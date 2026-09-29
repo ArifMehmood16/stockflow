@@ -1048,3 +1048,643 @@ h2 {
   top: 0;
   left: 0;
 }
+/* Architecture controls live with their components. */
+.graph {
+  width: 960px;
+  height: 670px;
+}
+.edges {
+  width: 960px;
+  height: 670px;
+}
+.graph-scroll {
+  height: 670px;
+}
+.edge.optional {
+  opacity: 0;
+  transition:
+    opacity 0.5s,
+    stroke 0.5s;
+}
+.edge.enabled {
+  opacity: 1;
+}
+.edge.muted-route {
+  opacity: 0.13;
+  animation: none !important;
+}
+.edge.cache-remainder {
+  opacity: 0.32;
+}
+.routes-changed .edge.enabled {
+  stroke-width: 3;
+  stroke: #169a76;
+}
+.routes-changed .edge.read:not(.muted-route) {
+  stroke-width: 2.5;
+}
+.zone-label {
+  position: absolute;
+  font: 9px var(--mono);
+  letter-spacing: 1.3px;
+  color: #7c8d81;
+}
+.component-shell {
+  position: absolute;
+  width: 176px;
+  height: 166px;
+  background: white;
+  border: 1px solid #b7cec0;
+  border-radius: 9px;
+  transition:
+    background 0.4s,
+    border-color 0.4s,
+    opacity 0.4s;
+  overflow: visible;
+}
+.component-shell .node {
+  position: relative;
+  width: 100%;
+  height: 115px;
+  border: 0;
+  border-radius: 9px 9px 0 0;
+  padding: 12px 13px;
+  background: transparent;
+  gap: 3px;
+  opacity: 1;
+  outline-offset: 1px;
+}
+.component-shell .node-top {
+  top: 12px;
+  left: 13px;
+  right: 13px;
+  align-items: center;
+}
+.tech-logo {
+  width: 27px;
+  height: 27px;
+  object-fit: contain;
+}
+.node-state {
+  font: 7px var(--mono);
+  letter-spacing: 0.7px;
+  color: var(--accent);
+}
+.component-shell .node strong {
+  font-size: 13px;
+  letter-spacing: -0.2px;
+  margin-top: 35px;
+}
+.technology-name {
+  font-size: 10px;
+  color: #566d62;
+}
+.component-shell .node small {
+  font-size: 9px;
+  letter-spacing: -0.1px;
+  margin-top: 2px;
+}
+.component-action {
+  padding: 7px 10px;
+  border-top: 1px solid #e2eae0;
+  min-height: 49px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  justify-content: center;
+}
+.map-action {
+  border: 1px solid #d0e2d5;
+  border-radius: 5px;
+  background: #eff7f0;
+  padding: 7px 8px;
+  color: #226751;
+  font-size: 10px;
+  line-height: 1.25;
+  min-height: 32px;
+  flex: 1;
+}
+.map-action:disabled {
+  opacity: 0.5;
+}
+.map-fact {
+  font-size: 9px;
+  line-height: 1.5;
+  color: #6e8075;
+  text-align: center;
+}
+.component-shell.planned {
+  background: rgba(249, 251, 245, 0.8);
+  border: 1px dashed #bdcdbd;
+}
+.component-shell.planned .tech-logo {
+  filter: grayscale(1);
+  opacity: 0.65;
+}
+.component-shell.planned .node-state {
+  color: #81917e;
+}
+.component-shell.planned .map-action {
+  background: #fff;
+  border-style: dashed;
+}
+.component-shell.building {
+  border: 1px solid #c4a56b;
+  background: #fffdf3;
+  animation: component-assemble 0.6s ease both;
+}
+.component-shell.building .node-state {
+  color: #9a742c;
+}
+.build-progress {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 0 0 9px 9px;
+  overflow: hidden;
+  display: none;
+}
+.building .build-progress {
+  display: block;
+}
+.build-progress span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #ba954a;
+  transform-origin: left;
+  animation: build-fill 2.9s linear;
+}
+.component-shell.ready {
+  animation: component-ready 0.65s ease;
+}
+.component-shell.standby {
+  opacity: 0.5;
+}
+.component-shell.serving {
+  border: 2px solid #22835e;
+}
+.component-shell .node.failed {
+  background: #fff0eb;
+}
+.component-shell .node.stressed {
+  background: #fff9eb;
+}
+.build-status {
+  padding: 12px 20px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  background: #f0f5ee;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 10px;
+  color: #526c59;
+  min-height: 47px;
+}
+.build-indicator {
+  height: 7px;
+  width: 7px;
+  border-radius: 50%;
+  background: #509570;
+  flex: none;
+}
+.is-building {
+  background: #faf5e9;
+  color: #92702d;
+}
+.is-building .build-indicator {
+  background: #c49b44;
+}
+.build-mode {
+  margin-left: auto;
+  font: 7px var(--mono);
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+.guide-map-note {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #356951;
+  background: #eef6ee;
+  border-left: 2px solid #86b299;
+  padding: 11px 12px;
+  margin: 17px 0;
+}
+.location-cue {
+  display: block;
+  margin-left: 29px;
+  color: #29765b;
+  font: 10px/1.7 var(--mono);
+}
+.hover-card {
+  top: 625px;
+  left: 26px;
+  width: 390px;
+  font-size: 10px;
+  padding: 8px 12px;
+}
+.step p {
+  margin-bottom: 8px;
+}
+.graph-footer {
+  font-size: 9px;
+}
+.legend {
+  gap: 15px;
+}
+@keyframes component-assemble {
+  from {
+    transform: translateY(9px) scale(0.97);
+    opacity: 0.45;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes component-ready {
+  from {
+    border-color: #30a97c;
+    background: #e4f6e9;
+  }
+  to {
+    background: white;
+  }
+}
+@keyframes build-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .component-shell,
+  .build-progress span {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+.reduced .component-shell,
+.reduced .build-progress span {
+  animation: none !important;
+  transition: none !important;
+}
+@media (max-width: 760px) {
+  .build-mode {
+    display: none;
+  }
+  .build-status {
+    padding: 10px 14px;
+  }
+  .component-shell .node:focus-visible {
+    outline-offset: -3px;
+  }
+}
+/* Dark workbench with light infrastructure cards. */
+:root {
+  --bg: #0b111c;
+  --paper: #121c2b;
+  --ink: #e7eef5;
+  --muted: #94a6b8;
+  --line: #28364a;
+  --accent: #5ce1b4;
+  --soft: #183a37;
+  --amber: #edb968;
+  --danger: #ed937b;
+}
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+.topbar {
+  background: #101827;
+  border-color: #2b384b;
+}
+.brand-icon {
+  background: #64e0b5;
+  color: #0b2521;
+}
+.mode {
+  color: #78e6c4;
+  background: #1a3334;
+  border: 1px solid #2d514b;
+}
+.rail {
+  background: #101827;
+}
+.chapter {
+  color: #a3b3c4;
+}
+.chapter.selected {
+  background: #21372f;
+  color: #94f0c8;
+}
+.rail-note > span:last-child {
+  color: #8fa2b6;
+}
+.budget-line {
+  background: #243449;
+}
+.notice {
+  background: #172437;
+  border: 1px solid #2b4058;
+  color: #b8ccde;
+}
+.notice-mark {
+  border-color: #6a879e;
+}
+.controls {
+  background: #142034;
+  border-color: #2e4057;
+}
+.mix-control strong {
+  color: #d9e7f3;
+}
+.primary {
+  background: #6be5b8;
+  color: #092d25;
+  border-color: #6be5b8;
+  font-weight: 700;
+}
+.secondary {
+  border-color: #3b5068;
+  background: #18263a;
+}
+.architecture {
+  background: #101c2c;
+  border-color: #31445d;
+}
+.section-heading {
+  background: #122034;
+}
+.state-pill {
+  background: #213246;
+  color: #adbac9;
+}
+.state-pill.active {
+  background: #20443d;
+  color: #82f0c7;
+}
+.build-status {
+  background: #152c32;
+  border-color: #2b454d;
+  color: #a7ddcf;
+}
+.build-indicator {
+  background: #67e7b4;
+}
+.is-building {
+  background: #352e24;
+  color: #f1cf94;
+}
+.is-building .build-indicator {
+  background: #f5c979;
+}
+.graph {
+  background-color: #0c1727;
+  background-image: radial-gradient(#2d4059 0.8px, transparent 0.8px);
+}
+.zone-label {
+  color: #8a9fb8;
+}
+.edges text {
+  fill: #9baec5;
+}
+.edge {
+  stroke: #58dbb1;
+  color: #58dbb1;
+  stroke-width: 2;
+}
+.edge.write {
+  stroke: #a6b8ff;
+  color: #a6b8ff;
+}
+.edge.replication {
+  stroke: #eac57f;
+  color: #eac57f;
+}
+.edge.failed {
+  stroke: #fa8f88;
+  color: #fa8f88;
+}
+.routes-changed .edge.enabled {
+  stroke: #abffd6;
+}
+.graph-footer {
+  background: #132035;
+  color: #a7bad0;
+}
+.legend .read-line {
+  border-color: #58dbb1;
+}
+.legend .write-line {
+  border-color: #a6b8ff;
+}
+.legend .replication-line {
+  border-color: #eac57f;
+}
+.component-shell {
+  background: #f4f7fa;
+  border-color: #b8c7d6;
+  color: #182d43;
+}
+.component-shell .node {
+  color: #182d43;
+}
+.component-shell .node strong {
+  font-weight: 700;
+}
+.component-shell .node small {
+  color: #63778b;
+}
+.component-shell .node-state {
+  color: #16785a;
+}
+.technology-name {
+  color: #4f657b;
+}
+.component-action {
+  border-color: #d4dee6;
+}
+.map-action {
+  background: #e4f0ec;
+  border-color: #c5d8ce;
+  color: #175c49;
+  font-weight: 600;
+}
+.map-fact {
+  color: #52677d;
+}
+.component-shell.planned {
+  background: #17283d;
+  border: 1px dashed #627991;
+  color: #d0dce9;
+}
+.component-shell.planned .node {
+  color: #cbdceb;
+}
+.component-shell.planned .technology-name,
+.component-shell.planned .node small {
+  color: #91a8bf;
+}
+.component-shell.planned .node-state {
+  color: #91a8bf;
+}
+.component-shell.planned .tech-logo {
+  filter: none;
+  opacity: 0.65;
+}
+.component-shell.planned .component-action {
+  border-color: #334a61;
+}
+.component-shell.planned .map-action {
+  background: #253d50;
+  border-color: #557b8f;
+  color: #a7e7d2;
+}
+.component-shell.building {
+  background: #fff3d9;
+  border-color: #e7ba72;
+}
+.component-shell.serving {
+  border-color: #6be5b8;
+}
+.component-shell .node.failed {
+  background: #fde9e7;
+}
+.component-shell .node.stressed {
+  background: #fff0d5;
+}
+.component-shell .node.pinned {
+  outline-color: #5ce1b4;
+}
+.guide-panel {
+  background: #131f30;
+  border-color: #2d4058;
+}
+.guide-map-note {
+  background: #203b3b;
+  color: #b3ebd7;
+  border-color: #64d7ae;
+}
+.location-cue {
+  color: #8adfbf;
+}
+.step-num {
+  border-color: #496076;
+  color: #a9bacc;
+}
+.step.done .step-num {
+  background: #254839;
+  color: #97efc5;
+  border-color: #3f6a56;
+}
+.tradeoff {
+  background: #302d28;
+  border: 1px solid #4b4437;
+}
+.tradeoff .tiny-label {
+  color: #edc78b;
+}
+.tradeoff p {
+  color: #d8c7ab;
+}
+.inspect-role {
+  background: #22433e;
+  color: #96ecd0;
+}
+.inspect-list dd {
+  color: #d7e3ef;
+}
+.metrics {
+  background: #e8eff5;
+  border-color: #cbd9e4;
+  color: #15304a;
+}
+.metric {
+  border-color: #c2d2df;
+}
+.metric > span,
+.metric p,
+.metric strong small {
+  color: #5a7085;
+}
+.metric.alert strong {
+  color: #a44331;
+}
+.activity {
+  background: #131f30;
+  border-color: #2e4057;
+}
+.activity li {
+  border-color: #27394f;
+}
+.hover-card {
+  background: #eaf2f7;
+  color: #193047;
+  border: 1px solid #c2d5e1;
+}
+.main-footer {
+  color: #7c91aa;
+}
+.skip {
+  background: #122034;
+  color: #9af0cd;
+}
+.panel-bottom a {
+  color: #8be3c2;
+}
+.budget b {
+  color: #dee8f0;
+}
+.range-labels {
+  color: #9eafc2;
+}
+input[type="range"] {
+  accent-color: #62dfb5;
+}
+.icon-button {
+  color: #b5c5d6;
+}
+.graph-caption {
+  color: #91a6bb;
+}
+@keyframes component-ready {
+  from {
+    border-color: #86ffb7;
+    background: #c1f9dd;
+  }
+  to {
+    background: #f4f7fa;
+  }
+}
+@media (max-width: 760px) {
+  .metric:nth-child(-n + 2) {
+    border-bottom-color: #c2d2df;
+  }
+}
+.graph-stage {
+  position: relative;
+  overflow: hidden;
+}
+.graph-scroll {
+  overflow-y: hidden;
+}
+.component-shell .node strong {
+  font-size: 14px;
+}
+.component-shell .node-state {
+  font-size: 8px;
+}
+.component-shell .technology-name {
+  font-size: 10px;
+}
+.component-shell .node small {
+  white-space: normal;
+  font-size: 9px;
+}

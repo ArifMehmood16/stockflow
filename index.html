@@ -110,133 +110,342 @@
             </div>
             <div class="state-pill" id="run-state"><i></i> Traffic paused</div>
           </div>
+          <div class="build-status" id="build-status" role="status">
+            <span class="build-indicator"></span
+            ><span id="build-message"
+              >Build directly on the map. Select a component to inspect
+              it.</span
+            ><span class="build-mode">ILLUSTRATIVE LIFECYCLE</span>
+          </div>
           <div class="graph-scroll">
-            <div class="graph" id="graph">
-              <svg class="edges" viewBox="0 0 880 415" aria-hidden="true">
-                <defs>
-                  <marker
-                    id="arrow"
-                    viewBox="0 0 10 10"
-                    refX="8"
-                    refY="5"
-                    markerWidth="5"
-                    markerHeight="5"
-                    orient="auto-start-reverse"
+            <div class="graph-stage">
+              <div class="graph" id="graph">
+                <svg class="edges" viewBox="0 0 960 670" aria-hidden="true">
+                  <defs>
+                    <marker
+                      id="arrow"
+                      viewBox="0 0 10 10"
+                      refX="8"
+                      refY="5"
+                      markerWidth="5"
+                      markerHeight="5"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
+                    </marker>
+                  </defs>
+                  <path id="edge-client" class="edge read" d="M202 316 H236" />
+                  <path id="edge-api" class="edge read" d="M412 316 H446" />
+                  <path id="edge-db" class="edge write" d="M622 334 H758" />
+                  <path id="edge-db-read" class="edge read" d="M622 304 H758" />
+                  <path
+                    id="edge-cache"
+                    class="edge read optional"
+                    d="M550 264 V224 H696 V106 H758"
+                  />
+                  <path
+                    id="edge-replica"
+                    class="edge replication optional"
+                    d="M894 430 V474"
+                  />
+                  <path
+                    id="edge-replica-read"
+                    class="edge read optional"
+                    d="M622 350 H696 V526 H758"
+                  />
+                  <path
+                    id="edge-shard"
+                    class="edge write optional"
+                    d="M534 430 V474"
+                  />
+                  <path
+                    id="edge-api2"
+                    class="edge read optional"
+                    d="M412 282 H426 V106 H446"
+                  />
+                  <path
+                    id="edge-api2-db"
+                    class="edge write optional"
+                    d="M622 146 H716 V350 H758"
+                  />
+                  <path
+                    id="edge-green"
+                    class="edge read optional"
+                    d="M324 264 V220"
+                  />
+                  <path
+                    id="edge-green-db"
+                    class="edge write optional"
+                    d="M324 54 V26 H928 V304 H934"
+                  />
+                  <text x="653" y="293">READ</text>
+                  <text x="653" y="355">WRITE</text>
+                  <text id="wal-label" x="903" y="458">WAL</text>
+                  <text id="cache-label" x="706" y="92">GET / SET</text>
+                </svg>
+                <div class="zone-label" style="left: 26px; top: 230px">
+                  REQUEST PATH
+                </div>
+                <div class="zone-label" style="left: 26px; top: 55px">
+                  ADD CAPACITY
+                </div>
+                <div class="zone-label" style="left: 26px; top: 484px">
+                  RESILIENCE & DATA
+                </div>
+                <article
+                  class="component-shell ready"
+                  id="component-client"
+                  style="left: 26px; top: 264px"
+                  aria-label="Workload component"
+                >
+                  <button
+                    class="node"
+                    data-node="client"
+                    aria-label="Inspect Workload"
                   >
-                    <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
-                  </marker>
-                </defs>
-                <path id="edge-client" class="edge read" d="M165 224 H220" />
-                <path id="edge-api" class="edge read" d="M360 224 H420" />
-                <path id="edge-db" class="edge write" d="M560 224 H655" />
-                <path
-                  id="edge-cache"
-                  class="edge read optional"
-                  d="M490 185 V84 H620"
-                />
-                <path
-                  id="edge-replica"
-                  class="edge replication optional"
-                  d="M725 264 V325"
-                />
-                <path
-                  id="edge-shard"
-                  class="edge write optional"
-                  d="M490 264 V325"
-                />
-                <path
-                  id="edge-replica-read"
-                  class="edge read optional"
-                  d="M560 244 H595 V374 H655"
-                />
-                <text x="183" y="207">HTTP</text>
-                <text x="581" y="207">SQL</text>
-                <text id="wal-label" x="739" y="300">WAL</text>
-                <text id="cache-label" x="521" y="69">GET / SET</text>
-              </svg>
-              <button
-                class="node client"
-                data-node="client"
-                style="left: 25px; top: 185px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">↗</span
-                  ><span class="health-dot"></span></span
-                ><strong>Workload</strong
-                ><small id="client-meta">80 offered req/s</small>
-              </button>
-              <button
-                class="node proxy"
-                data-node="proxy"
-                style="left: 220px; top: 185px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">⇄</span
-                  ><span class="health-dot"></span></span
-                ><strong>Router</strong
-                ><small id="proxy-meta">blue pool · v1</small>
-              </button>
-              <button
-                class="node api"
-                data-node="api"
-                style="left: 420px; top: 185px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">{ }</span
-                  ><span class="health-dot"></span></span
-                ><strong id="api-name">Inventory API</strong
-                ><small id="api-meta">Java · 1 instance</small
-                ><span class="node-tag" id="api-tag">STATELESS</span>
-              </button>
-              <button
-                class="node cache inactive"
-                data-node="cache"
-                style="left: 620px; top: 45px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">▱</span
-                  ><span class="health-dot"></span></span
-                ><strong>Redis cache</strong
-                ><small id="cache-meta">not enabled</small>
-              </button>
-              <button
-                class="node database"
-                data-node="db"
-                style="left: 655px; top: 185px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">▤</span
-                  ><span class="health-dot"></span></span
-                ><strong id="db-name">Primary DB</strong
-                ><small id="db-meta">PostgreSQL · reads + writes</small
-                ><span class="node-tag" id="db-tag">SOURCE OF TRUTH</span>
-              </button>
-              <button
-                class="node replica inactive"
-                data-node="replica"
-                style="left: 655px; top: 325px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">▤</span
-                  ><span class="health-dot"></span></span
-                ><strong>Read replica</strong
-                ><small id="replica-meta">not provisioned</small>
-              </button>
-              <button
-                class="node shard inactive"
-                data-node="shard"
-                style="left: 420px; top: 325px"
-              >
-                <span class="node-top"
-                  ><span class="node-symbol">▤</span
-                  ><span class="health-dot"></span></span
-                ><strong>Shard 02</strong
-                ><small id="shard-meta">not provisioned</small>
-              </button>
-              <div class="graph-caption">
-                Hover to understand · click to inspect
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/react.svg"
+                        alt=""
+                      /><span class="node-state" id="client-status"
+                        >READY</span
+                      ></span
+                    ><strong id="client-name">Workload</strong
+                    ><span class="technology-name">React · planned UI</span
+                    ><small id="client-meta">80 offered req/s</small>
+                  </button>
+                  <div class="component-action" id="client-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell ready"
+                  id="component-proxy"
+                  style="left: 236px; top: 264px"
+                  aria-label="Traffic router component"
+                >
+                  <button
+                    class="node"
+                    data-node="proxy"
+                    aria-label="Inspect Traffic router"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/nginx.svg"
+                        alt=""
+                      /><span class="node-state" id="proxy-status"
+                        >READY</span
+                      ></span
+                    ><strong id="proxy-name">Traffic router</strong
+                    ><span class="technology-name">NGINX · proposed proxy</span
+                    ><small id="proxy-meta">blue pool · v1</small>
+                  </button>
+                  <div class="component-action" id="proxy-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell ready"
+                  id="component-api"
+                  style="left: 446px; top: 264px"
+                  aria-label="Inventory API component"
+                >
+                  <button
+                    class="node"
+                    data-node="api"
+                    aria-label="Inspect Inventory API"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/java.svg"
+                        alt=""
+                      /><span class="node-state" id="api-status"
+                        >READY</span
+                      ></span
+                    ><strong id="api-name">Inventory API</strong
+                    ><span class="technology-name">Java + Spring Boot</span
+                    ><small id="api-meta">1 instance · blue v1</small>
+                  </button>
+                  <div class="component-action" id="api-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell planned"
+                  id="component-cache"
+                  style="left: 758px; top: 54px"
+                  aria-label="Read cache component"
+                >
+                  <button
+                    class="node inactive"
+                    data-node="cache"
+                    aria-label="Inspect Read cache"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/redis.svg"
+                        alt=""
+                      /><span class="node-state" id="cache-status"
+                        >NOT BUILT</span
+                      ></span
+                    ><strong id="cache-name">Read cache</strong
+                    ><span class="technology-name">Redis</span
+                    ><small id="cache-meta">not built</small>
+                  </button>
+                  <div class="component-action" id="cache-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell ready"
+                  id="component-db"
+                  style="left: 758px; top: 264px"
+                  aria-label="Primary database component"
+                >
+                  <button
+                    class="node"
+                    data-node="db"
+                    aria-label="Inspect Primary database"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/postgresql.svg"
+                        alt=""
+                      /><span class="node-state" id="db-status"
+                        >READY</span
+                      ></span
+                    ><strong id="db-name">Primary database</strong
+                    ><span class="technology-name">PostgreSQL</span
+                    ><small id="db-meta">reads + writes</small>
+                  </button>
+                  <div class="component-action" id="db-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell planned"
+                  id="component-replica"
+                  style="left: 758px; top: 474px"
+                  aria-label="Read replica component"
+                >
+                  <button
+                    class="node inactive"
+                    data-node="replica"
+                    aria-label="Inspect Read replica"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/postgresql.svg"
+                        alt=""
+                      /><span class="node-state" id="replica-status"
+                        >NOT BUILT</span
+                      ></span
+                    ><strong id="replica-name">Read replica</strong
+                    ><span class="technology-name">PostgreSQL standby</span
+                    ><small id="replica-meta">not built</small>
+                  </button>
+                  <div class="component-action" id="replica-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell planned"
+                  id="component-shard"
+                  style="left: 446px; top: 474px"
+                  aria-label="Shard 02 component"
+                >
+                  <button
+                    class="node inactive"
+                    data-node="shard"
+                    aria-label="Inspect Shard 02"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/postgresql.svg"
+                        alt=""
+                      /><span class="node-state" id="shard-status"
+                        >NOT BUILT</span
+                      ></span
+                    ><strong id="shard-name">Shard 02</strong
+                    ><span class="technology-name">PostgreSQL primary</span
+                    ><small id="shard-meta">not built</small>
+                  </button>
+                  <div class="component-action" id="shard-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell planned"
+                  id="component-api2"
+                  style="left: 446px; top: 54px"
+                  aria-label="Extra API instance component"
+                >
+                  <button
+                    class="node inactive"
+                    data-node="api2"
+                    aria-label="Inspect Extra API instance"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/java.svg"
+                        alt=""
+                      /><span class="node-state" id="api2-status"
+                        >NOT BUILT</span
+                      ></span
+                    ><strong id="api2-name">Extra API instance</strong
+                    ><span class="technology-name">Java + Spring Boot</span
+                    ><small id="api2-meta">not built</small>
+                  </button>
+                  <div class="component-action" id="api2-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <article
+                  class="component-shell planned"
+                  id="component-green"
+                  style="left: 236px; top: 54px"
+                  aria-label="Green deployment component"
+                >
+                  <button
+                    class="node inactive"
+                    data-node="green"
+                    aria-label="Inspect Green deployment"
+                  >
+                    <span class="node-top"
+                      ><img
+                        class="tech-logo"
+                        src="/assets/spring.svg"
+                        alt=""
+                      /><span class="node-state" id="green-status"
+                        >NOT BUILT</span
+                      ></span
+                    ><strong id="green-name">Green deployment</strong
+                    ><span class="technology-name">Spring Boot · version 2</span
+                    ><small id="green-meta">not built</small>
+                  </button>
+                  <div class="component-action" id="green-actions"></div>
+                  <div class="build-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </article>
+                <div class="hover-card" id="hover-card" hidden></div>
               </div>
-              <div id="hover-card" class="hover-card" hidden></div>
             </div>
           </div>
           <div class="graph-footer">

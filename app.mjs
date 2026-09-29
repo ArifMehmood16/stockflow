@@ -5,6 +5,10 @@ let running = false;
 let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let pinned = null;
 let events = [];
+let buildTimers = [];
+let routeTimer;
+let routeNotice =
+  "Build directly on the map. Select a component to inspect it.";
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString("en-GB");
 const chapters = [
@@ -164,7 +168,7 @@ const chapters = [
       ],
       [
         "Add a second shard",
-        "This preview applies an instant 50/50 split; production uses a verified bucket-migration sequence.",
+        "Build the new shard on the map. After readiness, this preview applies a balanced split; real migration needs verification.",
         "Add shard",
         "shard",
       ],
@@ -198,8 +202,8 @@ const chapters = [
       ],
       [
         "Switch to green",
-        "Preview the route/version change. This sketch assumes readiness and changes instantly.",
-        "Switch to green",
+        "Preview the route/version change. Build green on the map, watch its readiness checks, then switch traffic at the router.",
+        "Build green, then switch",
         "deploy",
       ],
       [
@@ -226,7 +230,7 @@ const descriptions = {
     "Routing proxy",
     "Request routing",
     "Sends requests to the selected inventory version and instances.",
-    "Blue/green switch is instant in this sketch.",
+    "Build green first; the router enables switching only after model readiness.",
     "Real rollout requires readiness, bounded draining and compatible database changes.",
   ],
   api: [
@@ -261,10 +265,24 @@ const descriptions = {
     "Shard 02",
     "Independent data owner",
     "Owns a subset of tenant buckets on a separate database primary.",
-    "Sketch assumes balanced demand and instantaneous migration.",
+    "Sketch assumes balanced demand after an illustrative provisioning/readiness sequence.",
     "Real migration must pause writes, drain, copy, verify and switch ownership epoch. A hot tenant remains hot.",
   ],
 };
+descriptions.api2 = [
+  "Extra API instance",
+  "Horizontal service capacity",
+  "Receives part of the traffic from the router after readiness checks complete.",
+  "Adds 220 illustrative req/s of API capacity. Database capacity stays unchanged.",
+  "Each real instance adds connections and memory. A database bottleneck remains a database bottleneck.",
+];
+descriptions.green = [
+  "Green deployment",
+  "Prepared service version",
+  "Version 2 starts separately. It receives traffic only after an explicit switch at the router.",
+  "Readiness is an illustrative timed state, not a running Spring process.",
+  "Both versions must be compatible with the same schema. Rollback does not undo database changes.",
+];
 function log(text) {
   events.unshift({ at: new Date().toLocaleTimeString("en-GB"), text });
   events = events.slice(0, 6);
@@ -327,35 +345,177 @@ function renderInspector() {
   const id = pinned || "api";
   const d = descriptions[id];
   const active =
-    id === "cache"
-      ? state.cache
-      : id === "replica"
-        ? state.replica
-        : id === "shard"
-          ? state.shards > 1
-          : id === "db"
-            ? !state.primaryDown
-            : true;
+    id === "green"
+      ? state.greenReady
+      : id === "api2"
+        ? state.instances > 1
+        : id === "cache"
+          ? state.cache
+          : id === "replica"
+            ? state.replica
+            : id === "shard"
+              ? state.shards > 1
+              : id === "db"
+                ? !state.primaryDown
+                : true;
   $("inspect-content").innerHTML =
     `<span class="guide-kicker">COMPONENT INSPECTOR</span><h3>${d[0]}</h3><span class="inspect-role">${d[1]}</span><dl class="inspect-list"><div><dt>Current state</dt><dd>${active ? "Available in the model" : "Inactive / unavailable"}${id === "proxy" ? " · " + (state.green ? "green v2" : "blue v1") : ""}</dd></div><div><dt>What it does</dt><dd>${d[2]}</dd></div><div><dt>Model assumption</dt><dd>${d[3]}</dd></div></dl><div class="tradeoff"><span class="tiny-label">WHAT TO REMEMBER</span><p>${d[4]}</p></div><p class="inspect-hint">All values are illustrative. Select another architecture component to inspect its role.</p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
   $("back-guide").onclick = () => selectPanel(false);
 }
+const actionLocations = {
+  run: "Workload → Start traffic",
+  burst: "Workload → Send 300 req/s",
+  scale: "Extra API instance → Build instance",
+  cache: "Read cache → Build Redis",
+  replica: "Read replica → Build replica",
+  fail: "Primary database → Fail primary",
+  fence: "Primary database → Fence primary",
+  promote: "Read replica → Promote replica",
+  shard: "Shard 02 → Build shard",
+  deploy: "Green deployment → Build green; then Router → Switch to green",
+  "inspect-cache": "Select the Redis component",
+  "inspect-replica": "Select the replica component",
+  "inspect-proxy": "Select the router component",
+};
 function renderGuide() {
-  const focusedAction = document.activeElement?.getAttribute("data-action");
   const c = chapters[chapter];
   $("guide-content").innerHTML =
-    `<span class="guide-kicker">GUIDED EXPERIMENT ${String(chapter + 1).padStart(2, "0")}</span><h3>${c.heading}</h3><p class="guide-intro">${c.intro}</p>${c.steps.map((s, i) => `<div class="step ${done(s[3]) ? "done" : ""}"><div class="step-heading"><span class="step-num">${done(s[3]) ? "✓" : i + 1}</span>${s[0]}</div><p>${s[1]}</p><button class="${i === 0 ? "primary" : "secondary"}" data-action="${s[3]}" ${s[3] === "promote" && !(state.primaryDown && state.fenced && state.replica) ? "disabled" : s[3] === "fence" && !state.primaryDown ? "disabled" : ""}>${s[3] === "cache" && state.cache ? "Disable Redis" : s[3] === "deploy" && state.green ? "Roll back to blue" : s[2]}</button></div>`).join("")}<div class="tradeoff"><span class="tiny-label">THE TRADE-OFF</span><p>${c.cost}</p></div>`;
+    `<span class="guide-kicker">GUIDED EXPERIMENT ${String(chapter + 1).padStart(2, "0")}</span><h3>${c.heading}</h3><p class="guide-intro">${c.intro}</p><div class="guide-map-note">All operations happen on the architecture. Follow the labelled controls below each component.</div>${c.steps.map((s, i) => `<div class="step ${done(s[3]) ? "done" : ""}"><div class="step-heading"><span class="step-num">${done(s[3]) ? "✓" : i + 1}</span>${s[0]}</div><p>${s[1]}</p><span class="location-cue">↗ ${actionLocations[s[3]]}</span></div>`).join("")}<div class="tradeoff"><span class="tiny-label">THE TRADE-OFF</span><p>${c.cost}</p></div>`;
   $("reflection").textContent = c.question;
+}
+function buildNode(action) {
+  return {
+    cache: "cache",
+    replica: "replica",
+    shard: "shard",
+    scale: "api2",
+    "prepare-green": "green",
+  }[action];
+}
+function beginBuild(action) {
+  const next = transition(state, "begin-build", action);
+  if (!next.build || state.build) return;
+  state = next;
+  running = true;
+  const name = descriptions[buildNode(action)][0];
+  log(`${name}: provisioning. Existing traffic keeps its current route.`);
+  render();
+  buildTimers.push(
+    setTimeout(() => {
+      state = transition(state, "advance-build");
+      log(`${name}: checking readiness. No new traffic admitted yet.`);
+      render();
+    }, 1400),
+  );
+  buildTimers.push(
+    setTimeout(() => {
+      state = transition(state, "finish-build");
+      buildTimers = [];
+      routeNotice =
+        action === "prepare-green"
+          ? "Green is ready. Switch traffic using the control on the router."
+          : `${name} is ready. New routes are active; inspect the highlighted paths.`;
+      log(routeNotice);
+      render();
+      highlightRoutes();
+    }, 2900),
+  );
+}
+function highlightRoutes() {
+  clearTimeout(routeTimer);
+  $("graph").classList.remove("routes-changed");
+  requestAnimationFrame(() => $("graph").classList.add("routes-changed"));
+  routeTimer = setTimeout(
+    () => $("graph").classList.remove("routes-changed"),
+    2200,
+  );
+}
+function renderActions() {
+  const busy = Boolean(state.build);
+  const focusedAction = document.activeElement?.getAttribute("data-action");
+  const focusedNode = document.activeElement?.closest(".component-shell")?.id;
+  const button = (action, label, disabled = false) =>
+    `<button class="map-action" data-action="${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
+  $("client-actions").innerHTML =
+    button("run", running ? "Flow running" : "Start traffic", running) +
+    button("burst", "Send 300 req/s");
+  $("proxy-actions").innerHTML = button(
+    "deploy",
+    state.green ? "Roll back to blue" : "Switch to green",
+    busy || !state.greenReady,
+  );
+  $("api-actions").innerHTML =
+    `<span class="map-fact">${state.instances} instance${state.instances > 1 ? "s" : ""} · ${state.green ? "blue on standby" : "receiving traffic"}</span>`;
+  for (const [id, action, active, label] of [
+    ["cache", "cache", state.cache, "Build Redis"],
+    ["replica", "replica", state.replica, "Build replica"],
+    ["shard", "shard", state.shards > 1, "Build shard"],
+    ["api2", "scale", state.instances > 1, "Build instance"],
+    ["green", "prepare-green", state.greenReady, "Build green"],
+  ]) {
+    const pending = state.build?.action === action;
+    const status = pending
+      ? state.build.stage === "provisioning"
+        ? "PROVISIONING"
+        : "CHECKING"
+      : active
+        ? "READY"
+        : "NOT BUILT";
+    const shell = $(`component-${id}`);
+    shell.classList.toggle("building", pending);
+    shell.classList.toggle("planned", !active && !pending);
+    shell.classList.toggle("ready", active);
+    $(`${id}-status`).textContent = status;
+    shell
+      .querySelector(".node")
+      .classList.toggle("inactive", !active && !pending);
+    let controls = pending
+      ? `<span class="map-fact">${state.build.stage === "provisioning" ? "Creating component…" : "Verifying readiness…"}</span>`
+      : button(
+          action,
+          active ? "Ready" : `+ ${label}`,
+          busy ||
+            active ||
+            ((id === "replica" || id === "shard") && state.primaryDown),
+        );
+    if (id === "cache" && active)
+      controls = button("cache", "Disable cache", busy);
+    if (id === "replica" && state.primaryDown && active)
+      controls = button("promote", "Promote replica", busy || !state.fenced);
+    if (id === "api2" && active)
+      controls = button(
+        "scale",
+        state.instances < 3 ? "+ Add third instance" : "3 instances ready",
+        busy || state.instances >= 3,
+      );
+    if (id === "green" && active)
+      controls = `<span class="map-fact">${state.green ? "Receiving traffic · v2" : "Ready · switch at router"}</span>`;
+    $(`${id}-actions`).innerHTML = controls;
+  }
+  $("db-actions").innerHTML = state.primaryDown
+    ? state.fenced
+      ? `<span class="map-fact">Fenced · promote the replica</span>`
+      : button("fence", "Fence primary", busy)
+    : button("fail", "Fail primary", busy);
+  $("db-status").textContent = state.primaryDown
+    ? state.fenced
+      ? "FENCED"
+      : "UNAVAILABLE"
+    : "READY";
+  $("build-status").classList.toggle("is-building", busy);
+  $("build-message").textContent = busy
+    ? `${descriptions[buildNode(state.build.action)][0]} · ${state.build.stage === "provisioning" ? "Provisioning component" : "Checking readiness"} · existing routes stay active`
+    : routeNotice;
   document
-    .querySelectorAll("[data-action]")
+    .querySelectorAll(".map-action")
     .forEach((b) => (b.onclick = () => act(b.dataset.action)));
-  // Replacing step markup must not send keyboard users back to the page start.
-  if (focusedAction && !$("guide-content").hidden) {
-    const next = [...document.querySelectorAll("[data-action]")].find(
-      (button) => button.dataset.action === focusedAction,
-    );
-    if (next && !next.disabled) next.focus({ preventScroll: true });
-    else $("guide-tab").focus({ preventScroll: true });
+  if (focusedAction && focusedNode) {
+    const replacement = [
+      ...$(focusedNode).querySelectorAll(".map-action"),
+    ].find((b) => b.dataset.action === focusedAction && !b.disabled);
+    (replacement || $(focusedNode).querySelector(".node")).focus({
+      preventScroll: true,
+    });
   }
 }
 function render() {
@@ -367,8 +527,8 @@ function render() {
     ? "green pool · v2"
     : "blue pool · v1";
   $("api-meta").textContent =
-    `Java · ${state.instances} instance${state.instances > 1 ? "s" : ""}`;
-  $("api-tag").textContent = state.green ? "GREEN · VERSION 2" : "STATELESS";
+    `${state.instances} instance${state.instances > 1 ? "s" : ""} · blue v1`;
+
   $("cache-meta").textContent = state.cache
     ? "80% assumed read hits"
     : "not enabled";
@@ -378,13 +538,10 @@ function render() {
       ? "fenced · writes stopped"
       : "failed · writes stopped"
     : state.shards > 1
-      ? "PostgreSQL · shard 01"
+      ? "shard 01 · tenant buckets"
       : state.replica
-        ? "PostgreSQL · writes"
-        : "PostgreSQL · reads + writes";
-  $("db-tag").textContent = state.primaryDown
-    ? "WRITER UNAVAILABLE"
-    : "SOURCE OF TRUTH";
+        ? "authoritative writes"
+        : "reads + writes";
   $("replica-meta").textContent = state.replica
     ? "eventual reads · async WAL"
     : state.promoted
@@ -407,7 +564,54 @@ function render() {
     state.replica && !state.primaryDown,
   );
   $("edge-replica-read").classList.toggle("enabled", state.replica);
+  $("edge-db").setAttribute(
+    "d",
+    state.green ? "M324 54 V26 H948 V334 H934" : "M622 334 H758",
+  );
+  $("edge-db-read").setAttribute(
+    "d",
+    state.green ? "M412 88 H736 V304 H758" : "M622 304 H758",
+  );
+  $("edge-cache").setAttribute(
+    "d",
+    state.green ? "M412 106 H758" : "M550 264 V224 H696 V106 H758",
+  );
+  $("edge-replica-read").setAttribute(
+    "d",
+    state.green ? "M412 142 H676 V526 H758" : "M622 350 H696 V526 H758",
+  );
+  $("edge-shard").setAttribute(
+    "d",
+    state.green ? "M324 220 V452 H534 V474" : "M534 430 V474",
+  );
   $("edge-db").classList.toggle("failed", state.primaryDown);
+  $("edge-db-read").classList.toggle(
+    "muted-route",
+    state.replica || state.primaryDown,
+  );
+  $("edge-db-read").classList.toggle("cache-remainder", state.cache);
+  $("edge-api").classList.toggle("muted-route", state.green);
+  $("edge-api2").classList.toggle(
+    "enabled",
+    state.instances > 1 && !state.green,
+  );
+  $("edge-api2-db").classList.toggle(
+    "enabled",
+    state.instances > 1 && !state.green && !state.primaryDown,
+  );
+  $("edge-green").classList.toggle("enabled", state.green);
+
+  $("component-api").classList.toggle("standby", state.green);
+  $("component-green").classList.toggle("serving", state.green);
+  $("api2-meta").textContent =
+    state.instances > 1
+      ? `${state.instances - 1} extra instance${state.instances > 2 ? "s" : ""}`
+      : "not built";
+  $("green-meta").textContent = state.green
+    ? "active route · v2"
+    : state.greenReady
+      ? "ready · awaiting switch"
+      : "not built";
   $("wal-label").style.opacity = state.replica ? 1 : 0.2;
   $("cache-label").style.opacity = state.cache ? 1 : 0.2;
   const db = document.querySelector("[data-node=db]");
@@ -432,10 +636,18 @@ function render() {
   $("run-state").classList.toggle("active", running);
   $("motion").textContent = `Motion: ${reduced ? "off" : "on"}`;
   $("motion").setAttribute("aria-pressed", String(reduced));
+  renderActions();
   renderGuide();
   if (pinned) renderInspector();
 }
 function act(action) {
+  if (
+    ["replica", "shard", "scale", "prepare-green"].includes(action) ||
+    (action === "cache" && !state.cache)
+  ) {
+    beginBuild(action);
+    return;
+  }
   if (action.startsWith("inspect-")) {
     inspect(action.slice(8));
     return;
@@ -462,14 +674,19 @@ function act(action) {
       scale: `API scaled to ${state.instances} instances. Database capacity is unchanged.`,
       shard: "Second shard added with an assumed balanced tenant split.",
       deploy: state.green
-        ? "Route switched to green v2. Readiness and drain are not simulated."
+        ? "Route switched to green v2. Green passed the illustrative readiness sequence; new requests use v2."
         : "Route rolled back to blue v1.",
     };
     log(messages[action] || "Model configuration changed.");
   }
   render();
+  if (["deploy", "cache", "promote"].includes(action)) highlightRoutes();
 }
 function selectChapter(i) {
+  buildTimers.forEach(clearTimeout);
+  buildTimers = [];
+  clearTimeout(routeTimer);
+  routeNotice = "Build directly on the map. Select a component to inspect it.";
   chapter = i;
   state = initialState();
   running = false;
@@ -559,7 +776,9 @@ render();
 renderInspector();
 const graphViewport = document.querySelector(".graph-scroll");
 new ResizeObserver(() => {
-  const scale = Math.max(0.64, Math.min(1, graphViewport.clientWidth / 880));
+  const scale = Math.max(0.65, Math.min(1, graphViewport.clientWidth / 960));
   $("graph").style.transform = `scale(${scale})`;
-  graphViewport.style.height = `${430 * scale}px`;
+  graphViewport.style.height = `${670 * scale}px`;
+  document.querySelector(".graph-stage").style.width = `${960 * scale}px`;
+  document.querySelector(".graph-stage").style.height = `${670 * scale}px`;
 }).observe(graphViewport);
