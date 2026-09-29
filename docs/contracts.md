@@ -4,15 +4,15 @@ Status: proposed v1 contract. These endpoints do not exist in the design prototy
 
 ## Inventory data
 
-PostgreSQL tables, all run-isolated through a dedicated database/schema; `tenant_id` always explicit in queries:
+[ADR 002](adr/002-writable-inventory-contract.md) is the writable contract. The diagnostic `stockflow.inventory` table, with its integer `tenant_id` and product-code primary key, stays as imported and is never mutated by a lesson. Writable rows live in one schema per run. The sketch below is not a migration.
 
 ```sql
 CREATE TABLE inventory (
   tenant_id uuid NOT NULL,
   warehouse_id uuid NOT NULL,
-  sku text NOT NULL CHECK (length(sku) BETWEEN 1 AND 64),
+  sku text NOT NULL CHECK (sku ~ '^[0-9]{1,32}$'),
   available integer NOT NULL CHECK (available >= 0),
-  version bigint NOT NULL DEFAULT 0,
+  version bigint NOT NULL DEFAULT 0 CHECK (version >= 0),
   updated_at timestamptz NOT NULL DEFAULT now(),
   PRIMARY KEY (tenant_id, warehouse_id, sku)
 );
@@ -24,6 +24,7 @@ CREATE TABLE reservation (
   quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 100),
   state text NOT NULL CHECK (state IN ('ACTIVE','RELEASED','EXPIRED')),
   expires_at timestamptz NOT NULL,
+  stock_version bigint NOT NULL CHECK (stock_version >= 0),
   PRIMARY KEY (tenant_id, id),
   FOREIGN KEY (tenant_id, warehouse_id, sku)
     REFERENCES inventory (tenant_id, warehouse_id, sku)
@@ -32,22 +33,25 @@ CREATE TABLE idempotency_record (
   tenant_id uuid NOT NULL,
   key text NOT NULL CHECK (length(key) BETWEEN 1 AND 128),
   request_hash text NOT NULL,
-  status_code integer NOT NULL,
-  response_json jsonb NOT NULL,
+  state text NOT NULL CHECK (state IN ('CLAIMED','COMPLETED')),
+  status_code integer,
+  response_json jsonb,
   expires_at timestamptz NOT NULL,
   PRIMARY KEY (tenant_id, key)
 );
 ```
 
-DDL is illustrative schema specification; add migrations, indexes on expiry/state and tests before using it. Claiming an in-flight idempotency operation requires an implementation mechanism (transaction-scoped advisory lock or claim row); finalize response in the same transaction as stock mutation. Phase 1 ADR chooses the narrow mechanism; never persist an uncommitted success placeholder. Synthetic fixture: 32 tenants, 2 warehouses each, 100 SKUs/warehouse, initial available 1000; deterministic UUIDs and seed. Keep manifest/counts/checksum. Larger fixture cap: 100,000 inventory rows per run. Reservations and replay records have separate retention/volume caps.
+`sku` is a catalog code. `version` starts at 0 and increments only when `available` changes. The idempotency primary key is inserted and completed in the same transaction as the stock change; a committed row is `COMPLETED`, and a crash before commit leaves no claim. Replay returns the stored status and body. The same key under another tenant or another run is a different operation.
+
+The default writable fixture is the small profile: 2 tenants, 2 warehouses, 100 shared catalog SKUs on each pair, 400 rows, `available` 1000. An explicit `FIXTURE_ROWS` value copies that many distinct catalog codes, capped by the catalog rows actually present and by disk admission. The withdrawn 100,000-row example is not a default or a hidden maximum. Receipts record `actual_rows`. Reservations and idempotency rows are retained for 24 hours, at most 200,000 of each per run. Full DDL, roles and the worked example are in ADR 002.
 
 ## Inventory HTTP
 
 Tenant identity comes from a run-issued synthetic client credential, never trusted solely from a path/header. Local fixture clients get assigned tenant scopes. Future internet auth is out of core scope.
 
-- `GET /v1/warehouses/{warehouseId}/stock/{sku}?consistency=eventual|session` → 200 `{sku,available,version,source,cachedAt,observedAt}`. Optional opaque session token binds tenant/item/minVersion; server verifies scope. 404 unknown item; 503 required freshness unavailable.
-- `POST /v1/reservations`, required `Idempotency-Key`, body `{warehouseId,sku,quantity}` → 201 `{id,state,quantity,stockVersion,sessionToken}`. Replay returns same status/body plus replay header. Reuse key with different body → 409 `IDEMPOTENCY_CONFLICT`. Insufficient stock → 409 `INSUFFICIENT_STOCK` and stable replay semantics.
-- `POST /v1/reservations/{id}/release`, same key contract → 200 canonical release result. Already-released reservation remains released, stock unaffected.
+- `GET /v1/warehouses/{warehouseId}/stock/{sku}?consistency=eventual|session` → 200 `{sku,available,version,source,cachedAt,observedAt}`. Omitted consistency means primary. `session` requires the opaque session token and reads the primary at `minVersion`. `eventual` returns 409 `CAPABILITY_UNAVAILABLE` until a replica reader exists; a primary read is never labeled eventual. 404 unknown item in scope; 503 required freshness unavailable.
+- `POST /v1/reservations`, required `Idempotency-Key`, body `{warehouseId,sku,quantity}` → 201 `{id,state,quantity,stockVersion,sessionToken}`. Replay returns the stored status and body plus `Idempotency-Replayed: true`. Reuse of a key with a different body → 409 `IDEMPOTENCY_CONFLICT`. An in-flight claim that exceeds the 2-second lock wait → 409 `IDEMPOTENCY_IN_PROGRESS`, `retryable: true`, with no stock change. Insufficient stock → 409 `INSUFFICIENT_STOCK`; the stored body is replayed unchanged even if stock later increases.
+- `POST /v1/reservations/{id}/release`, same key contract and a distinct release hash → 200 canonical release result. Already released or expired stays terminal and does not credit stock. The reserve key is not a release key.
 - `GET /v1/reservations/{id}` → current tenant-scoped state; use to inspect a known committed operation.
 - Health: `/health/live`, `/health/ready`. Readiness depends on critical primary route, not optional Redis. Private telemetry endpoints not publicly routed.
 

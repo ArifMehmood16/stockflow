@@ -112,6 +112,16 @@ Inspected the existing plan/contracts, Java read-only boundary and pool configur
 
 Updated AGENTS/PLAN/README/backlog/handoff/resume to point to the same workflow and reduce unnecessary full-document reads. No new implementation, dependency, migration, dataset import or architecture decision was executed. Review gates reflect the owner's explicit coordination request; they are not an invented approval requirement. Verification and publication evidence follows in the journal. This log remains a draft for human review.
 
+## 008 — Freeze the writable inventory contract
+
+Date: 2026-09-29. Tool: Cursor. Task: A01. Status: draft for human review. Checkpoint V0 is pending and is not accepted by this entry.
+
+The owner asked to start at task A and continue. A01 is the first card and ends in a review stop, so A02 was not started.
+
+Recommended one decision per open issue: diagnostic integer tenants stay on the immutable public catalog; lesson stock uses UUID tenants and warehouses in a run-owned schema; version starts at 0 and increments only with available stock; expiry and release credit stock once; idempotency is a same-transaction unique-key claim with stored insufficient-stock replay; the fixture CLI issues HMAC tenant tokens before a controller exists; catalog reads and run writes use separate database roles. The small fixture is 400 rows. An explicit `FIXTURE_ROWS` value may use up to the catalog rows actually present, after a disk check, and must record `actual_rows`. The old 100,000-row cap is withdrawn. Future shards copy a local catalog snapshot and do not foreign-key back to the bootstrap database.
+
+No runtime code, migration, credential, or database write. Link check and static SQL inspection are in the engineering journal. Licence, hosting, and owner acceptance of this recommendation remain open.
+
 ### Entry 007 validation
 
 Observed: 195 local Markdown links passed; a one-off Java structure check passed all 43 cards, required sections, predecessor/gate consistency and untouched future statuses; diff whitespace check passed. Existing commit `46bcbe6` contains the handoff; preserved it and added only this verification record. No future task or checkpoint is represented as implemented/accepted, and no application/database work was performed for this documentation request.

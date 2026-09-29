@@ -4,16 +4,16 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Planning branch at handoff: `codex/cursor-implementation-handoff`; use the current Git history rather than assuming an old branch is checked out.
-- Current task: **A01**.
-- Next review: **V0**, after A01 only.
+- Current task: **A01** is implemented and self-checked. Stop for V0. Do not start A02.
+- Next review: **V0**.
 - Last accepted Cursor checkpoint: **none**.
-- Active blocker: none for A01 documentation. Docker runtime verification will require a running daemon; do not claim it was tested.
+- Active blocker: V0 is not accepted. Docker runtime verification remains untested and was not required for this documentation task.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Cursor may prepare pending review but cannot accept its own checkpoint. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
 ## Tasks
 
-- A01: todo
+- A01: done — documentation contract only; commit hash is recorded in the V0 packet, not in this line until that packet commit
 - A02: todo
 - A03: todo
 - A04: todo
@@ -59,7 +59,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Checkpoints
 
-- V0: not_requested — after A01; reviewed code commit: none; packet: none
+- V0: pending_review — after A01; reviewed code commit: none until the packet records the implementation head; packet: none
 - V1: not_requested — after A07; reviewed code commit: none; packet: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none

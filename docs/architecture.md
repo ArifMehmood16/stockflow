@@ -92,7 +92,7 @@ Read-your-writes: core implementation pins session-consistent reads to primary. 
 
 ## Persistence correctness
 
-Within one transaction, insert/claim a unique `(tenant_id, idempotency_key)` request record, validate matching payload hash, update inventory with `available >= quantity`, insert reservation, persist canonical response, commit. A conflicting in-flight operation blocks only within the request deadline then returns retryable conflict; rollback releases its claim. Response delivery can fail after commit: replay reads the same persisted result. Release transitions ACTIVE→RELEASED or EXPIRED once and credits stock in the same transaction. No unguarded read-modify-write in Java.
+[ADR 002](adr/002-writable-inventory-contract.md) fixes the writable mechanism. Within one transaction, insert a unique `(tenant_id, idempotency_key)` claim, update inventory with `available >= quantity`, insert the reservation, store the canonical response and commit. Only `COMPLETED` claims are committed. A conflicting in-flight insert waits on that unique key until the request deadline, then returns retryable `IDEMPOTENCY_IN_PROGRESS`; rollback removes the uncommitted claim. A lost response replays the stored result and does not decrement again. Release or expiry transitions `ACTIVE` once and credits stock in the same transaction. No unguarded read-modify-write in Java.
 
 ## Caching trade-offs
 

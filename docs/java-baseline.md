@@ -39,3 +39,7 @@ This diagnostic catalog endpoint deliberately exposes **public catalog and synth
 Docker adds the inventory service between seed completion and UI startup. Container build/run and release image digest locking remain unverified/pending; Compose parsing alone is not runtime verification. Maven dependencies emit JDK native-access/Unsafe deprecation warnings from Maven internals; the observed build passes without disabling checks.
 
 Native API launch copies the packaged JAR to a unique ignored runtime file before starting it. Rebuilding or cleaning Maven output therefore cannot replace classes beneath the running process. Owned runtime copies are removed when their process exits; failed cleanup can leave an ignored file. Shutdown does not forcibly kill a stuck JVM.
+
+## Writable contract, not implemented
+
+[ADR 002](adr/002-writable-inventory-contract.md) recommends run-owned UUID stock, roles and fixture credentials. This slice still serves only the diagnostic catalog read. `ReadOnlyBoundary` still rejects non-GET/HEAD methods, and the pool remains read-only. No reservation route, token or writable schema is created here.

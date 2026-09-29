@@ -8,7 +8,7 @@ Code baseline: `ba824c7` (includes Java API checkpoints `e13cd91`/`5946eda` and 
 
 Cursor implements one requested item at a time. Codex validates at the named milestones to reduce repeated model usage. Read [CURSOR](CURSOR.md), [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each agent conversation.
 
-**Next Cursor item: A01. Next Codex checkpoint: V0 after A01.** A01 writes the recommended data/identity/transaction contract and stops before implementation. No new checkpoint has been accepted merely because this plan was created. See [VALIDATION](docs/implementation/VALIDATION.md) for short review prompts and evidence requirements.
+**Next action: Codex review of V0. Do not start A02 until that gate is accepted.** A01 recommends the writable contract in ADR 002 and does not change runtime code. See [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
 
 ## Working implementation
 

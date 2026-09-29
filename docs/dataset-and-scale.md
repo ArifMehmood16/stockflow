@@ -34,7 +34,7 @@ Java is the sole operational/runtime tooling language. `Database.java` converts 
 - `inventory(code PK/FK, tenant_id, bucket, on_hand, version)` — one inventory row per selected product. Tenant and stock values are deterministic synthetic fixtures, not Open Food Facts facts.
 - `dataset_import(subset_sha256 PK, source_url, selected_rows, source_complete, imported_at)` — receipt committed only with a verified import.
 
-Synthetic values use the unsigned first 64 bits of SHA-256(code): tenant = seed mod 10,000; bucket = tenant mod 16; quantity = 10 + seed mod 991. Existing quantities are never reset on restart. This is bootstrap schema; the service phase must migrate to its approved tenant/SKU and reservation contract rather than treating this seed table as a complete reservation API.
+Synthetic values use the unsigned first 64 bits of SHA-256(code): tenant = seed mod 10,000; bucket = tenant mod 16; quantity = 10 + seed mod 991. Existing quantities are never reset on restart. This diagnostic schema stays in place. [ADR 002](adr/002-writable-inventory-contract.md) puts lesson stock in a separate run schema with UUID tenants and warehouses, copied catalog codes and its own `available` of 1000. Lessons do not update these diagnostic rows, and they do not treat this integer tenant as the reservation tenant.
 
 Setup takes a dataset file lock and database advisory lock. Import uses JDBC COPY into a temporary table, inserts missing catalog/inventory rows with conflict handling, verifies the selected inventory count, and commits its receipt in the same transaction. Empty text fields remain empty strings, not accidental NULLs. SQL values use prepared parameters; product text is never executable SQL. A failed insert rolls back both tables and the receipt.
 

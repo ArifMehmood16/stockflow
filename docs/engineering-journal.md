@@ -143,6 +143,19 @@ Documentation-only owner request: Cursor implements one card per request, Codex 
 
 Planning was grounded in current code/contracts, including the read-only HTTP filter/pool and numeric imported schema. Documented the existing/future command distinction, inherited constraints, small-context reading protocol and code-commit-based review evidence. Runtime code, database and process state were not changed. Link/structure/diff checks and publication status are recorded after validation below; no runtime suite is claimed for this documentation-only change.
 
+## 2026-09-29 — A01 writable inventory contract
+
+Documentation-only decision. No migration, credential, or runtime change. ADR 002 keeps the numeric diagnostic catalog immutable and puts UUID tenant/warehouse stock in a run schema. The worked example uses tenants North and South, runs R1 and R2, shared SKU `00000000000101`, and a lost-response retry of key `retry-1`.
+
+Static inspection of the ADR SQL sketches: two fenced SQL blocks, parenthesis balance 0, required tables and primary keys present. The example schema `sf_run_aaaaaaaaaaaa4aaa8aaaaaaaaaaaaaa1` is 32 hex characters and matches run UUID `aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa1` with hyphens removed. HTTP examples for the replayed 201 and the stored 409 were read in place and not sent to a server.
+
+Commands:
+
+- `java` on `PATH` failed: no system Java runtime.
+- `.lab/jdk/Contents/Home/bin/java tools/Build.java check-docs` passed: `Checked 200 local documentation links.`
+- `git diff --check` passed.
+- Migrations were not applied. `make verify`, Docker, and database checks were not run for this contract-only card.
+
 ### Handoff validation
 
 The Java documentation checker passed **195 local links**. An ignored, one-off Java structure check verified **43 indexed cards**, every required section, sequential predecessor references, **ten matching review gates**, and all future task/gate statuses still unstarted. `git diff --check` passed; inspection confirmed this handoff changes documentation only. No runtime tests were rerun because no runtime code changed. The handoff was saved as `46bcbe6`; this follow-up records the observed validation without rewriting that commit. Start Cursor at A01 and request V0 before writable implementation.
