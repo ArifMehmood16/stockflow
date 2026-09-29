@@ -71,9 +71,6 @@ button:hover:not(:disabled) {
   font-size: 25px;
   letter-spacing: -1px;
 }
-.brand-dot {
-  color: var(--accent);
-}
 .brand-icon {
   height: 29px;
   width: 29px;

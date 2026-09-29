@@ -168,7 +168,7 @@ const chapters = [
       ],
       [
         "Follow the read route",
-        "Inspect the replica. Real replay delay and session consistency are planned experiments.",
+        "Inspect the replica, then inject simulated lag to explore stale reads and primary fallback.",
         "Inspect replica",
         "inspect-replica",
       ],
