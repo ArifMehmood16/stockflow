@@ -1,4 +1,4 @@
-// Deliberately aggregate teaching sketch, not the planned discrete-event engine.
+// Aggregate educational model: capacities and fault multipliers are explicit assumptions.
 export const loadSteps = { min: 10000, max: 250000, interval: 10000 };
 export const initialState = () => ({
   rps: loadSteps.min,

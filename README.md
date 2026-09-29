@@ -88,6 +88,6 @@ The app shows the current bottleneck and assumptions. See [the simulation design
 - `tests/` — quick model and interaction-boundary regressions.
 - `scripts/serve.mjs` — optional local static-file preview and owned-process stop.
 
-[Current plan](PLAN.md) · [Asset attribution](THIRD_PARTY_NOTICES.md) · [Development record](AI_DEVELOPMENT_LOG.md)
+[Current plan](PLAN.md) · [Historical design archive](docs/archive/README.md) · [Asset attribution](THIRD_PARTY_NOTICES.md) · [Development record](AI_DEVELOPMENT_LOG.md)
 
 A future Medium article will explain the walkthrough, model choices and trade-offs. No article or hosted demo has been published yet.
