@@ -2262,7 +2262,7 @@ h1 {
   font-size: 9px;
 }
 #component-shard .node {
-  height: 34px;
+  height: 42px;
 }
 #component-shard .node strong {
   font-size: 12px;
@@ -2271,7 +2271,7 @@ h1 {
   font-size: 8px;
 }
 #shard-bank {
-  height: 42px;
+  height: 34px;
 }
 .metrics {
   flex: none;

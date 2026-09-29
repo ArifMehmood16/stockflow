@@ -1,42 +1,32 @@
 # Resume StockFlow
 
-## Current checkpoint
-
-Phase 0 design package and interactive prototype delivered. Java services and real infrastructure are NOT implemented. Read README.md, AGENTS.md, PLAN.md, docs/adr/001-design-baseline.md and AI_DEVELOPMENT_LOG.md before continuing.
-
 Repository: https://github.com/ArifMehmood16/stockflow (public).
 Branch: `codex/phase-0-stockflow-design-and-prototype`.
-First checkpoint: `c1e964b`. Later checkpoints: `git log --oneline` (this file is maintained before each commit, so the containing commit is the latest).
+Use `git log --oneline` for checkpoint hashes. Read README, PLAN, AGENTS, ADR 001 and latest AI_DEVELOPMENT_LOG before edits.
 
-## Available now
+## Current work
 
-- `make run` → http://127.0.0.1:4173 (Node 24; no install/dependencies).
-- `make verify` → 5 model tests plus 1 local preview regression test, syntax checks and local Markdown links.
-- `make doctor` → tool prerequisites.
-- `docker compose up --build -d` / `make run-docker` → optional prototype-only container path.
+PLAN 0.4c/0.4d: one cumulative fitted topology, modeled scale/faults, Java operational tooling, and real catalog bootstrap. Model/UI checkpoint `1fcbead` was pushed. The containing Java checkpoint supersedes all Python/Node operational tooling. Frontend code and tests remain JavaScript.
 
-## Evidence and limitations
+- `make run`: Java setup/skip + preview at 4173; `make preview`: Java preview only.
+- `make stop`: stops only registered Java preview; never PostgreSQL.
+- `make setup`, `make db-status`: actual database setup/counts.
+- `make verify`: Java tool tests + frontend model tests + links.
+- `make test-integration`: owned temporary PostgreSQL database; requires CREATE DATABASE permission.
+- Docker Compose defines isolated PostgreSQL, Java seed and Java preview. Config parses; daemon stopped, container execution unverified.
 
-Five tests passed after four observed behavioural failures. Browser checks covered overload, scale/no DB improvement, caching, inspector, failure/fencing/promotion, reduced motion and focus retention. Responsive DOM overflow checked at 375/768/1440. HTTP returned 200 root / 404 hidden file / 405 POST. Compose configuration parses; **Docker build/run not tested because daemon is stopped**. Java runtime is absent. Full accessibility audit, all supported OS paths and real benchmarks remain future work. See docs/engineering-journal.md for exact results.
+## User's local state
 
-## Next task
+Ignored .env points to the existing local `postgres` database and has DATASET_ROWS=10000000. It contains credentials; do not print or commit it. A verified project-local Temurin JDK is in ignored .lab/jdk/Contents/Home and Make finds it. Fresh clones require their own JDK 25+.
 
-Human reviews proposed ADR 001, visual direction, core scope and licence. Then start **PLAN 1.1** on a new dedicated phase branch. Do not carry on with arbitrary services or claim prototype constants are measured Java throughput. Implement one task at a time with red-green-refactor and checkpoint commits.
+**Actual committed database:** stockflow.catalog and stockflow.inventory each contain 4,532,480 rows, the available valid unique products below the ten-million maximum. Complete source receipt committed. A subsequent make run skipped download and COPY successfully. The source, cached projections and manifests stay in .lab/dataset, excluded from Git. The full projection was upgraded to CSV format version 2 to handle embedded quotes safely.
 
-Before Phase 1, optionally start Docker and verify the prototype container. No need to redo the completed design package. The unrelated RAG repository was left unchanged. All current work belongs in this StockFlow directory.
+The browser sketch separately models one million logical rows, 16 buckets and up to 250k illustrative req/s; no real API/load/Redis/replication/sharding is running. Do not describe animated recovery as measured recovery. Chapter changes preserve all state; Reset lab clears it.
 
-## Latest maintenance checkpoint
+## Next checkpoint
 
-Fixed occupied-port startup guidance after the agent-started preview conflicted with the user’s `make run`. Agent-owned preview was stopped; port 4173 left free. Tests now include a local loopback listener and require permission to bind a port in restricted agent environments. Phase 1 remains unstarted.
+Finish final browser/responsive checks, docs/diff review and commit/push if not recorded below. Then stop at the Phase 0 gate. Full inventory service phases still need recorded architecture review; the owner has explicitly approved Java/local-PG/Docker bootstrap choices, not arbitrary further services. Do not modify the unrelated RAG repository.
 
-## Current UI revision checkpoint
+## Validation checkpoint
 
-Completed PLAN 0.4b: dark workbench, light ready components, technology logos, on-map build/scale/recovery controls, readiness stages and route switching. Learning path stays; guide points to map controls. Added `make stop` (same PORT as make run), per-port process identity checks, and tests. `make verify` passes 11 tests, syntax checks and 18 links. Browser checks covered building→ready, no early routing, green switch gate, reset cancellation, keyboard inspection, reduced motion and narrow-screen containment. Actual `PORT=4175 make stop` ended the isolated agent preview cleanly; repeated stop reported no registered preview. The test preview is no longer running.
-
-Checkpoint `543c683` was pushed; final evidence/screenshot is in the containing follow-up commit. The previously blocked port fix is also on the remote. Use `git log --oneline` for the latest checkpoint.
-
-If a preview launched before tracking was added still runs in your terminal, use Ctrl-C once and restart with `make run`; thereafter `make stop` manages it. No need to redo this UI revision. Next planned work remains human review of ADR 001, then Phase 1.1; do not start Java without that review.
-
-## In-progress scale revision
-
-User requested one persistent topology, a single-view canvas, a million-record scenario, repeated shard expansion and cache/system failure fixes (PLAN 0.4c). Model and UI changes are checkpointed; final browser checks and docs remain. New request 0.4d adds real catalog bootstrap: Make must use existing local PostgreSQL; Docker gets its own database. Local connection succeeds, but db_name/stockflow do not exist; actual database name requested from user. Dataset importer tests are being developed. Open Food Facts official CSV export selected. No Java runtime started.
+PLAN 0.4c and 0.4d implementation/host checks completed. make verify: 24 Java assertions + 14 model tests + 24 local links. Real JDBC integration includes CSV quotes, empty values, skipped repeats, missing-row repair, smaller-than-limit completion and rollback. Full host make run works and skips the loaded 4,532,480-row catalog. Browser fits desktop/narrow canvas without inner scroll and preserves load/protections through shard expansion. Docker config parses but its daemon is stopped. Next production work remains the Phase 0 review gate; no further service implementation is implied by this checkpoint.

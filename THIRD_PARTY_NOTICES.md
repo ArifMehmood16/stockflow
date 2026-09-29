@@ -5,3 +5,11 @@ The six technology SVG files in `prototype/assets/` are unmodified icons from [D
 These logos identify technologies in the proposed teaching architecture. They do not imply endorsement or that those services run inside this browser prototype. Product names and marks remain the property of their respective owners; the upstream licence does not replace brand-specific trademark policies. StockFlow itself has not selected a project licence.
 
 Assets are served locally with an explicit allowlist; the page makes no external image requests. SVGs were checked for script, foreignObject, embedded image/use references and event-handler attributes before inclusion. No image-generation model was used to redraw brand marks.
+
+## Java and catalog dependencies
+
+- [pgJDBC 42.7.13](https://jdbc.postgresql.org/): BSD 2-clause licence, including its packaged notices. The downloaded jar also retains its bundled dependency notices under META-INF/licenses.
+- [univocity-parsers 2.9.1](https://github.com/uniVocity/univocity-parsers): Apache License 2.0. Used for streaming TSV/CSV parsing and writing.
+- [Open Food Facts](https://openfoodfacts.github.io/openfoodfacts-server/api/): database ODbL, individual contents DbCL. Attribution and source/snapshot/checksum metadata accompany the local cache. Images are excluded. Public dataset contents are not committed to this repository; publication of a derived database must respect its applicable licence obligations.
+
+Java dependencies are fetched by Build.java with SHA-256 checks. No jar or downloaded catalog is tracked in Git. Temurin is the verified local test JDK; its distribution retains its own notices in the ignored installation.

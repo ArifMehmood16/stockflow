@@ -1,6 +1,6 @@
 # Guided experiment curriculum
 
-Every lesson resets its fixture and topology. Preserve baseline, change one variable, rerun matched workload, inspect evidence and discuss the remaining cost. The right-side guide uses the quoted control labels below. Current prototype demonstrates selected controls; the full acceptance behaviours are future implementation tasks.
+Lessons share one evolving fixture and topology. Changing chapters preserves architecture, workload, in-flight builds, faults and installed protections. Only explicit Reset lab restores the baseline. Save a comparison checkpoint before changing one variable; rerun a matched workload, inspect evidence and discuss the remaining cost. The right guide points to controls in the architecture. The current aggregate sketch implements the fault/fix interactions in [the playbook](system-failure-playbook.md); full service-level acceptance behaviors below remain implementation tasks.
 
 ## 01 — One service, one database
 

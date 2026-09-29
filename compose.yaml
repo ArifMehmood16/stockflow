@@ -1,22 +1,65 @@
-name: stockflow-preview
+name: stockflow
 services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: stockflow
+      POSTGRES_PASSWORD: ${STOCKFLOW_DB_PASSWORD:-stockflow-local-only}
+      POSTGRES_DB: stockflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U stockflow -d stockflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    mem_limit: 1g
+    cpus: 2
+    shm_size: 256m
+    security_opt: [no-new-privileges:true]
+  seed:
+    build:
+      context: .
+      dockerfile: Dockerfile.seed
+    environment:
+      DATABASE_URL: postgresql://stockflow@database:5432/stockflow
+      STOCKFLOW_DB_PASSWORD: ${STOCKFLOW_DB_PASSWORD:-stockflow-local-only}
+      STOCKFLOW_DOCKER: "1"
+      DATASET_ROWS: ${DATASET_ROWS:-10000000}
+    volumes:
+      - dataset-cache:/app/.lab/dataset
+    depends_on:
+      database:
+        condition: service_healthy
+    mem_limit: 1g
+    cpus: 2
+    security_opt: [no-new-privileges:true]
+    cap_drop: [ALL]
   prototype:
     build: .
+    depends_on:
+      seed:
+        condition: service_completed_successfully
     ports:
       - "127.0.0.1:${PORT:-4173}:4173"
-    mem_limit: 128m
+    environment:
+      STOCKFLOW_DOCKER: "1"
+    mem_limit: 256m
     cpus: 0.5
-    pids_limit: 32
+    pids_limit: 64
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
     healthcheck:
       test:
         [
-          "CMD",
-          "node",
-          "-e",
-          "fetch('http://127.0.0.1:4173').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+          CMD,
+          java,
+          -Xmx32m,
+          -cp,
+          ".lab/classes:.lab/lib/*",
+          stockflow.Lab,
+          health,
         ]
       interval: 10s
       timeout: 3s
@@ -26,3 +69,7 @@ services:
       options:
         max-size: "2m"
         max-file: "2"
+
+volumes:
+  postgres-data:
+  dataset-cache:

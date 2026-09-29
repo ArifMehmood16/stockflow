@@ -60,3 +60,19 @@ Previous local commit e41fb6a initially could not push because automatic approva
 ### Entry 003 final checkpoint
 
 Completed the browser checks, replaced the screenshot with the dark workbench, removed an unused edge, and fixed the narrow-screen scrollbar allowance. Final `make verify` passed 11 tests and 18 local links; Compose config and diff checks passed. The native isolated preview started on 4175 and exited 0 after `PORT=4175 make stop`; repeated stop was harmless. This preview was stopped deliberately to avoid another agent-owned port conflict. Updated PLAN 0.4b and RESUME. Checkpoint 543c683 pushed successfully, including the previously unpushed fix in its history. Production architecture review remains pending; no real Java/infrastructure claims added.
+
+## 004 — Preserve a cumulative topology and bootstrap a real catalog in Java
+
+Date: 2026-09-29. Tool: Codex. User-assigned PLAN 0.4c/0.4d. Draft for human review.
+
+Human decisions: one persistent, single-view architecture; million-logical-record high-load examples; repeated multi-shard growth and fault/fix drills across components; local PostgreSQL for Make and a new isolated database for Docker; Java for all operational scripting/backend; skip already loaded data; DATASET_ROWS caps actual available public products rather than inventing duplicate products. Existing `postgres` database was explicitly selected. Local credentials are in ignored .env, not Git.
+
+Implemented the cumulative model/UI, six-owner bucket migration, cache fault/mitigation catalog and component controls. Selected Open Food Facts with provenance/licence documentation. An initial Python shortcut was rejected by the owner and removed before this checkpoint. Replaced operational scripts with Java, using pinned pgJDBC and univocity; documented why standard JDK APIs alone are insufficient. Added schema creation, streaming selection, atomic JDBC COPY, count/receipt skip checks and safe ProcessHandle lifecycle. Frontend modeling remains JavaScript; the real service remains a future phase.
+
+Verified 4,532,480 unique product and inventory rows in the stockflow schema. Full import caught a CSV interoperability defect at row 35,623. Reproduced it with synthetic embedded quotes (red), forced CSV quoting/escaping (green), reused and normalized the cached file, then observed full import success. Repeated make run skipped download/COPY and started Java HTTP serving. Tests and exact evidence are in the engineering journal. Removed only owned temporary integration databases and owned preview processes; did not change unrelated schemas or stop the user's database. Source/data/credential caches are ignored. Docker execution remains unverified because its daemon is stopped.
+
+Remaining validation at this checkpoint: final broader browser/responsive checks, final diff/document review, checkpoint commit/push. The owner's rejection of Python and clarification of row limits supersede the initial shortcut and the briefly discussed synthetic-expansion approach; no ten-million-product duplication was performed.
+
+### Entry 004 final validation
+
+Final make verify passed 24 Java assertions, 14 frontend tests and 24 local links. Extended integration verified missing-row repair and complete-source exhaustion handling, in addition to the import/rollback checks. Full Make startup was observed to skip the 4,532,480-row import and serve the app through Java. Browser confirmed third-shard redistribution, persistent protections and canvas containment on desktop/narrow viewports with no console warnings/errors. Docker runtime verification remains unavailable; final screenshot, stop and publication status are recorded in the final checkpoint.

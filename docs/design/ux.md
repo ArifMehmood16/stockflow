@@ -104,10 +104,18 @@ Semantic landmarks/headings, visible focus, real buttons/labels, no hover-only i
 
 ## Prototype scope
 
-Delivered: dark/light-contrast workbench, locally served technology logos, nine inspectable components, six chapter selections, traffic start/pause, bounded load slider, cache/replica/shard/instance/deployment toggles, fenced primary promotion, animated architecture, hover/focus/pinned inspector, metric breakdown, right guide, activity log, reset and reduced motion. Build actions run through a 1.4-second provisioning stage, then readiness checking until 2.9 seconds. Capacity and routes remain unchanged until completion. These durations illustrate the lifecycle; they do not measure provisioning. Green preparation and traffic switching are separate actions. Reset/chapter change cancels pending build timers. All build/recovery actions are on component cards; the right panel contains explanatory steps and location cues. Stale-fill races, real replication, detailed traces, report export and compare are specified, not falsely simulated by random counters.
+Delivered: dark/light-contrast workbench, locally served technology logos, nine inspectable components, six chapter selections, traffic start/pause, bounded load slider, cache/replica/shard/instance/deployment toggles, fenced primary promotion, animated architecture, hover/focus/pinned inspector, metric breakdown, right guide, activity log, reset and reduced motion. Build actions run through a 1.4-second provisioning stage, then readiness checking until 2.9 seconds. Capacity and routes remain unchanged until completion. These durations illustrate the lifecycle; they do not measure provisioning. Green preparation and traffic switching are separate actions. Only Reset lab cancels pending build timers; chapter selection preserves them. All build/recovery actions are on component cards; the right panel contains explanatory steps and location cues. Stale-fill races, real replication, detailed traces, report export and compare are specified, not falsely simulated by random counters.
 
 ## Captured preview
 
 The responsive browser preview below was captured during Phase 0. At narrower widths the guide stacks below the architecture; the desktop wireframe above defines the side-by-side layout.
 
 ![StockFlow local preview](screenshots/preview.png)
+
+## Single-view revision (supersedes the reset/scroll behavior above)
+
+Chapter selection now preserves the complete model, including pending builds. Only Reset lab cancels timers and clears topology/fixes. The workspace uses viewport height; the architecture fits both dimensions with no inner scrolling, while learning and guide panels scroll independently. Focus canvas temporarily hides side panels and restores them on demand. On narrow screens the complete graph is retained but text is smaller; the inspector provides readable detail.
+
+A distinct shard bank shows up to six PostgreSQL owners and record counts. New nodes appear empty; copy/verification preserve old counts and routes; epoch switch changes ownership and enables routes. Ready empty capacity is never counted as serving data. The same canvas hosts a fault selector and inject/fix/recover controls, selected through each component's Faults button. The right panel explains active effects and persistent mitigations. Cache stale-read estimates are separate from completed rates; a completed stale read is not silently classified as fresh.
+
+The new detailed [fault playbook](../system-failure-playbook.md) and [dataset contract](../dataset-and-scale.md) supersede earlier small-rate examples. Runtime tools and static HTTP serving are now Java; frontend modeling remains JavaScript. Actual imported database counts are read with make db-status, separate from the million-logical-row topology.

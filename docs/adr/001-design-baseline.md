@@ -21,3 +21,9 @@ There are three deliverables over time: current UI prototype, deterministic Java
 ## Human review gate
 
 Approve or amend domain, Java/framework/storage version lines, native-service support scope, licence choice and the 8–12 week core scope before Phase 1. Approval of this planning task does not mean that each proposal has already been reviewed. Public hosting platform and any spending remain undecided.
+
+## Owner-directed bootstrap amendments — 2026-09-29
+
+Accepted by explicit user instruction: operational scripts and backend use Java; Make reuses the existing local PostgreSQL database (the user's target is `postgres`); Docker creates an isolated PostgreSQL service; setup creates its dedicated schema and imports a public dataset; repeated startup skips a verified loaded dataset. The owner clarified DATASET_ROWS is a maximum bounded by available public products, not a request to manufacture extra products.
+
+Java 25 bootstrap now uses pgJDBC 42.7.13 for PostgreSQL/COPY and univocity-parsers 2.9.1 for streaming quoted TSV/CSV. The standard library does not provide those two capabilities. Their jars are fetched from Maven Central with committed SHA-256 pins, not committed binaries. This small bootstrap uses the JDK compiler; Maven/Spring service implementation remains the subsequent reviewed phase. The temporarily introduced Python importer was rejected by the owner and removed before delivery.

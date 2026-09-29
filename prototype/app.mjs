@@ -705,7 +705,7 @@ function render() {
     "muted-route",
     state.replica || state.primaryDown,
   );
-  $("edge-db-read").classList.toggle("cache-remainder", state.cache);
+  $("edge-db-read").classList.toggle("cache-remainder", m.cacheAvailable);
   $("edge-api").classList.toggle("muted-route", state.green);
   $("edge-api2").classList.toggle(
     "enabled",
@@ -829,6 +829,9 @@ function act(action) {
 function selectChapter(i) {
   chapter = i;
   state = transition(state, "lesson", i);
+  faultNode = ["db", "cache", "replica", "db", "shard", "green"][i];
+  faultKind =
+    state.faults[faultNode] || Object.keys(faultCatalog[faultNode])[0];
   pinned = null;
   selectPanel(false);
   const c = chapters[i];

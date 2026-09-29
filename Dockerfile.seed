@@ -1,0 +1,8 @@
+FROM eclipse-temurin:25-jdk-alpine
+WORKDIR /app
+COPY tools ./tools
+RUN java tools/Build.java compile
+COPY infra ./infra
+RUN adduser -D -u 10001 lab && mkdir -p /app/.lab/dataset && chown -R lab:lab /app
+USER lab
+CMD ["java", "-Xmx768m", "-cp", ".lab/classes:.lab/lib/*", "stockflow.Lab", "setup"]

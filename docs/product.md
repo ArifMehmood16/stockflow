@@ -8,7 +8,7 @@ Primary users: hiring engineers evaluating design judgement; developers learning
 
 ## Domain and invariants
 
-Fictional warehouses hold synthetic products for tenants. Workload mix defaults to 90% stock reads and 10% reservation/release writes. A write-heavy preset uses 40% reads / 60% writes; hot tenant preset sends 80% of traffic to one tenant; flash-sale preset targets one SKU. All quantities are bounded positive integers. No checkout, money or personal data.
+Fictional warehouses hold real public Open Food Facts products with synthetic tenant assignments and quantities. Java bootstrap imports up to DATASET_ROWS valid unique products, capped by actual availability; see [dataset contract](dataset-and-scale.md). Workload mix defaults to 90% stock reads and 10% reservation/release writes. A write-heavy preset uses 40% reads / 60% writes; hot tenant preset sends 80% of traffic to one tenant; flash-sale preset targets one SKU. All quantities are bounded positive integers. No checkout, money or personal data.
 
 Available stock never becomes negative. Reserve and release apply at most once per idempotency key and request hash. A reservation belongs to one tenant, warehouse and SKU; there are no cross-shard reservations. Reads declare eventual or session-consistent semantics. Stale display stock must never be used to approve a reservation. A request with an unknown write outcome is resolved through its idempotency record, not blindly repeated.
 

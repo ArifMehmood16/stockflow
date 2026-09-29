@@ -24,3 +24,11 @@ Initial prototype static server is for local preview only. Model is deliberately
 ## Phase 0 preview lifecycle update
 
 Technology SVGs are vendored from a pinned upstream tag with attribution, screened, served as images through explicit paths and covered by the existing self-only CSP. No CDN requests at runtime. Local `make stop` uses an ignored per-port registry plus process start/command identity before SIGTERM; it does not infer ownership from listening ports, force-kill, or expose stop through HTTP. The registry is not a defence against malicious code with the same OS permissions. Docker does not enable registry writes. UI build timers are illustrative only and cancel on reset/chapter switch.
+
+## Catalog bootstrap boundary
+
+New trusted CLI → local PostgreSQL boundary: Java accepts only loopback database hosts (the isolated `database` hostname additionally allowed inside Compose), rejects URL query options, and passes credentials as driver properties. It creates only stockflow objects and never resets the supplied database. UI HTTP remains static GET/HEAD with an explicit allowlist and no connection to the database or load target. `.env`, catalog caches, manifests and JDK downloads are ignored.
+
+External catalog → file/COPY boundary: source URL is a pinned HTTPS official export; validate unique numeric product codes, cap retained text, parse with a streaming library, strip control characters and quote every output CSV field. Fixed SQL/prepared parameters plus JDBC COPY keep text from becoming SQL. Limit selection/scan sizes and parser field/column sizes. Complete imports are atomic; migration/reset of other schemas is absent. Keep transaction/lock timeouts. Record source exhaustion only on clean parser/gzip EOF. File lock plus PostgreSQL advisory lock serializes setup. Receipt/count-based startup checks are not protection against equal-count malicious substitutions or content corruption.
+
+Java preview lifecycle checks PID, start instant and executable. It does not discover or kill a process by port. Process records are user-private on POSIX; a malicious process under the same OS account is outside this bookkeeping boundary. Default Docker database has no host port; local development passwords must not be reused for public deployment. Docker deployment and native Windows require separate validation.

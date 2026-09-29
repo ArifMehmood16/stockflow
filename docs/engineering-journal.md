@@ -71,3 +71,31 @@ Reviewed safety: local registry checks start/command identity before signalling,
 - Dark screenshot updated in `docs/design/screenshots/preview.png`; removed an unused graph path during final review.
 - Native smoke: `PORT=4175 make run` started the registered isolated preview; `PORT=4175 make stop` reported it stopped, and the run process exited 0. Repeating stop reported no registered preview and exited 0. No user process on port 4173 was touched.
 - Commit 543c683 pushed successfully; remote includes the prior port-conflict fix. Final documentation checkpoint follows this record.
+
+## 2026-09-29 — Cumulative scale and Java catalog bootstrap
+
+User-directed PLAN 0.4c/0.4d revision. Model tests first showed five behavioral failures for the new rate limit, persistent lesson selection, empty new shards, migration state and cache faults. Fourteen frontend tests now pass. The UI keeps one topology, fits its viewport, exposes six shard owners and explicit pause/copy/verify/switch, and preserves installed cache/system mitigations.
+
+The owner rejected an initially introduced Python importer and specified Java for all operational scripts/backend. That uncommitted Python implementation was removed. Java replaced the Node preview/stop/doctor/doc checker too; only frontend JavaScript/tests still use Node. Downloaded a project-local Temurin 25.0.4.1 JDK from the official vendor and verified SHA-256 `61979887f7506a24a57439ff99adb8b3a7fc89977d9cfe3b8984f58a981b7b9d`. Jars are checksum-pinned in Build.java. No global JDK installation was performed.
+
+Java red/green: initial URL config assertion failed against the stub, then passed. JDBC integration initially reproduced the quoted CSV failure (SQLSTATE 22P04); forced quoting/escaping passed the same fixture. Repeat-import detection failed against its stub, then passed. Safe-stop, stale identity, occupied-port and HTTP allowlist checks migrated to Java; the occupied-port fixture was corrected to bind the same IPv4 address on macOS. Current Java suite passes 24 assertions.
+
+Observed dataset evidence:
+
+- Official compressed export: 1,275,171,186 bytes; pinned S3 version in Dataset.SOURCE.
+- First import: 1,000,000 catalog and inventory rows successfully committed in the user's existing `postgres` database, under `stockflow` only.
+- The owner clarified DATASET_ROWS=10,000,000 is an upper bound, not synthetic expansion. Clean source EOF selected **4,532,480 valid unique products**.
+- Full Java COPY found unquoted embedded quotes at projected row 35,623; the failed transaction rolled back. A synthetic row reproduced the same format family. The cached projection was normalized without a second source download.
+- Corrected full subset: SHA-256 `f095ea1db1dbce9976d00763e040ea4e85d7f6e3e226d43d84295b2e918a48e7`, 466 MiB reported by du; metadata records source_complete=true.
+- Full Java import committed **4,532,480 catalog rows and 4,532,480 inventory rows**. Sixteen actual buckets range from 282,542 to 284,368 rows. Existing quantities were preserved.
+- Subsequent `PORT=4175 make run` printed **“Matching catalog already loaded; skipping download, COPY and inventory writes.”** It then started the Java preview successfully. `PORT=4175 make stop` successfully stopped the previous owned Java preview before this check.
+
+Commands observed: `make setup`, `DATASET_ROWS=10 make data-fetch` (fresh Java HTTPS projection), `make test-java`, `make test-integration`, `make verify`, `docker compose config --quiet`, `git diff --check`. At this checkpoint verify passed 24 Java assertions, 14 frontend tests, syntax checks and 23 local links. Additional final checks follow below. Docker config parsed; `docker info` failed because the daemon socket was absent, so container build/run remains unverified. No Java inventory API, actual load generator, Redis, multi-node shard, or benchmark is claimed.
+
+Browser on Java server: 30,000 offered modeled requests retained across chapter change/build; stampede raised modeled DB demand to 105,600 and mitigation reduced it to 8,400; stale scenario showed 4,320 stale reads/s and version guard reduced it to zero. Two protections remained after chapter change. Shard counts remained 1,000,000/0 until ownership switch, then became 500,000/500,000. These are illustrative model observations, not PostgreSQL performance measurements.
+
+### Final validation
+
+`make verify` passed 24 Java assertions, 14 frontend model tests and 24 local documentation links. The extended JDBC integration passed embedded quotes/empty fields, repeat skip, complete-source exhaustion below a requested maximum, detection/repair of missing inventory, quantity preservation and rollback; it removed its owned test database. `docker compose config --quiet` and `git diff --check` passed.
+
+Java-served browser checks observed a third shard remain empty until migration, then ownership counts of 375,000 / 312,500 / 312,500; three installed protections persisted. Naive-modulo routing mitigation worked through the on-map console. No browser error/warning logs were recorded. At 1280×720 the graph scroll/client dimensions both measured 796×274; at 375×812 both measured 346×284 with no page horizontal overflow. Viewport override is reset for the final screenshot. Mobile labels are small because the entire topology remains visible; inspector/focus mode provide detail. A full accessibility audit remains future work.

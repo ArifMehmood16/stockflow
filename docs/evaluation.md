@@ -33,3 +33,9 @@ Targets to measure: ≤30 simultaneous animated particles, ≤1 Hz metric render
 ## Evidence export
 
 Every report carries mode, engine/schema versions, fixture hash, exact workload/config, run window, counters, histogram sample counts, fault/deployment timeline, invariant verdicts, missing-data/gap flags and resource caps. Reports should make an interviewer able to challenge the conclusion.
+
+## Current bootstrap and cumulative-model checks
+
+`make test-java` covers URL/credential separation, data projection/deduplication/upper-limit behavior, owned process stop/refusal, port ownership, static-file allowlist and HTTP method rejection. `make test` adds frontend model tests for persistent lessons, build readiness, conservation, empty new shards, repeated rebalance, cancellation and cache effects. `make test-integration` uses a disposable local PostgreSQL database to verify COPY (including empty fields and embedded quotes), schema idempotence, repeat-import skip, preserved stock and rollback.
+
+The full-catalog run found a CSV behavior difference: univocity's default writer could leave embedded quotes in unquoted fields, whereas PostgreSQL treats them as CSV syntax. A synthetic fixture reproduced SQLSTATE 22P04 before forcing every field to be quoted/escaped. A cached projection upgrade reuses the downloaded data. Use observed journal evidence for the final count and repeat-startup result; do not infer it from a passing small fixture.

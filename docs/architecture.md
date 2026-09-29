@@ -119,3 +119,9 @@ Blue and green versions use one compatible schema and persisted idempotency. Pre
 ## Sources and limits
 
 Design checked against [PostgreSQL replication](https://www.postgresql.org/docs/17/warm-standby.html), [PostgreSQL partitioning](https://www.postgresql.org/docs/17/ddl-partitioning.html), [Redis cache-aside](https://redis.io/docs/latest/develop/use-cases/cache-aside/), [Java virtual threads](https://docs.oracle.com/en/java/javase/25/core/virtual-threads.html) and [Spring Boot requirements](https://docs.spring.io/spring-boot/system-requirements.html). Accessed 2026-09-29; exact supported patches must be rechecked at implementation. These references support component behaviour, not any unmeasured performance claim in this repository.
+
+## Implemented Java bootstrap boundary
+
+The owner explicitly requested Java for scripts and backend, local PostgreSQL for Make, and isolated PostgreSQL for Docker. `tools/Build.java` bootstraps two checksum-pinned libraries and compiles `tools/src/stockflow`. `Lab` handles CLI commands; `Dataset` streams and validates the public catalog; `Database` owns JDBC/schema/COPY transactions; `Preview` serves an explicit static-file allowlist and tracks owned processes through Java ProcessHandle. Browser actions have no database or process-control endpoint.
+
+Make connects only to the configured loopback database and creates the stockflow schema. Compose creates its own database, waits for its health, runs the Java seed, then starts the Java preview. The mutable bootstrap catalog is not the future inventory domain/API: implement reservations, tenant-scoped keys and migrations in the approved service phase. [Dataset contract](dataset-and-scale.md) defines provenance, skip behavior and schema. No Python operational code remains.

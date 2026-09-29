@@ -2,7 +2,11 @@
 
 ## Available today
 
-`make run` starts the static prototype on loopback using Node 24. `make stop`, `make test`, `make verify`, `make doctor`, `make run-docker`, `make down` are implemented. Local runs register PID plus OS process start/command identity in ignored `.lab/preview-<port>.json`. Stop sends SIGTERM only on a match and waits up to three seconds; it does not force-kill. A stale or mismatched record leaves the process untouched. Run/stop must use the same PORT. Docker uses `make down` and does not write this local registry. The registry is local process bookkeeping, not a security boundary against another process running as the same OS user. Native stop uses POSIX `ps`, matching macOS/Linux/WSL support. Docker serves only the prototype. No native tools are installed automatically.
+`make run` uses Java to create the dedicated schema in an existing local PostgreSQL database, import up to DATASET_ROWS valid unique public products (or skip a matching loaded dataset), then serve the browser sketch on loopback. `make preview` starts only the Java HTTP preview. Complete Make/Docker prerequisites and commands are in [README](../README.md). No Python or Node is required to run; Node 24 is used only for frontend tests.
+
+The Java lifecycle records PID, start instant and executable in ignored `.lab/preview-<port>.properties`. Stop verifies all three, requests graceful termination and waits five seconds; it never force-kills or stops the existing PostgreSQL server. Use matching PORT for run/stop. Docker uses Compose down and skips the host process registry. This is local process bookkeeping, not protection against a malicious process under the same OS account. Older Node previews need Ctrl-C once before switching to the Java launcher.
+
+Compose now provisions independent PostgreSQL storage, a one-shot Java catalog importer and a Java web process. The database port is private; named volumes preserve data/cache. The web process waits for successful seed. The Docker daemon was unavailable during verification; do not claim the container path has run successfully yet.
 
 ## Target operating modes (not yet implemented)
 
@@ -18,7 +22,7 @@ Primary: macOS arm64 and Linux x86_64/arm64 with GNU/POSIX tools, JDK 25, Node 2
 
 ## Resource profiles (initial engineering budgets, not measurements)
 
-- **Prototype:** one small Node static server + browser; no backend/data services. Current Compose limit 128 MiB/0.5 CPU for server. Browser overhead excluded.
+- **Current bootstrap:** Java preview container cap 256 MiB/0.5 CPU; PostgreSQL cap 1 GiB/2 CPU; one-shot Java importer cap 1 GiB/2 CPU with 768 MiB heap. Host Make reuses the user's PostgreSQL configuration. These are guardrails, not throughput claims. Browser overhead, cache files, indexes, temporary import tables and WAL require additional capacity.
 - **Simulation:** one controller JVM (heap 256 MiB, process budget 512 MiB) + browser. Target total app RSS ≤1 GiB excluding browser; one active run, max 500 modelled req/s by default, 5-minute run, bounded event queue.
 - **Baseline:** controller 512 MiB + one inventory JVM 512 MiB + PostgreSQL 512 MiB + proxy/web 128 MiB: ~1.7 GiB process caps, budget **3 GiB** with overhead. Cap 2 CPU-equivalents and default 50 offered req/s.
 - **Cache:** baseline + Redis 128 MiB process cap (`maxmemory` 64 MiB, eviction policy explicit). Budget **3.5 GiB**.

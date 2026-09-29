@@ -1,0 +1,154 @@
+package stockflow;
+
+import java.util.*;
+
+/** Offline behaviour checks, including loopback HTTP and owned child processes. */
+public final class ToolTests {
+  static int passed;
+
+  static void check(boolean condition, String message) {
+    if (!condition) throw new AssertionError(message);
+    passed++;
+  }
+
+  static void rejects(Runnable operation, String message) {
+    try {
+      operation.run();
+    } catch (IllegalArgumentException expected) {
+      passed++;
+      return;
+    }
+    throw new AssertionError(message);
+  }
+
+  public static void main(String[] args) throws Exception {
+    if (args.length > 0 && args[0].equals("child")) {
+      System.out.println("ready");
+      Thread.sleep(60000);
+      return;
+    }
+    var config =
+        Database.config("postgresql+psycopg://postgres:p%40ss@localhost:5432/postgres", false);
+    check(config.url().equals("jdbc:postgresql://localhost:5432/postgres"), "Normalize driver URL");
+    check(
+        config.properties().getProperty("password").equals("p@ss"),
+        "Decode credentials separately");
+    check(
+        !config.url().contains("p@ss") && !config.toString().contains("p@ss"),
+        "Do not display credentials");
+    for (String value :
+        List.of(
+            "https://localhost/db",
+            "postgresql://outside.test/db",
+            "postgresql://localhost/",
+            "postgresql://localhost/a/b",
+            "postgresql://localhost/db?options=unsafe"))
+      rejects(() -> Database.config(value, false), "Reject remote or malformed database URL");
+    String[] row = {"123", "Soup\n\\.\r\u0000" + "x".repeat(2000), "Brand", "Meals"};
+    String[] product = Dataset.project(row);
+    check(
+        product[1].length() == 512 && !product[1].contains("\n") && !product[1].contains("\u0000"),
+        "Bound and clean text");
+    check(
+        Integer.parseInt(product[5]) < 16 && Integer.parseInt(product[6]) >= 0,
+        "Bound synthetic data");
+    check(Arrays.equals(product, Dataset.project(row)), "Deterministic fixture");
+    check(Dataset.project(new String[] {"bad", "Bad", "", ""}) == null, "Reject invalid codes");
+    String input =
+        "code\tproduct_name\tbrands\tcategories\n"
+            + "123\tSoup\t\tMeals\n"
+            + "123\tDuplicate\t\tMeals\n"
+            + "bad\tBad\t\tOther\n"
+            + "456\tRice\t\tGrain\n";
+    var output = new java.io.StringWriter();
+    check(
+        Dataset.projectRows(new java.io.StringReader(input), output, 2) == 2,
+        "Select exactly two unique products");
+    check(output.toString().lines().count() == 2, "No duplicate output");
+    check(
+        Dataset.projectRows(new java.io.StringReader(input), new java.io.StringWriter(), 3) == 2,
+        "Use available unique products when the source is smaller than the requested maximum");
+    previewTests();
+    System.out.println("Passed " + passed + " Java behaviour assertions.");
+  }
+
+  static Process child() throws Exception {
+    var process =
+        new ProcessBuilder(
+                java.nio.file.Path.of(System.getProperty("java.home"), "bin", "java").toString(),
+                "-cp",
+                System.getProperty("java.class.path"),
+                "stockflow.ToolTests",
+                "child")
+            .start();
+    String ready =
+        new java.io.BufferedReader(new java.io.InputStreamReader(process.getInputStream()))
+            .readLine();
+    check("ready".equals(ready), "Owned child starts");
+    return process;
+  }
+
+  static void previewTests() throws Exception {
+    var dir = java.nio.file.Files.createTempDirectory("stockflow-stop-");
+    var child = child();
+    try {
+      Preview.register(dir, 4175, child.toHandle());
+      var path = Preview.recordPath(dir, 4175);
+      var record = new Properties();
+      try (var reader = java.nio.file.Files.newBufferedReader(path)) {
+        record.load(reader);
+      }
+      record.setProperty("started", "stale identity");
+      try (var writer = java.nio.file.Files.newBufferedWriter(path)) {
+        record.store(writer, "");
+      }
+      check(
+          Preview.stop(dir, 4175).contains("mismatch") && child.isAlive(),
+          "Stale identity never stops a process");
+      Preview.register(dir, 4175, child.toHandle());
+      check(
+          Preview.stop(dir, 4175).contains("stopped") && !child.isAlive(),
+          "Stop only the registered process");
+      check(Preview.stop(dir, 4175).contains("No registered"), "Repeated stop is harmless");
+    } finally {
+      child.destroy();
+      java.nio.file.Files.deleteIfExists(Preview.recordPath(dir, 4175));
+      java.nio.file.Files.delete(dir);
+    }
+    try (var listener =
+        new java.net.ServerSocket(0, 10, java.net.InetAddress.getByName("127.0.0.1"))) {
+      boolean occupied = false;
+      try {
+        Preview.create(java.nio.file.Path.of("."), listener.getLocalPort());
+      } catch (java.net.BindException expected) {
+        occupied = true;
+      }
+      check(occupied && !listener.isClosed(), "Occupied listener is never killed or replaced");
+    }
+    var server = Preview.create(java.nio.file.Path.of("."), 0);
+    server.start();
+    try (var client = java.net.http.HttpClient.newHttpClient()) {
+      String base = "http://127.0.0.1:" + server.getAddress().getPort();
+      for (var item : Map.of("/", 200, "/.env", 404, "/../.env", 404).entrySet()) {
+        var response =
+            client.send(
+                java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + item.getKey()))
+                    .build(),
+                java.net.http.HttpResponse.BodyHandlers.discarding());
+        check(
+            response.statusCode() == item.getValue(),
+            "Explicit HTTP file allowlist: " + item.getKey());
+      }
+      var response =
+          client.send(
+              java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/"))
+                  .POST(java.net.http.HttpRequest.BodyPublishers.noBody())
+                  .build(),
+              java.net.http.HttpResponse.BodyHandlers.discarding());
+      check(response.statusCode() == 405, "Reject HTTP mutation requests");
+    } finally {
+      server.stop(0);
+      ((java.util.concurrent.ExecutorService) server.getExecutor()).shutdownNow();
+    }
+  }
+}

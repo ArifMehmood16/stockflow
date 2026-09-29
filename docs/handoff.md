@@ -2,7 +2,7 @@
 
 ## Start here
 
-1. Run `make run` and explore the prototype. Read product.md and design/ux.md for intended behaviour versus present behaviour.
+1. Read README prerequisites, configure the existing local database, then use `make run`; use `make preview` for the Java-served sketch without setup. Read dataset-and-scale.md for the real import boundary, product.md and design/ux.md for intended versus implemented simulation behavior.
 2. Review ADR 001 with the owner; record accepted/amended decisions. Read PLAN.md; start Phase 1 only after its gate.
 3. Implement inventory correctness before scaling. Use the contracts and fixture from contracts.md; maintain test evidence and journal.
 4. Build authoritative Java simulation, then port UI to React using the same run/command/event contracts. The prototype's aggregate model is disposable.
