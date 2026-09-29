@@ -45,7 +45,7 @@ test("all component summaries contain usable values before and after provisionin
   let s = initialState();
   for (const action of ["cache", "replica", "scale", "shard"]) s = transition(s, action);
   for (const state of [initialState(), s]) {
-    for (const id of ["client", "proxy", "api", "api2", "cache", "db", "replica", "shard", "green"]) {
+    for (const id of ["client", "proxy", "api", "api2", "cache", "db", "replica", "shard"]) {
       const snapshot = componentSnapshot(state, id, true);
       assert.equal(typeof snapshot.detail, "string", id);
       assert.doesNotMatch(snapshot.detail, /NaN|undefined/, id);

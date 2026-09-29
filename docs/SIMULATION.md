@@ -8,7 +8,7 @@ A static HTML page imports four local JavaScript modules. `model.mjs` owns pure 
 
 ## One evolving model
 
-State includes offered requests/s, virtual record ownership, API count, cache/replica/deployment flags, readiness, active faults and installed protections. Switching lessons preserves state. Reset creates the initial state. A staged build becomes usable only after readiness; request routes are then redrawn. Faults and their mitigations alter the same model rather than adding disconnected examples.
+State includes offered requests/s, virtual record ownership, API count, cache/replica flags, readiness, active faults and installed protections. Switching lessons preserves state. Reset creates the initial state. A staged build becomes usable only after readiness; request routes are then redrawn. Faults and their mitigations alter the same model rather than adding disconnected examples.
 
 The baseline has 10,000 requests/s, 90% reads, 10% writes, one API, a primary database, 16 ownership buckets and one million virtual records. No array of a million records is allocated.
 
@@ -26,7 +26,7 @@ At 30,000 requests/s the baseline completes 12,000. Adding a healthy cache lower
 
 ## Fault lessons
 
-The fault catalog is the source of available failures, their effects, mitigation descriptions and recovery actions. Cache stampedes amplify database work; negative caching addresses penetration; version-aware invalidation addresses stale reads; hot-key mitigation redistributes modeled demand. Crashes, replica lag, retry amplification, shard skew and invalid deployment routes have separate effects. Applying a fix does not necessarily recover a failed component. Hover details describe the active state.
+The fault catalog is the source of available failures, their effects, mitigation descriptions and recovery actions. Cache stampedes amplify database work; negative caching addresses penetration; version-aware invalidation addresses stale reads; hot-key mitigation redistributes modeled demand. Crashes, replica lag, retry amplification, and shard skew have separate effects. Applying a fix does not necessarily recover a failed component. Hover details describe the active state.
 
 ## What the model does not claim
 

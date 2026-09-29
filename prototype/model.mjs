@@ -16,8 +16,6 @@ export const initialState = () => ({
   promoted: false,
   instances: 1,
   shards: 1,
-  green: false,
-  greenReady: false,
   build: null,
 });
 export function transition(state, action, value) {
@@ -29,7 +27,6 @@ export function transition(state, action, value) {
         replica: !s.replica && !s.primaryDown,
         shard: s.shards < 6 && !s.primaryDown && !s.migration,
         scale: s.instances < 3,
-        "prepare-green": !s.greenReady,
       };
       if (!s.build && Object.hasOwn(eligible, value) && eligible[value])
         s.build = { action: value, stage: "provisioning" };
@@ -41,8 +38,6 @@ export function transition(state, action, value) {
     case "finish-build":
       if (s.build?.stage === "checking") {
         const ready = { ...s, build: null };
-        if (s.build.action === "prepare-green")
-          return { ...ready, greenReady: true };
         return transition(ready, s.build.action);
       }
       break;
@@ -79,11 +74,8 @@ export function transition(state, action, value) {
     case "shard":
       if (!s.migration && !s.primaryDown) s.shards = Math.min(6, s.shards + 1);
       break;
-    case "deploy":
-      if (s.green || (s.greenReady && !s.faults.green)) s.green = !s.green;
-      break;
     case "lesson":
-      if (Number.isInteger(value) && value >= 0 && value < 6) s.lesson = value;
+      if (Number.isInteger(value) && value >= 0 && value < 5) s.lesson = value;
       break;
     case "start-migration":
       if (s.shards > 1 && !s.migration && !s.primaryDown && !s.build)
@@ -121,8 +113,6 @@ export function transition(state, action, value) {
       const kind = s.faults[value];
       if (kind && !s.protections.includes(`${value}:${kind}`))
         s.protections = [...s.protections, `${value}:${kind}`];
-      // A failed deployment can be isolated by rolling back, not by declaring it healthy.
-      if (value === "green" && kind) s.green = false;
       break;
     }
     case "recover":
@@ -255,16 +245,6 @@ export const faultCatalog = {
         "Fail affected tenants quickly and preserve healthy routes. Recover represents verified restore; no replica or backup has actually run.",
     },
   },
-  green: {
-    bad: {
-      label: "Bad release",
-      fix: "Roll back",
-      effect:
-        "Green fails requests if serving and cannot pass the route-switch gate.",
-      result:
-        "Traffic returns to blue. The faulty green stays blocked until Recover represents a corrected, healthy release. Schema compatibility is required.",
-    },
-  },
 };
 export function componentAvailable(s, node) {
   return node === "cache"
@@ -273,9 +253,7 @@ export function componentAvailable(s, node) {
       ? s.replica
       : node === "shard"
         ? s.shards > 1
-        : node === "green"
-          ? s.greenReady
-          : ["api", "proxy", "db"].includes(node);
+        : ["api", "proxy", "db"].includes(node);
 }
 export const shardRecords = (s) =>
   Array.from(
@@ -353,7 +331,6 @@ export function metrics(s) {
     0,
     completed - Math.min(completed, writes * movingShare * factor),
   );
-  if (s.green && has("green", "bad")) completed = 0;
   const staleReads = Math.min(
     completed,
     (unhandled("cache", "stale") ? cacheReads * 0.2 : 0) +

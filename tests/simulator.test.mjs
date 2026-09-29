@@ -40,3 +40,17 @@ test('static assets work beneath a repository subpath', async () => {
     assert.deepEqual(paths, [], `${file} must use relative asset and home links`);
   }
 });
+
+test('database lessons exclude deployment resources and route switches', async () => {
+  const { nodes } = await import('../prototype/topology.mjs');
+  const { faultCatalog } = await import('../prototype/model.mjs');
+  assert.equal('green' in nodes, false);
+  assert.equal('green' in faultCatalog, false);
+  const baseline = initialState();
+  assert.deepEqual(transition(baseline, 'begin-build', 'prepare-green'), baseline);
+  assert.deepEqual(transition(baseline, 'lesson', 5), baseline);
+  for (const file of ['index.html', 'app.mjs']) {
+    const source = await readFile(new URL(`../prototype/${file}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(source, /component-green|Blue \/ green|Switch to green/);
+  }
+});

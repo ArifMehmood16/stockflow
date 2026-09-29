@@ -4,7 +4,7 @@
 
 [**Try the live demo →**](https://arifmehmood16.github.io/stockflow/) · [Read the article draft](docs/articles/distributed-systems-simulator.md)
 
-The **StockFlow inventory scenario** lets you evolve one architecture from a single API and database into a system with caching, read replicas, multiple shards, failure recovery, and blue/green deployment. Build components directly on the map, follow animated request routes, inspect their behavior, and use the guided learning path to understand each change.
+The **StockFlow inventory scenario** lets you evolve one architecture from a single API and database into a system with caching, read replicas, multiple shards, and failure recovery. Build components directly on the map, follow animated request routes, inspect their behavior, and use the guided learning path to understand each change.
 
 **Everything is simulated in the browser.** No backend, database, dataset, credentials, Java installation, or real load generator is required. Technology logos represent the architecture being taught—not running services.
 
@@ -42,14 +42,13 @@ Adding Redis moves the next limit to the API:
 
 This project demonstrates an educational model and frontend engineering. It does not claim a production distributed-system implementation or performance benchmark. An earlier Java/PostgreSQL experiment remains recoverable in Git history; it is no longer part of the app.
 
-## Explore six connected lessons
+## Explore five connected lessons
 
 - **Single database:** raise load, inspect capacity, and find the first bottleneck.
 - **Caching:** add Redis; explore stampede, stale data, penetration, hot keys and cache crashes.
 - **Read replicas:** move eligible reads while keeping writes on the primary; explore lag and fallback.
 - **Failure recovery:** fence a failed primary before promotion; distinguish availability from consistency.
 - **Sharding:** add up to six shards, migrate bucket ownership, and explore skew, interrupted migration and stale routing.
-- **Blue/green deployment:** build a new version, wait for readiness, switch routes and roll back.
 
 Chapters share one evolving system. Builds and failure recovery change the same architecture rather than opening disconnected demos.
 

@@ -9,14 +9,12 @@ test("fit leaves room for controls docked inside the canvas", () => {
   assert.ok(fitted.x + scene.width * fitted.scale <= 1000 - 48);
 });
 
-test("replica receives read requests and WAL, never client writes, in blue and green", () => {
-  for (const green of [false, true]) {
-    const edges = routes({ ...initialState(), replica: true, green, greenReady: true });
-    assert.deepEqual(edges.filter(e => e.to === "replica").map(e => e.kind).sort(), ["read", "replication"]);
-    assert.ok(edges.filter(e => e.kind === "write").every(e => ["db", "shard"].includes(e.to)));
-    assert.equal(edges.find(e => e.id === "edge-replica-read").label.text, "REPLICA READ");
-    assert.equal(edges.find(e => e.id === "edge-replica").label.text, "ASYNC WAL");
-  }
+test("replica receives read requests and WAL, never client writes", () => {
+  const edges = routes({ ...initialState(), replica: true });
+  assert.deepEqual(edges.filter(e => e.to === "replica").map(e => e.kind).sort(), ["read", "replication"]);
+  assert.ok(edges.filter(e => e.kind === "write").every(e => ["db", "shard"].includes(e.to)));
+  assert.equal(edges.find(e => e.id === "edge-replica-read").label.text, "REPLICA READ");
+  assert.equal(edges.find(e => e.id === "edge-replica").label.text, "ASYNC WAL");
 });
 test("failed and lag-protected replicas route reads back to primary", () => {
   const base = { ...initialState(), replica: true };
@@ -32,7 +30,7 @@ test("component gutters leave room for arrows and labels", () => {
   assert.ok(nodes.db.x - nodes.api.x - nodes.api.width >= 200);
 });
 test("route segments never pass through an unrelated component", () => {
-  for (const green of [false, true]) for (const route of routes({ ...initialState(), green })) {
+  for (const route of routes(initialState())) {
     let point;
     for (const command of route.path.match(/[MHV][^MHV]*/g)) {
       const values = command.slice(1).trim().split(/\s+/).map(Number);
@@ -43,7 +41,7 @@ test("route segments never pass through an unrelated component", () => {
         const crosses = point.x === next.x
           ? point.x > box.x && point.x < box.x+box.width && Math.max(point.y,next.y)>box.y && Math.min(point.y,next.y)<box.y+box.height
           : point.y > box.y && point.y < box.y+box.height && Math.max(point.x,next.x)>box.x && Math.min(point.x,next.x)<box.x+box.width;
-        assert.equal(crosses, false, `${route.id} crosses ${id} in ${green ? "green" : "blue"}`);
+        assert.equal(crosses, false, `${route.id} crosses ${id}`);
       }
       point = next;
     }

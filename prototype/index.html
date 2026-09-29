@@ -6,7 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'" />
     <meta name="theme-color" content="#0c1727" />
     <title>Distributed Systems Simulator — StockFlow</title>
-    <meta name="description" content="An interactive browser-only guide to distributed systems: caching, replication, sharding, failure recovery and blue-green deployment." />
+    <meta name="description" content="An interactive browser-only guide to distributed systems: caching, replication, sharding, failure recovery and data ownership." />
     <link rel="icon" type="image/svg+xml" sizes="any" href="./favicon.svg" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
@@ -30,7 +30,7 @@
     </header>
     <div class="workspace">
       <aside class="rail" aria-label="Learning chapters">
-        <div class="rail-heading">THE LEARNING PATH <span>01—06</span></div>
+        <div class="rail-heading">THE LEARNING PATH <span>01—05</span></div>
         <nav id="chapters"></nav>
         <div class="rail-note">
           <span class="tiny-label">ONE CHANGE AT A TIME</span>
@@ -160,7 +160,7 @@
                       ></span
                     ><strong id="proxy-name">Traffic router</strong
                     ><span class="technology-name">NGINX · simulated router</span
-                    ><small id="proxy-meta">blue pool · v1</small>
+                    ><small id="proxy-meta">API instance pool</small>
                   </button>
                   <div class="component-action" id="proxy-actions"></div>
                   <div class="build-progress" aria-hidden="true">
@@ -188,7 +188,7 @@
                       ></span
                     ><strong id="api-name">Inventory API</strong
                     ><span class="technology-name">Java + Spring Boot</span
-                    ><small id="api-meta">1 instance · blue v1</small>
+                    ><small id="api-meta">1 instance · ready</small>
                   </button>
                   <div class="component-action" id="api-actions"></div>
                   <div class="build-progress" aria-hidden="true">
@@ -335,34 +335,6 @@
                     ><small id="api2-meta">not built</small>
                   </button>
                   <div class="component-action" id="api2-actions"></div>
-                  <div class="build-progress" aria-hidden="true">
-                    <span></span>
-                  </div>
-                </article>
-                <article
-                  class="component-shell planned"
-                  id="component-green"
-                  style="left: 310px; top: 50px"
-                  aria-label="Green deployment component"
-                >
-                  <button
-                    class="node inactive"
-                    data-node="green"
-                    aria-label="Inspect Green deployment"
-                  >
-                    <span class="node-top"
-                      ><img
-                        class="tech-logo"
-                        src="./assets/spring.svg"
-                        alt=""
-                      /><span class="node-state" id="green-status"
-                        >NOT BUILT</span
-                      ></span
-                    ><strong id="green-name">Green deployment</strong
-                    ><span class="technology-name">Spring Boot · version 2</span
-                    ><small id="green-meta">not built</small>
-                  </button>
-                  <div class="component-action" id="green-actions"></div>
                   <div class="build-progress" aria-hidden="true">
                     <span></span>
                   </div>

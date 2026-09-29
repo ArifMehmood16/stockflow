@@ -54,7 +54,6 @@ test("model conserves offered requests across completed and rejected categories"
     "fail",
     "shard",
     "scale",
-    "deploy",
   ]) {
     const s = transition(transition(initialState(), "load", 50000), action);
     const m = metrics(s);
@@ -90,16 +89,6 @@ test("builds serialize and reset discards a pending topology change", () => {
   );
 });
 
-test("green readiness precedes an explicit route switch", () => {
-  let s = transition(initialState(), "deploy");
-  assert.equal(s.green, false);
-  s = transition(s, "begin-build", "prepare-green");
-  s = transition(s, "advance-build");
-  s = transition(s, "finish-build");
-  assert.equal(s.greenReady, true);
-  assert.equal(s.green, false);
-  assert.equal(transition(s, "deploy").green, true);
-});
 
 test("changing lessons keeps the million-record system, load and in-flight build", () => {
   let s = transition(initialState(), "cache");

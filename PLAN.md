@@ -4,9 +4,9 @@ The product is a standalone browser simulation. [README](README.md) defines the 
 
 ## Delivered
 
-- [x] One cumulative architecture with six guided learning chapters.
+- [x] One cumulative architecture with five guided learning chapters.
 - [x] On-map builds, readiness, rerouting, fault injection and mitigation.
-- [x] Caching, replicas, recovery, multiple shards and blue/green lessons.
+- [x] Caching, replicas, recovery, multiple shards lessons.
 - [x] Explicit capacity assumptions and bottleneck explanations.
 - [x] Browser-only runtime with no service, database or dataset dependency.
 - [x] Minimal Make startup/stop and optional static-site Docker configuration.

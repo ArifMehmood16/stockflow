@@ -248,40 +248,6 @@ const chapters = [
     question:
       "Does adding a shard help if one SKU receives almost all requests?",
   },
-  {
-    name: "Blue / green",
-    sub: "Change versions safely",
-    kicker: "DEPLOYMENT",
-    title: "Change the engine in motion.",
-    subtitle:
-      "Keep a known-good version available while introducing the next one.",
-    heading: "Switch with a way back.",
-    intro:
-      "Blue and green share a compatible schema. The simulation stages readiness before switching the illustrated request routes.",
-    steps: [
-      [
-        "Keep requests flowing",
-        "Use traffic to make the active route visible.",
-        "Start traffic",
-        "run",
-      ],
-      [
-        "Switch to green",
-        "Preview the route/version change. Build green on the map, watch its readiness checks, then switch traffic at the router.",
-        "Build green, then switch",
-        "deploy",
-      ],
-      [
-        "Inspect the active route",
-        "Check which version receives traffic. Use the switch again to preview rollback.",
-        "Inspect router",
-        "inspect-proxy",
-      ],
-    ],
-    cost: "Blue/green temporarily doubles application capacity and connections. Destructive schema changes can remove rollback safety.",
-    question:
-      "Can version 1 still run after version 2 changes the database schema?",
-  },
 ];
 const descriptions = {
   client: [
@@ -294,9 +260,9 @@ const descriptions = {
   proxy: [
     "Routing proxy",
     "Request routing",
-    "Sends requests to the selected inventory version and instances.",
-    "Build green first; the router enables switching only after model readiness.",
-    "Real rollout requires readiness, bounded draining and compatible database changes.",
+    "Distributes requests across ready inventory API instances.",
+    "New instances receive traffic only after model readiness.",
+    "Retries need deadlines and budgets to avoid amplifying database overload.",
   ],
   api: [
     "Inventory API",
@@ -341,13 +307,6 @@ descriptions.api2 = [
   "Adds 22,000 illustrative req/s of API capacity. Database capacity stays unchanged.",
   "Each real instance adds connections and memory. A database bottleneck remains a database bottleneck.",
 ];
-descriptions.green = [
-  "Green deployment",
-  "Prepared service version",
-  "Version 2 starts separately. It receives traffic only after an explicit switch at the router.",
-  "Readiness is an illustrative timed state, not a running Spring process.",
-  "Both versions must be compatible with the same schema. Rollback does not undo database changes.",
-];
 function log(text) {
   events.unshift({ at: new Date().toLocaleTimeString("en-GB"), text });
   events = events.slice(0, 6);
@@ -384,11 +343,9 @@ function done(action) {
                   ? state.instances > 1
                   : action === "shard"
                     ? state.shards > 1
-                    : action === "deploy"
-                      ? state.green
-                      : action.startsWith("inspect-")
-                        ? pinned === action.slice(8)
-                        : false;
+                    : action.startsWith("inspect-")
+                      ? pinned === action.slice(8)
+                      : false;
 }
 function selectPanel(inspect) {
   $("guide-content").hidden = inspect;
@@ -430,7 +387,6 @@ const actionLocations = {
   shard: "Shard cluster → Add shard",
   "switch-ownership":
     "Shard cluster → Pause writes → Copy → Verify → Switch owners",
-  deploy: "Green deployment → Build green; then Router → Switch to green",
   "inspect-cache": "Select the Redis component",
   "inspect-replica": "Select the replica component",
   "inspect-proxy": "Select the router component",
@@ -452,7 +408,6 @@ function buildNode(action) {
     replica: "replica",
     shard: "shard",
     scale: "api2",
-    "prepare-green": "green",
   }[action];
 }
 function beginBuild(action) {
@@ -477,9 +432,7 @@ function beginBuild(action) {
       routeNotice =
         action === "shard"
           ? "Empty shard ready. Pause writes, copy, verify and switch owners on the cluster."
-          : action === "prepare-green"
-            ? "Green is ready. Switch traffic using the control on the router."
-            : `${name} is ready. New routes are active; inspect the highlighted paths.`;
+          : `${name} is ready. New routes are active; inspect the highlighted paths.`;
       log(routeNotice);
       render();
       highlightRoutes();
@@ -504,19 +457,14 @@ function renderActions() {
   $("client-actions").innerHTML =
     button("run", running ? "Flow running" : "Start traffic", running) +
     button("burst", "Send 30,000 req/s");
-  $("proxy-actions").innerHTML = button(
-    "deploy",
-    state.green ? "Roll back to blue" : "Switch to green",
-    busy || !state.greenReady || (!state.green && Boolean(state.faults.green)),
-  );
+  $("proxy-actions").innerHTML = `<span class="map-fact">Ready instances only</span>`;
   $("api-actions").innerHTML =
-    `<span class="map-fact">${state.instances} instance${state.instances > 1 ? "s" : ""} · ${state.green ? "blue on standby" : "receiving traffic"}</span>`;
+    `<span class="map-fact">${state.instances} instance${state.instances > 1 ? "s" : ""} · receiving traffic</span>`;
   for (const [id, action, active, label] of [
     ["cache", "cache", state.cache, "Build Redis"],
     ["replica", "replica", state.replica, "Build replica"],
     ["shard", "shard", state.shards > 1, "Build shard"],
     ["api2", "scale", state.instances > 1, "Build instance"],
-    ["green", "prepare-green", state.greenReady, "Build green"],
   ]) {
     const pending = state.build?.action === action;
     const status = pending
@@ -583,8 +531,6 @@ function renderActions() {
         state.instances < 3 ? "+ Add third instance" : "3 instances ready",
         busy || state.instances >= 3,
       );
-    if (id === "green" && active)
-      controls = `<span class="map-fact">${state.green ? "Receiving traffic · v2" : "Ready · switch at router"}</span>`;
     $(`${id}-actions`).innerHTML = controls;
   }
   $("db-actions").innerHTML = state.primaryDown
@@ -669,11 +615,9 @@ function render() {
   $("load-down").disabled = state.rps <= loadSteps.min;
   $("load-up").disabled = state.rps >= loadSteps.max;
   $("client-meta").textContent = `${state.rps} offered req/s`;
-  $("proxy-meta").textContent = state.green
-    ? "green pool · v2"
-    : "blue pool · v1";
+  $("proxy-meta").textContent = "API instance pool";
   $("api-meta").textContent =
-    `${state.instances} instance${state.instances > 1 ? "s" : ""} · blue v1`;
+    `${state.instances} instance${state.instances > 1 ? "s" : ""} · ready`;
 
   $("cache-meta").textContent = state.cache
     ? `${Math.round(m.hitRatio * 100)}% assumed hits · ${state.faults.cache || "healthy"}`
@@ -738,16 +682,9 @@ function render() {
   }
   renderRoutes();
 
-  $("component-api").classList.toggle("standby", state.green);
-  $("component-green").classList.toggle("serving", state.green);
   $("api2-meta").textContent =
     state.instances > 1
       ? `${state.instances - 1} extra instance${state.instances > 2 ? "s" : ""}`
-      : "not built";
-  $("green-meta").textContent = state.green
-    ? "active route · v2"
-    : state.greenReady
-      ? "ready · awaiting switch"
       : "not built";
   const db = document.querySelector("[data-node=db]");
   db.classList.toggle("stressed", m.pressure > 1 && !state.primaryDown);
@@ -804,7 +741,7 @@ function act(action) {
     return;
   }
   if (
-    ["replica", "shard", "scale", "prepare-green"].includes(action) ||
+    ["replica", "shard", "scale"].includes(action) ||
     (action === "cache" && !state.cache)
   ) {
     beginBuild(action);
@@ -837,19 +774,16 @@ function act(action) {
       shard: "Second shard added with an assumed balanced tenant split.",
       "restart-primary":
         "Primary restored in the sketch. Real WAL replay and ledger verification are required before serving.",
-      deploy: state.green
-        ? "Route switched to green v2. Green passed the illustrative readiness sequence; new requests use v2."
-        : "Route rolled back to blue v1.",
     };
     log(messages[action] || "Model configuration changed.");
   }
   render();
-  if (["deploy", "cache", "promote"].includes(action)) highlightRoutes();
+  if (["cache", "promote"].includes(action)) highlightRoutes();
 }
 function selectChapter(i) {
   chapter = i;
   state = transition(state, "lesson", i);
-  faultNode = ["db", "cache", "replica", "db", "shard", "green"][i];
+  faultNode = ["db", "cache", "replica", "db", "shard"][i];
   faultKind =
     state.faults[faultNode] || Object.keys(faultCatalog[faultNode])[0];
   pinned = null;

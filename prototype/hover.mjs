@@ -35,18 +35,16 @@ export function componentSnapshot(state, id, running, shardIndex = null) {
       detail: `${fmt(counts[shardIndex])} logical records · ${state.owners.filter(owner => owner === shardIndex).length} buckets · epoch ${state.epoch}. ${state.migration ? `Migration: ${state.migration.stage}; the old owner still serves reads.` : counts[shardIndex] ? "Requests follow the current bucket ownership map." : "Run Pause writes → Copy → Verify → Switch owners to move data here."}`,
     };
   }
-  const buildAction = { api2: "scale", green: "prepare-green" }[id] || id;
+  const buildAction = { api2: "scale" }[id] || id;
   if (state.build?.action === buildAction) return {
     status: state.build.stage === "provisioning" ? "Provisioning" : "Checking readiness",
     detail: "Existing routes stay active. Traffic joins only after readiness passes.",
   };
   const available = id === "client" ? true : id === "db" ? !state.primaryDown : id === "api2" ? state.instances > 1
     : id === "shard" ? state.shards > 1
-    : id === "green" ? state.greenReady : componentAvailable(state, id);
+    : componentAvailable(state, id);
   let status = available ? "Ready" : id === "db" ? "Unavailable" : "Not built";
   if (id === "db" && state.fenced) status = "Fenced";
-  if ((id === "api" || id === "api2") && state.green && available) status = "Standby";
-  if (id === "green" && state.green) status = "Serving v2";
   const fault = state.faults[id];
   if (fault) return {
     status: `${state.protections.includes(`${id}:${fault}`) ? "Mitigated" : "Fault"} · ${faultCatalog[id][fault].label}`,
@@ -55,8 +53,8 @@ export function componentSnapshot(state, id, running, shardIndex = null) {
   const m = metrics(state);
   const detail = {
     client: `${fmt(state.rps)} offered req/s configured · ${running ? "flow active" : "traffic paused"}.`,
-    proxy: `Routes to ${state.green ? "green v2" : `blue v1 · ${state.instances} instance(s)`}.`,
-    api: `${fmt(m.apiCapacity)} req/s combined API capacity · ${state.green ? "blue pool on standby" : "blue pool selected"}.`,
+    proxy: `Routes across ${state.instances} ready API instance(s).`,
+    api: `${fmt(m.apiCapacity)} req/s combined API capacity.`,
     api2: `${state.instances} total API instances · shared database capacity is unchanged.`,
     cache: `${Math.round(m.hitRatio * 100)}% modeled hit rate · ${fmt(m.dbDemand)} ops/s continue to storage.`,
     db: state.primaryDown ? "Writes stopped. Fence before promotion; verify data after recovery."
@@ -64,7 +62,6 @@ export function componentSnapshot(state, id, running, shardIndex = null) {
     replica: state.promoted ? "Promoted to primary. This standby needs reseeding."
       : "Eventual reads follow asynchronous WAL. Writes still go to the primary.",
     shard: `${state.shards} shards · epoch ${state.epoch} · ${state.migration?.stage || "stable ownership"}. Added shards stay empty until ownership switches.`,
-    green: state.green ? "Receiving traffic. Roll back at the router if needed." : "Ready; switch traffic explicitly at the router.",
   }[id];
   return { status, detail: !available && id !== "db" && id !== "shard"
     ? "Build this component using the action below its card. It has no active route yet." : detail };

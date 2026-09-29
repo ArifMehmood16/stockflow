@@ -1202,12 +1202,6 @@ h2 {
 .component-shell.ready {
   animation: component-ready 0.65s ease;
 }
-.component-shell.standby {
-  opacity: 0.5;
-}
-.component-shell.serving {
-  border: 2px solid #22835e;
-}
 .component-shell .node.failed {
   background: #fff0eb;
 }
@@ -1522,9 +1516,6 @@ body {
 .component-shell.building {
   background: #fff3d9;
   border-color: #e7ba72;
-}
-.component-shell.serving {
-  border-color: #6be5b8;
 }
 .component-shell .node.failed {
   background: #fde9e7;
@@ -2353,10 +2344,6 @@ h1 {
   outline-offset: 1px;
 }
 /* Animate inside reserved slots: adding capacity never moves a control. */
-.component-shell.serving {
-  border-width: 1px;
-  box-shadow: 0 0 0 1px #6be5b8;
-}
 .component-shell.building {
   animation: none;
 }
