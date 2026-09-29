@@ -13,7 +13,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Tasks
 
-- A01: done — documentation contract only; commit hash is recorded in the V0 packet, not in this line until that packet commit
+- A01: done — documentation contract only; implementation commit `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`
 - A02: todo
 - A03: todo
 - A04: todo
@@ -59,7 +59,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Checkpoints
 
-- V0: pending_review — after A01; reviewed code commit: none until the packet records the implementation head; packet: none
+- V0: pending_review — after A01; reviewed code commit: `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`; packet: [reviews/V0.md](reviews/V0.md)
 - V1: not_requested — after A07; reviewed code commit: none; packet: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none
