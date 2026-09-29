@@ -1,9 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { initialState, transition, metrics } from "../prototype/model.mjs";
+import {
+  initialState,
+  transition,
+  metrics,
+  shardRecords,
+  faultCatalog,
+} from "../prototype/model.mjs";
 
 test("high load exposes a bottleneck and caching reduces database read demand", () => {
-  const s = transition(initialState(), "load", 300);
+  const s = transition(initialState(), "load", 30000);
   const before = metrics(s);
   const after = metrics(transition(s, "cache"));
   assert.ok(before.dbDemand > before.dbCapacity);
@@ -22,8 +28,8 @@ test("a failed primary rejects writes; only a replica can be promoted after fenc
   assert.equal(s.promoted, true);
 });
 test("reset restores the baseline and offered load is bounded", () => {
-  assert.equal(transition(initialState(), "load", 99999).rps, 500);
-  assert.equal(transition(initialState(), "load", -5).rps, 10);
+  assert.equal(transition(initialState(), "load", 999999).rps, 250000);
+  assert.equal(transition(initialState(), "load", -5).rps, 1000);
   assert.deepEqual(
     transition(transition(initialState(), "cache"), "reset"),
     initialState(),
@@ -45,7 +51,7 @@ test("model conserves offered requests across completed and rejected categories"
     "scale",
     "deploy",
   ]) {
-    const s = transition(transition(initialState(), "load", 500), action);
+    const s = transition(transition(initialState(), "load", 50000), action);
     const m = metrics(s);
     assert.ok(m.completed >= 0);
     assert.ok(Math.abs(m.completed + m.rejected - s.rps) < 0.001);
@@ -53,7 +59,7 @@ test("model conserves offered requests across completed and rejected categories"
 });
 
 test("a component has no routing or capacity effect until its build completes", () => {
-  const baseline = transition(initialState(), "load", 300);
+  const baseline = transition(initialState(), "load", 30000);
   const building = transition(baseline, "begin-build", "cache");
   assert.equal(building.build?.action, "cache");
   assert.equal(building.cache, false);
@@ -88,4 +94,107 @@ test("green readiness precedes an explicit route switch", () => {
   assert.equal(s.greenReady, true);
   assert.equal(s.green, false);
   assert.equal(transition(s, "deploy").green, true);
+});
+
+test("changing lessons keeps the million-record system, load and in-flight build", () => {
+  let s = transition(initialState(), "cache");
+  s = transition(s, "load", 100000);
+  s = transition(s, "begin-build", "replica");
+  const next = transition(s, "lesson", 4);
+  assert.equal(next.lesson, 4);
+  assert.equal(next.records, 1000000);
+  assert.deepEqual({ ...next, lesson: s.lesson }, s);
+});
+
+test("new shards are empty until verified ownership transfer; repeated expansion conserves records", () => {
+  let s = initialState();
+  for (let count = 2; count <= 6; count++) {
+    const capacity = metrics(s).dbCapacity;
+    s = transition(s, "shard");
+    assert.equal(s.shards, count);
+    assert.equal(shardRecords(s).at(-1), 0);
+    assert.equal(metrics(s).dbCapacity, capacity);
+    assert.deepEqual(transition(s, "switch-ownership"), s);
+    for (const action of [
+      "start-migration",
+      "copy-buckets",
+      "verify-buckets",
+    ]) {
+      s = transition(s, action);
+      assert.equal(shardRecords(s).at(-1), 0);
+    }
+    s = transition(s, "switch-ownership");
+    assert.ok(shardRecords(s).every((n) => n > 0));
+    assert.equal(
+      shardRecords(s).reduce((a, b) => a + b, 0),
+      1000000,
+    );
+    assert.equal(s.epoch, count);
+  }
+  assert.equal(transition(s, "shard").shards, 6);
+});
+
+test("interrupted migration leaves original ownership intact", () => {
+  let s = transition(initialState(), "shard");
+  s = transition(s, "start-migration");
+  s = transition(s, "copy-buckets");
+  const before = s.owners;
+  s = transition(s, "cancel-migration");
+  assert.deepEqual(s.owners, before);
+  assert.equal(s.migration, null);
+});
+
+test("cache faults show distinct effects and fixes stay installed across experiments", () => {
+  const baseline = transition(
+    transition(initialState(), "cache"),
+    "load",
+    50000,
+  );
+  for (const kind of ["stampede", "stale", "penetration", "hotkey", "crash"]) {
+    const fault = transition(baseline, "inject", { node: "cache", kind });
+    assert.equal(fault.faults.cache, kind);
+    const fixed = transition(fault, "mitigate", "cache");
+    assert.ok(fixed.protections.includes(`cache:${kind}`));
+    const before = metrics(fault),
+      after = metrics(fixed);
+    if (kind === "stale") assert.ok(before.staleReads > after.staleReads);
+    if (["stampede", "penetration"].includes(kind))
+      assert.ok(before.dbDemand > after.dbDemand);
+    if (kind === "hotkey") assert.ok(after.completed > before.completed);
+    if (kind === "crash") {
+      assert.equal(after.cacheAvailable, false);
+      assert.ok(after.dbDemand < before.dbDemand);
+      assert.ok(after.rejected > 0);
+    }
+    const recovered = transition(fixed, "recover", "cache");
+    assert.equal(recovered.faults.cache, undefined);
+    assert.ok(recovered.protections.includes(`cache:${kind}`));
+  }
+});
+
+test("faults are allowlisted and unavailable components cannot fail", () => {
+  assert.deepEqual(
+    transition(initialState(), "inject", { node: "cache", kind: "crash" }),
+    initialState(),
+  );
+  assert.deepEqual(
+    transition(initialState(), "inject", { node: "db", kind: "shell" }),
+    initialState(),
+  );
+});
+
+test("faults across layers conserve requests; mitigations are not magical recovery", () => {
+  let s = transition(transition(initialState(), "cache"), "replica");
+  s = transition(s, "load", 200000);
+  for (const node of Object.keys(faultCatalog)) {
+    for (const kind of Object.keys(faultCatalog[node])) {
+      const fault = transition(s, "inject", { node, kind });
+      for (const version of [fault, transition(fault, "mitigate", node)]) {
+        const m = metrics(version);
+        assert.ok(m.completed >= 0 && m.completed <= s.rps);
+        assert.ok(Math.abs(m.completed + m.rejected - s.rps) < 0.001);
+        assert.ok(m.staleReads <= m.completed);
+      }
+    }
+  }
 });

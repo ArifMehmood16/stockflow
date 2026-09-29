@@ -1,6 +1,15 @@
-import { initialState, transition, metrics } from "./model.mjs";
+import {
+  initialState,
+  transition,
+  metrics,
+  shardRecords,
+  faultCatalog,
+  componentAvailable,
+} from "./model.mjs";
 let state = initialState();
 let chapter = 0;
+let faultNode = "cache";
+let faultKind = "stampede";
 let running = false;
 let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let pinned = null;
@@ -30,8 +39,8 @@ const chapters = [
       ],
       [
         "Turn up the pressure",
-        "Raise offered load to 300 req/s. Watch demand exceed the database’s illustrative capacity.",
-        "Send 300 req/s",
+        "Raise offered load to 30,000 req/s. Watch demand exceed the database’s illustrative capacity.",
+        "Send 30,000 req/s",
         "burst",
       ],
       [
@@ -57,8 +66,8 @@ const chapters = [
     steps: [
       [
         "Create a busy baseline",
-        "Use the same 300 req/s workload before and after the change.",
-        "Send 300 req/s",
+        "Use the same 30,000 req/s workload before and after the change.",
+        "Send 30,000 req/s",
         "burst",
       ],
       [
@@ -92,7 +101,7 @@ const chapters = [
       [
         "Apply a read-heavy load",
         "This preview uses 90% reads and 10% writes.",
-        "Send 300 req/s",
+        "Send 30,000 req/s",
         "burst",
       ],
       [
@@ -158,25 +167,25 @@ const chapters = [
       "Spread tenants across independent databases. Keep ownership explicit.",
     heading: "Split the working set.",
     intro:
-      "A second primary can own a different set of tenants. This preview assumes a perfectly balanced split.",
+      "Add empty PostgreSQL nodes to this same system. Move buckets explicitly; watch row counts and routes change only at cutover.",
     steps: [
       [
         "Increase demand",
-        "Expose the capacity limit at 300 offered req/s.",
-        "Send 300 req/s",
+        "Expose the capacity limit at 30,000 offered req/s.",
+        "Send 30,000 req/s",
         "burst",
       ],
       [
-        "Add a second shard",
-        "Build the new shard on the map. After readiness, this preview applies a balanced split; real migration needs verification.",
+        "Provision the next shard",
+        "Add up to six nodes. A ready empty node has no data or traffic. Then use Pause writes → Copy → Verify → Switch owners on the cluster.",
         "Add shard",
         "shard",
       ],
       [
-        "Remove the API limit",
-        "With more database capacity, the single API becomes the next bottleneck.",
-        "Add instance",
-        "scale",
+        "Move ownership safely",
+        "Complete the migration on the shard cluster. Watch counts sum to one million, then inject naive modulo routing or a hot tenant.",
+        "Switch owners",
+        "switch-ownership",
       ],
     ],
     cost: "A hot tenant still belongs to one shard. Cross-shard queries and migrations get harder. Partitions in one database are not independent shards.",
@@ -237,35 +246,35 @@ const descriptions = {
     "Inventory API",
     "Java business service",
     "Reads stock and reserves/releases inventory through atomic database operations.",
-    "Model capacity: 220 req/s per instance. This is an arbitrary teaching constant.",
+    "Model capacity: 22,000 req/s per instance. This is an arbitrary teaching constant.",
     "Virtual threads and more instances do not create more database connections or CPU capacity.",
   ],
   cache: [
     "Redis cache",
     "Disposable read acceleration",
     "Serves repeated eventual stock reads; misses continue to storage.",
-    "Assumed warm hit rate: 80% of reads when enabled. TTL/races are not modelled here.",
-    "Reservations always validate authoritative stock. Version guards, TTL jitter and bounded fallback are future lessons.",
+    "Warm hits assume 80%. Inject expiry, stale-fill, missing-key, hot-key and crash scenarios on this component.",
+    "Reservations validate authoritative stock. Fixes persist across experiments; restoring service does not remove installed protections.",
   ],
   db: [
     "Primary database",
     "Authoritative write store",
     "Owns stock, reservations and persistent idempotency records.",
-    "Model capacity: 120 operations/s per balanced shard, not a PostgreSQL benchmark.",
+    "Model capacity: 12,000 operations/s per balanced shard, not a PostgreSQL benchmark.",
     "Atomic conditional updates prevent overselling. Async failover can lose acknowledged writes; recovery needs a write ledger.",
   ],
   replica: [
     "Read replica",
     "Asynchronous copy",
     "Serves eligible eventual reads while following primary WAL.",
-    "Model capacity: 120 reads/s. Replay lag is explained, not simulated in this preview.",
+    "Model capacity: 12,000 reads/s. Lag scenarios mark stale reads; pinning moves that demand back to primary.",
     "Session-consistent reads should use primary or a verified caught-up replica. A replica is not a backup.",
   ],
   shard: [
-    "Shard 02",
+    "Shard cluster",
     "Independent data owner",
     "Owns a subset of tenant buckets on a separate database primary.",
-    "Sketch assumes balanced demand after an illustrative provisioning/readiness sequence.",
+    "16 virtual buckets hold 1,000,000 logical records. An added shard stays empty until ownership switches.",
     "Real migration must pause writes, drain, copy, verify and switch ownership epoch. A hot tenant remains hot.",
   ],
 };
@@ -273,7 +282,7 @@ descriptions.api2 = [
   "Extra API instance",
   "Horizontal service capacity",
   "Receives part of the traffic from the router after readiness checks complete.",
-  "Adds 220 illustrative req/s of API capacity. Database capacity stays unchanged.",
+  "Adds 22,000 illustrative req/s of API capacity. Database capacity stays unchanged.",
   "Each real instance adds connections and memory. A database bottleneck remains a database bottleneck.",
 ];
 descriptions.green = [
@@ -300,10 +309,11 @@ function log(text) {
   $("announcement").textContent = text;
 }
 function done(action) {
+  if (action === "switch-ownership") return state.epoch > 1;
   return action === "run"
     ? running
     : action === "burst"
-      ? state.rps >= 300
+      ? state.rps >= 30000
       : action === "cache"
         ? state.cache
         : action === "replica"
@@ -364,14 +374,16 @@ function renderInspector() {
 }
 const actionLocations = {
   run: "Workload → Start traffic",
-  burst: "Workload → Send 300 req/s",
+  burst: "Workload → Send 30,000 req/s",
   scale: "Extra API instance → Build instance",
   cache: "Read cache → Build Redis",
   replica: "Read replica → Build replica",
   fail: "Primary database → Fail primary",
   fence: "Primary database → Fence primary",
   promote: "Read replica → Promote replica",
-  shard: "Shard 02 → Build shard",
+  shard: "Shard cluster → Add shard",
+  "switch-ownership":
+    "Shard cluster → Pause writes → Copy → Verify → Switch owners",
   deploy: "Green deployment → Build green; then Router → Switch to green",
   "inspect-cache": "Select the Redis component",
   "inspect-replica": "Select the replica component",
@@ -379,8 +391,13 @@ const actionLocations = {
 };
 function renderGuide() {
   const c = chapters[chapter];
+  const issue = state.faults[faultNode];
+  const scenario = faultCatalog[faultNode][issue || faultKind];
+  const protectedIssue =
+    issue && state.protections.includes(`${faultNode}:${issue}`);
+  const experiment = `<div class="experiment-explanation"><span class="tiny-label">ON-MAP FAULT LAB · ${faultNode.toUpperCase()}</span><b>${scenario.label}</b><p>${issue ? (protectedIssue ? scenario.result : scenario.effect) : "Select Inject in the canvas to expose this problem. Then Apply fix and compare the rates and routes."}</p><small>${state.protections.length} protection${state.protections.length === 1 ? "" : "s"} installed · retained between chapters</small></div>`;
   $("guide-content").innerHTML =
-    `<span class="guide-kicker">GUIDED EXPERIMENT ${String(chapter + 1).padStart(2, "0")}</span><h3>${c.heading}</h3><p class="guide-intro">${c.intro}</p><div class="guide-map-note">All operations happen on the architecture. Follow the labelled controls below each component.</div>${c.steps.map((s, i) => `<div class="step ${done(s[3]) ? "done" : ""}"><div class="step-heading"><span class="step-num">${done(s[3]) ? "✓" : i + 1}</span>${s[0]}</div><p>${s[1]}</p><span class="location-cue">↗ ${actionLocations[s[3]]}</span></div>`).join("")}<div class="tradeoff"><span class="tiny-label">THE TRADE-OFF</span><p>${c.cost}</p></div>`;
+    `<span class="guide-kicker">GUIDED EXPERIMENT ${String(chapter + 1).padStart(2, "0")}</span><h3>${c.heading}</h3><p class="guide-intro">${c.intro}</p>${experiment}<div class="guide-map-note">All operations happen on the architecture. Follow the labelled controls below each component.</div>${c.steps.map((s, i) => `<div class="step ${done(s[3]) ? "done" : ""}"><div class="step-heading"><span class="step-num">${done(s[3]) ? "✓" : i + 1}</span>${s[0]}</div><p>${s[1]}</p><span class="location-cue">↗ ${actionLocations[s[3]]}</span></div>`).join("")}<div class="tradeoff"><span class="tiny-label">THE TRADE-OFF</span><p>${c.cost}</p></div>`;
   $("reflection").textContent = c.question;
 }
 function buildNode(action) {
@@ -412,9 +429,11 @@ function beginBuild(action) {
       state = transition(state, "finish-build");
       buildTimers = [];
       routeNotice =
-        action === "prepare-green"
-          ? "Green is ready. Switch traffic using the control on the router."
-          : `${name} is ready. New routes are active; inspect the highlighted paths.`;
+        action === "shard"
+          ? "Empty shard ready. Pause writes, copy, verify and switch owners on the cluster."
+          : action === "prepare-green"
+            ? "Green is ready. Switch traffic using the control on the router."
+            : `${name} is ready. New routes are active; inspect the highlighted paths.`;
       log(routeNotice);
       render();
       highlightRoutes();
@@ -438,11 +457,11 @@ function renderActions() {
     `<button class="map-action" data-action="${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
   $("client-actions").innerHTML =
     button("run", running ? "Flow running" : "Start traffic", running) +
-    button("burst", "Send 300 req/s");
+    button("burst", "Send 30,000 req/s");
   $("proxy-actions").innerHTML = button(
     "deploy",
     state.green ? "Roll back to blue" : "Switch to green",
-    busy || !state.greenReady,
+    busy || !state.greenReady || (!state.green && Boolean(state.faults.green)),
   );
   $("api-actions").innerHTML =
     `<span class="map-fact">${state.instances} instance${state.instances > 1 ? "s" : ""} · ${state.green ? "blue on standby" : "receiving traffic"}</span>`;
@@ -478,6 +497,35 @@ function renderActions() {
             active ||
             ((id === "replica" || id === "shard") && state.primaryDown),
         );
+    if (id === "shard") {
+      const nextAction =
+        {
+          paused: "copy-buckets",
+          copied: "verify-buckets",
+          verified: "switch-ownership",
+        }[state.migration?.stage] || "start-migration";
+      const nextLabel =
+        {
+          paused: "Copy buckets",
+          copied: "Verify copy",
+          verified: "Switch owners",
+        }[state.migration?.stage] || "Pause writes";
+      controls =
+        button(
+          "shard",
+          pending ? "Building…" : "+ Add shard",
+          busy ||
+            state.shards >= 6 ||
+            Boolean(state.migration) ||
+            state.primaryDown,
+        ) +
+        button(
+          nextAction,
+          nextLabel,
+          busy || state.shards < 2 || state.primaryDown,
+        ) +
+        (state.migration ? button("cancel-migration", "Cancel") : "");
+    }
     if (id === "cache" && active)
       controls = button("cache", "Disable cache", busy);
     if (id === "replica" && state.primaryDown && active)
@@ -494,8 +542,9 @@ function renderActions() {
   }
   $("db-actions").innerHTML = state.primaryDown
     ? state.fenced
-      ? `<span class="map-fact">Fenced · promote the replica</span>`
-      : button("fence", "Fence primary", busy)
+      ? button("restart-primary", "Restore + verify", busy)
+      : button("fence", "Fence primary", busy) +
+        button("restart-primary", "Restore", busy)
     : button("fail", "Fail primary", busy);
   $("db-status").textContent = state.primaryDown
     ? state.fenced
@@ -506,6 +555,26 @@ function renderActions() {
   $("build-message").textContent = busy
     ? `${descriptions[buildNode(state.build.action)][0]} · ${state.build.stage === "provisioning" ? "Provisioning component" : "Checking readiness"} · existing routes stay active`
     : routeNotice;
+  for (const id of Object.keys(faultCatalog)) {
+    const control = document.createElement("button");
+    control.className = "fault-open";
+    control.textContent = "⚡ Faults";
+    control.setAttribute(
+      "aria-label",
+      `Explore ${descriptions[id][0]} failures`,
+    );
+    control.onclick = () => {
+      faultNode = id;
+      faultKind = state.faults[id] || Object.keys(faultCatalog[id])[0];
+      selectPanel(false);
+      renderFaultConsole();
+      renderGuide();
+      $("fault-select").focus({ preventScroll: true });
+    };
+    $(`component-${id}`).querySelector(".fault-open")?.remove();
+    $(`component-${id}`).append(control);
+  }
+  renderFaultConsole();
   document
     .querySelectorAll(".map-action")
     .forEach((b) => (b.onclick = () => act(b.dataset.action)));
@@ -517,6 +586,32 @@ function renderActions() {
       preventScroll: true,
     });
   }
+}
+function renderFaultConsole() {
+  const issue = state.faults[faultNode];
+  const scenario = faultCatalog[faultNode][faultKind];
+  $("fault-target").textContent = descriptions[faultNode][0];
+  $("fault-select").innerHTML = Object.entries(faultCatalog[faultNode])
+    .map(
+      ([key, item]) =>
+        `<option value="${key}" ${key === faultKind ? "selected" : ""}>${item.label}</option>`,
+    )
+    .join("");
+  $("inject-fault").disabled =
+    !componentAvailable(state, faultNode) ||
+    Boolean(state.build) ||
+    Boolean(state.migration);
+  $("fix-fault").disabled =
+    !issue || state.protections.includes(`${faultNode}:${issue}`);
+  $("fix-fault").textContent = issue
+    ? faultCatalog[faultNode][issue].fix
+    : scenario.fix;
+  $("recover-fault").disabled = !issue;
+  $("fault-outcome").textContent = !componentAvailable(state, faultNode)
+    ? "Build this component first. Choose ⚡ Faults on any component."
+    : issue
+      ? `${faultCatalog[faultNode][issue].label} · ${state.protections.includes(`${faultNode}:${issue}`) ? "mitigation installed; fault remains until recovery" : "fault active — inspect the impact"}`
+      : "Select a problem → Inject → Apply a fix → Recover. Architecture and fixes persist.";
 }
 function render() {
   const m = metrics(state);
@@ -530,7 +625,7 @@ function render() {
     `${state.instances} instance${state.instances > 1 ? "s" : ""} · blue v1`;
 
   $("cache-meta").textContent = state.cache
-    ? "80% assumed read hits"
+    ? `${Math.round(m.hitRatio * 100)}% assumed hits · ${state.faults.cache || "healthy"}`
     : "not enabled";
   $("db-name").textContent = state.promoted ? "New primary DB" : "Primary DB";
   $("db-meta").textContent = state.primaryDown
@@ -548,11 +643,24 @@ function render() {
       ? "promoted · reseed pending"
       : "not provisioned";
   $("shard-meta").textContent =
-    state.shards > 1 ? "assumed 50% tenant share" : "not provisioned";
+    `${state.shards} nodes · epoch ${state.epoch} · ${state.migration?.stage || "stable ownership"}`;
+  const counts = shardRecords(state);
+  $("shard-bank").innerHTML = counts
+    .map(
+      (count, i) =>
+        `<span class="shard-cell ${count ? "owns-data" : "empty-shard"} ${state.faults.shard === "crash" && i === counts.findLastIndex((n) => n > 0) ? "shard-down" : ""}"><img src="/assets/postgresql.svg" alt=""/><b>S${i + 1}</b><small>${fmt(count)}</small></span>`,
+    )
+    .join("");
+  $("record-count").textContent =
+    `${fmt(state.records)} logical records · ${state.shards} shard${state.shards > 1 ? "s" : ""}`;
+  $("quality").textContent =
+    `${fmt(m.staleReads)} stale reads/s · ${state.protections.length} protections`;
+  for (const id of Object.keys(faultCatalog))
+    $(`component-${id}`).classList.toggle("faulted", Boolean(state.faults[id]));
   for (const [id, active] of [
-    ["cache", state.cache],
+    ["cache", m.cacheAvailable],
     ["replica", state.replica],
-    ["shard", state.shards > 1],
+    ["shard", counts.slice(1).some((n) => n > 0)],
   ]) {
     document
       .querySelector(`[data-node=${id}]`)
@@ -561,28 +669,36 @@ function render() {
   }
   $("edge-replica").classList.toggle(
     "enabled",
-    state.replica && !state.primaryDown,
+    state.replica && !state.primaryDown && state.faults.replica !== "crash",
   );
-  $("edge-replica-read").classList.toggle("enabled", state.replica);
+  $("edge-replica-read").classList.toggle(
+    "enabled",
+    state.replica &&
+      state.faults.replica !== "crash" &&
+      !(
+        state.faults.replica === "lag" &&
+        state.protections.includes("replica:lag")
+      ),
+  );
   $("edge-db").setAttribute(
     "d",
-    state.green ? "M324 54 V26 H948 V334 H934" : "M622 334 H758",
+    state.green ? "M324 32 V15 H948 V196 H934" : "M622 196 H758",
   );
   $("edge-db-read").setAttribute(
     "d",
-    state.green ? "M412 88 H736 V304 H758" : "M622 304 H758",
+    state.green ? "M412 52 H736 V178 H758" : "M622 178 H758",
   );
   $("edge-cache").setAttribute(
     "d",
-    state.green ? "M412 106 H758" : "M550 264 V224 H696 V106 H758",
+    state.green ? "M412 62 H758" : "M550 154 V131 H696 V62 H758",
   );
   $("edge-replica-read").setAttribute(
     "d",
-    state.green ? "M412 142 H676 V526 H758" : "M622 350 H696 V526 H758",
+    state.green ? "M412 83 H676 V308 H758" : "M622 205 H696 V308 H758",
   );
   $("edge-shard").setAttribute(
     "d",
-    state.green ? "M324 220 V452 H534 V474" : "M534 430 V474",
+    state.green ? "M324 129 V265 H534 V278" : "M534 251 V278",
   );
   $("edge-db").classList.toggle("failed", state.primaryDown);
   $("edge-db-read").classList.toggle(
@@ -620,7 +736,7 @@ function render() {
   $("offered").innerHTML = `${fmt(state.rps)}<small>req/s</small>`;
   $("completed").innerHTML = `${fmt(m.completed)}<small>req/s</small>`;
   $("db-demand").innerHTML =
-    `${fmt(m.dbDemand)}<small>/ ${state.primaryDown ? "0" : m.dbCapacity} ops/s</small>`;
+    `${fmt(m.dbDemand)}<small>/ ${state.primaryDown ? "0" : fmt(m.dbCapacity)} ops/s</small>`;
   $("rejected").innerHTML = `${fmt(m.rejected)}<small>req/s</small>`;
   $("db-pressure").textContent = state.primaryDown
     ? "Primary writes unavailable"
@@ -642,6 +758,32 @@ function render() {
 }
 function act(action) {
   if (
+    [
+      "start-migration",
+      "copy-buckets",
+      "verify-buckets",
+      "switch-ownership",
+      "cancel-migration",
+    ].includes(action)
+  ) {
+    state = transition(state, action);
+    routeNotice = {
+      "start-migration":
+        "Moving buckets: writes paused and drained; reads keep the old owner.",
+      "copy-buckets":
+        "Copy complete in the sketch. Old owner still authoritative; verify before switching.",
+      "verify-buckets":
+        "Model verification gate passed. Real lab must compare counts, checksums and reservation ledger.",
+      "switch-ownership": `Ownership epoch ${state.epoch}: routes switched, writes resumed. One million logical records conserved.`,
+      "cancel-migration":
+        "Migration cancelled. Original ownership and routing preserved.",
+    }[action];
+    log(routeNotice);
+    render();
+    if (action === "switch-ownership") highlightRoutes();
+    return;
+  }
+  if (
     ["replica", "shard", "scale", "prepare-green"].includes(action) ||
     (action === "cache" && !state.cache)
   ) {
@@ -656,9 +798,9 @@ function act(action) {
     running = true;
     log("Illustrative request flow started. No network traffic is generated.");
   } else if (action === "burst") {
-    state = transition(state, "load", 300);
+    state = transition(state, "load", 30000);
     running = true;
-    log("Offered load set to 300 req/s in the capacity model.");
+    log("Offered load set to 30,000 req/s in the capacity model.");
   } else {
     state = transition(state, action);
     const messages = {
@@ -673,6 +815,8 @@ function act(action) {
         "Replica promoted in the model. Real recovery must quantify potential data loss.",
       scale: `API scaled to ${state.instances} instances. Database capacity is unchanged.`,
       shard: "Second shard added with an assumed balanced tenant split.",
+      "restart-primary":
+        "Primary restored in the sketch. Real WAL replay and ledger verification are required before serving.",
       deploy: state.green
         ? "Route switched to green v2. Green passed the illustrative readiness sequence; new requests use v2."
         : "Route rolled back to blue v1.",
@@ -683,13 +827,8 @@ function act(action) {
   if (["deploy", "cache", "promote"].includes(action)) highlightRoutes();
 }
 function selectChapter(i) {
-  buildTimers.forEach(clearTimeout);
-  buildTimers = [];
-  clearTimeout(routeTimer);
-  routeNotice = "Build directly on the map. Select a component to inspect it.";
   chapter = i;
-  state = initialState();
-  running = false;
+  state = transition(state, "lesson", i);
   pinned = null;
   selectPanel(false);
   const c = chapters[i];
@@ -704,7 +843,9 @@ function selectChapter(i) {
   document
     .querySelectorAll(".node")
     .forEach((n) => n.classList.remove("pinned"));
-  log(`${c.name}: baseline configuration restored.`);
+  log(
+    `${c.name}: continuing the same system. Topology, load and fixes retained.`,
+  );
   render();
 }
 $("chapters").innerHTML = chapters
@@ -730,7 +871,46 @@ $("run").onclick = () => {
   );
   render();
 };
-$("reset").onclick = () => selectChapter(chapter);
+$("reset").onclick = () => {
+  buildTimers.forEach(clearTimeout);
+  buildTimers = [];
+  clearTimeout(routeTimer);
+  state = transition(state, "reset");
+  running = false;
+  routeNotice =
+    "Fresh million-record baseline. All components and protections reset.";
+  selectChapter(chapter);
+  log(routeNotice);
+};
+$("fault-select").onchange = (e) => {
+  faultKind = e.target.value;
+  renderFaultConsole();
+  renderGuide();
+};
+for (const [id, action] of [
+  ["inject-fault", "inject"],
+  ["fix-fault", "mitigate"],
+  ["recover-fault", "recover"],
+]) {
+  $(id).onclick = () => {
+    const kind = action === "inject" ? faultKind : state.faults[faultNode];
+    state = transition(
+      state,
+      action,
+      action === "inject" ? { node: faultNode, kind } : faultNode,
+    );
+    routeNotice = `${descriptions[faultNode][0]}: ${action === "inject" ? faultCatalog[faultNode][kind].effect : action === "mitigate" ? faultCatalog[faultNode][kind].result : "Recovery complete in the model; installed protections retained."}`;
+    log(routeNotice);
+    selectPanel(false);
+    render();
+    highlightRoutes();
+  };
+}
+$("focus-map").onclick = () => {
+  const focused = document.body.classList.toggle("focus-map");
+  $("focus-map").textContent = focused ? "Show learning path" : "Focus canvas";
+  $("focus-map").setAttribute("aria-pressed", String(focused));
+};
 $("motion").onclick = () => {
   reduced = !reduced;
   render();
@@ -776,10 +956,12 @@ render();
 renderInspector();
 const graphViewport = document.querySelector(".graph-scroll");
 new ResizeObserver(() => {
-  const scale = Math.max(0.65, Math.min(1, graphViewport.clientWidth / 960));
+  const scale = Math.min(
+    1,
+    graphViewport.clientWidth / 960,
+    graphViewport.clientHeight / 410,
+  );
   $("graph").style.transform = `scale(${scale})`;
-  const scrollbarSpace = 960 * scale > graphViewport.clientWidth ? 20 : 0;
-  graphViewport.style.height = `${670 * scale + scrollbarSpace}px`;
   document.querySelector(".graph-stage").style.width = `${960 * scale}px`;
-  document.querySelector(".graph-stage").style.height = `${670 * scale}px`;
+  document.querySelector(".graph-stage").style.height = `${410 * scale}px`;
 }).observe(graphViewport);

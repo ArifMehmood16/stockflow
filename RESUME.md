@@ -36,3 +36,7 @@ Completed PLAN 0.4b: dark workbench, light ready components, technology logos, o
 Checkpoint `543c683` was pushed; final evidence/screenshot is in the containing follow-up commit. The previously blocked port fix is also on the remote. Use `git log --oneline` for the latest checkpoint.
 
 If a preview launched before tracking was added still runs in your terminal, use Ctrl-C once and restart with `make run`; thereafter `make stop` manages it. No need to redo this UI revision. Next planned work remains human review of ADR 001, then Phase 1.1; do not start Java without that review.
+
+## In-progress scale revision
+
+User requested one persistent topology, a single-view canvas, a million-record scenario, repeated shard expansion and cache/system failure fixes (PLAN 0.4c). Model and UI changes are checkpointed; final browser checks and docs remain. New request 0.4d adds real catalog bootstrap: Make must use existing local PostgreSQL; Docker gets its own database. Local connection succeeds, but db_name/stockflow do not exist; actual database name requested from user. Dataset importer tests are being developed. Open Food Facts official CSV export selected. No Java runtime started.
