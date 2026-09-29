@@ -706,7 +706,7 @@ function render() {
       cell.className = "shard-cell new-shard";
       cell.dataset.node = "shard";
       cell.dataset.shard = String(i);
-      cell.innerHTML = `<img src="/assets/postgresql.svg" alt=""/><b>S${i + 1}</b><small></small>`;
+      cell.innerHTML = `<img src="./assets/postgresql.svg" alt=""/><b>S${i + 1}</b><small></small>`;
       cell.onanimationend = () => cell.classList.remove("new-shard", "moved-buckets");
       bindComponentHover(cell);
       bank.append(cell);
