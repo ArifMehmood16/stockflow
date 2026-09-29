@@ -3,11 +3,11 @@
 This is the single task and checkpoint status ledger. Do not duplicate task checkboxes elsewhere. Task cards contain specifications, not completion claims.
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
-- Working base: `main` contains the Phase 0 and Phase 1 baseline. A02 is being developed on `codex/phase-1-reproducible-build-and-ci`.
-- Current task: **A02 completed/self-tested**; A03 is next only when the owner requests it.
+- Working base: `main` contains A02; A03 is on `codex/phase-1-run-owned-inventory-fixtures`.
+- Current task: **A03 completed/self-tested**; A04 is the next backend item.
 - Next review: **V1 after A07**; A02 itself has a task completion check.
 - Last accepted checkpoint: **V0** on A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`.
-- Active blocker: none for A02. Docker runtime verification remains untested and is still required for V1.
+- Active blocker: none for A04. Docker runtime verification remains untested and is still required for V1, but the owner deferred Docker polish.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
@@ -15,7 +15,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 - A01: done — R3a correction `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7` on `codex/a01-v0-retention-authority`; prior correction `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`
 - A02: done — build implementation `da8ad31`, then owner-directed CI removal; evidence: [engineering journal](../engineering-journal.md)
-- A03: todo
+- A03: done — fixture implementation `6520b7d`, native catalog-reader correction `23c9ac6`; evidence: [engineering journal](../engineering-journal.md)
 - A04: todo
 - A05: todo
 - A06: todo

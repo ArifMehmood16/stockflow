@@ -71,7 +71,33 @@ public final class ToolTests {
     previewTests();
     apiPortTest();
     apiArtifactTest();
+    apiReaderCredentialsTest();
     System.out.println("Passed " + passed + " Java behaviour assertions.");
+  }
+
+  static void apiReaderCredentialsTest() throws Exception {
+    var credentials = java.nio.file.Files.createTempFile("stockflow-reader-", ".properties");
+    try {
+      java.nio.file.Files.writeString(
+          credentials, "role=stockflow_catalog_reader\npassword=local-test-secret\n");
+      java.nio.file.Files.setPosixFilePermissions(
+          credentials,
+          java.util.Set.of(
+              java.nio.file.attribute.PosixFilePermission.OWNER_READ,
+              java.nio.file.attribute.PosixFilePermission.OWNER_WRITE));
+      var builder = new ProcessBuilder("true");
+      Api.configureCatalog(
+          builder, Database.config("postgresql://owner:owner-secret@localhost:5432/postgres", false),
+          credentials);
+      check(
+          "stockflow_catalog_reader".equals(builder.environment().get("STOCKFLOW_JDBC_USER")),
+          "API must use the catalog reader rather than the bootstrap owner");
+      check(
+          "local-test-secret".equals(builder.environment().get("STOCKFLOW_JDBC_PASSWORD")),
+          "API receives the catalog reader secret");
+    } finally {
+      java.nio.file.Files.deleteIfExists(credentials);
+    }
   }
 
   static void apiPortTest() throws Exception {

@@ -38,7 +38,33 @@ final class Api {
     }
   }
 
+  static void configureCatalog(ProcessBuilder builder, Database.Config config, Path credentials)
+      throws Exception {
+    if (!Files.isRegularFile(credentials, LinkOption.NOFOLLOW_LINKS))
+      throw new IllegalStateException("Catalog reader credentials are missing; run make setup.");
+    var permissions = Files.getPosixFilePermissions(credentials);
+    if (permissions.stream().anyMatch(permission -> !permission.name().startsWith("OWNER_")))
+      throw new IllegalStateException("Catalog reader credentials must be owner-only.");
+    var reader = new Properties();
+    try (var source = Files.newBufferedReader(credentials)) {
+      reader.load(source);
+    }
+    if (!"stockflow_catalog_reader".equals(reader.getProperty("role"))
+        || reader.getProperty("password", "").isBlank())
+      throw new IllegalStateException("Catalog reader credentials are invalid.");
+    builder.environment().put("STOCKFLOW_JDBC_URL", config.url());
+    builder.environment().put("STOCKFLOW_JDBC_USER", reader.getProperty("role"));
+    builder.environment().put("STOCKFLOW_JDBC_PASSWORD", reader.getProperty("password"));
+    builder.environment().put("STOCKFLOW_API_BIND", "127.0.0.1");
+  }
+
   static void configure(ProcessBuilder builder) throws Exception {
+    var settings = Lab.settings();
+    var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
+    configureCatalog(builder, config, Path.of(".lab/catalog-reader.properties"));
+  }
+
+  static void configureIntegration(ProcessBuilder builder) throws Exception {
     var settings = Lab.settings();
     var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
     builder.environment().put("STOCKFLOW_JDBC_URL", config.url());
@@ -135,7 +161,7 @@ final class Api {
     var builder =
         new ProcessBuilder(java(), "tools/MavenBuild.java", "-q", "-Pintegration", "verify")
             .inheritIO();
-    configure(builder);
+    configureIntegration(builder);
     if (builder.start().waitFor() != 0)
       throw new IllegalStateException("API integration checks failed.");
   }

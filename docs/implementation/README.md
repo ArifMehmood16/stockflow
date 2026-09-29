@@ -2,7 +2,7 @@
 
 Start with [PLAN](../../PLAN.md), the current [STATE](STATE.md), and [AGENTS](../../AGENTS.md). These **43 task cards** refine the phase implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.
 
-V0 accepted A01, and A02 is self-tested. **A03 is next on request.** Do not redo the delivered prototype, import or read-only API. Execute one requested card, stop, and let the owner choose the next item. A checkpoint blocks the next card until validation is accepted. There is no automatic multi-agent or phase-wide execution.
+V0 accepted A01, and A02–A03 are self-tested. **A04 is next.** Do not redo the delivered prototype, import or read-only API. Execute one task at a time; a checkpoint blocks the next card until validation is accepted. There is no automatic multi-agent or phase-wide execution.
 
 ## Ordering and completion
 

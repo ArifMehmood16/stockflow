@@ -9,7 +9,7 @@ JAVA := java
 endif
 LAB = $(JAVA) tools/Build.java
 MAVEN = $(JAVA) tools/MavenBuild.java
-.PHONY: help run preview stop api api-stop api-smoke api-build setup db-init db-import db-status data-fetch test test-java test-api test-api-integration test-integration lint verify doctor run-docker down
+.PHONY: help run preview stop api api-stop api-smoke api-build setup fixture db-init db-import db-status data-fetch test test-java test-api test-api-integration test-integration lint verify doctor run-docker down
 help:
 	@echo "StockFlow — Java tools and interactive systems design"
 	@echo "  make run               Set up data, build/start real Java API + model UI"
@@ -19,6 +19,7 @@ help:
 	@echo "  make api-stop          Stop only the registered inventory API"
 	@echo "  make api-smoke         Compare a real stock response with the local database"
 	@echo "  make setup             Create schema; import up to DATASET_ROWS unique products"
+	@echo "  make fixture           Explicitly create run-owned writable stock from catalog"
 	@echo "  make db-status         Show actual imported rows and bucket distribution"
 	@echo "  make test              Cached/offline Java tooling, API and frontend tests"
 	@echo "  make test-api-integration  Stock API adapter tests in an owned temporary DB"
@@ -45,7 +46,7 @@ preview:
 	$(LAB) preview
 stop:
 	$(LAB) stop
-setup db-init db-import db-status data-fetch doctor:
+setup fixture db-init db-import db-status data-fetch doctor:
 	$(LAB) $@
 test-java:
 	$(LAB) test
