@@ -19,7 +19,7 @@ public final class Lab {
         if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
         String[] entry = line.split("=", 2);
         if (entry.length == 2
-            && Set.of("DATABASE_URL", "DATASET_ROWS", "FIXTURE_ROWS", "FIXTURE_SEED", "RUN_ID")
+            && Set.of("DATABASE_URL", "DATASET_ROWS", "FIXTURE_ROWS", "FIXTURE_SEED", "RUN_ID", "STOCKFLOW_RUN_POOL_SIZE")
                 .contains(entry[0].trim())) {
           String value = entry[1].trim();
           if (value.length() > 1

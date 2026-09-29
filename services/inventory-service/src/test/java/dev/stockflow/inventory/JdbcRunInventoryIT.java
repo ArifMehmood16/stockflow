@@ -54,7 +54,7 @@ class JdbcRunInventoryIT {
               + " TO " + role);
         }
         var inventory = new JdbcRunInventory(run.toString(), target, role,
-            "test-only-password", keyFile.toString());
+            "test-only-password", keyFile.toString(), 4);
         assertTrue(inventory.stock(other, warehouse, "00123").isEmpty());
         var first = inventory.reserve(tenant, warehouse, "00123", 7, "key-1");
         assertEquals(201, first.status());
@@ -121,7 +121,7 @@ class JdbcRunInventoryIT {
           assertEquals(1, update.executeUpdate());
         }
         var restarted = new JdbcRunInventory(run.toString(), target, role,
-            "test-only-password", keyFile.toString());
+            "test-only-password", keyFile.toString(), 4);
         try (var executor = Executors.newFixedThreadPool(2)) {
           var start = new CountDownLatch(1);
           var calls = new ArrayList<Future<Integer>>();

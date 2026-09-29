@@ -13,6 +13,8 @@ final class TrafficControl implements AutoCloseable {
   private final TrafficRun.Operation operation;
   private final ApiPool pool;
   private TrafficRun run;
+  private int databasePoolSize = 4;
+  private int targetRate;
 
   TrafficControl(TrafficRun.Operation operation) { this(operation, null); }
   TrafficControl(TrafficRun.Operation operation, ApiPool pool) {
@@ -41,9 +43,11 @@ final class TrafficControl implements AutoCloseable {
       String sku = rows.getString(3);
       byte[] key = FixtureCredentials.key(runId);
       var pool = new ApiPool(Api.port(), Api::start);
-      return new TrafficControl(new TrafficTarget(pool::nextPort,
+      var control = new TrafficControl(new TrafficTarget(pool::nextPort,
           () -> ScopeToken.issueTenant(runId, tenant, Instant.now().plusSeconds(3600), key),
           warehouse, sku), pool);
+      control.databasePoolSize = Api.runPoolSize();
+      return control;
     }
   }
 
@@ -51,13 +55,14 @@ final class TrafficControl implements AutoCloseable {
     if (run != null && (run.status().running() || run.status().inFlight() > 0))
       throw new IllegalStateException("Stop the active traffic run first.");
     if (run != null) run.close();
+    targetRate = limits.rate();
     run = new TrafficRun(limits, operation);
     run.start();
     return run.status();
   }
 
   synchronized TrafficRun.Status status() {
-    return run == null ? new TrafficRun.Status(false, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, "")
+    return run == null ? new TrafficRun.Status(false, 0, 0, 0, 0, 0, 0, "", 0, 0, 0, "", 0)
         : run.status();
   }
 
@@ -82,12 +87,15 @@ final class TrafficControl implements AutoCloseable {
 
   private String json(TrafficRun.Status status) {
     return "{\"running\":" + status.running() + ",\"offered\":" + status.offered()
+        + ",\"targetRate\":" + targetRate
+        + ",\"elapsedMillis\":" + status.elapsedMillis()
         + ",\"started\":" + status.started() + ",\"completed\":" + status.completed()
         + ",\"failed\":" + status.failed() + ",\"dropped\":" + status.dropped()
         + ",\"inFlight\":" + status.inFlight() + ",\"lastPath\":\""
         + status.lastPath() + "\",\"lastElapsedMillis\":" + status.lastElapsedMillis()
         + ",\"available\":" + status.available() + ",\"version\":"
         + status.version() + ",\"lastError\":\"" + status.lastError() + "\""
+        + ",\"databasePoolSize\":" + databasePoolSize
         + ",\"instances\":" + (pool == null ? 1 : pool.instances())
         + ",\"building\":" + (pool != null && pool.building())
         + ",\"primaryRequests\":" + (pool == null ? 0 : pool.primaryRequests.get())

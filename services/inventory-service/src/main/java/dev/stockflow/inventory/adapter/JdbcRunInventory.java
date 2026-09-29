@@ -38,7 +38,9 @@ public final class JdbcRunInventory implements RunInventory {
       @Value("${STOCKFLOW_RUN_JDBC_URL:}") String url,
       @Value("${STOCKFLOW_RUN_JDBC_USER:}") String user,
       @Value("${STOCKFLOW_RUN_JDBC_PASSWORD:}") String password,
-      @Value("${STOCKFLOW_RUN_KEY_FILE:}") String keyFile) throws Exception {
+      @Value("${STOCKFLOW_RUN_KEY_FILE:}") String keyFile,
+      @Value("${STOCKFLOW_RUN_POOL_SIZE:4}") int poolSize) throws Exception {
+    if (poolSize < 1 || poolSize > 16) throw new IllegalArgumentException("Run pool size must be 1..16");
     if (active.isBlank()) {
       this.runId = null;
       this.schema = null;
@@ -68,7 +70,7 @@ public final class JdbcRunInventory implements RunInventory {
     pool.setJdbcUrl(url);
     pool.setUsername(user);
     pool.setPassword(password);
-    pool.setMaximumPoolSize(4);
+    pool.setMaximumPoolSize(poolSize);
     pool.setMinimumIdle(0);
     pool.setConnectionTimeout(2000);
     pool.setValidationTimeout(1000);

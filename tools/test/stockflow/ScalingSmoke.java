@@ -48,6 +48,9 @@ final class ScalingSmoke {
         if (release.statusCode() != 200) throw new IllegalStateException("Cross-instance release failed.");
         var target = new TrafficTarget(pool::nextPort, () -> token, warehouse, sku);
         var observed = target.perform();
+        target.perform();
+        target.perform();
+        target.perform();
         if (observed.available() != rows.getInt(4)
             || pool.primaryRequests.get() != 2 || pool.secondaryRequests.get() != 2)
           throw new IllegalStateException("Shared stock or routing check failed.");

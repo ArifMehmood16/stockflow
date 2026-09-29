@@ -15,6 +15,12 @@ final class Api {
     return value;
   }
 
+  static int runPoolSize() throws Exception {
+    int size = Integer.parseInt(Lab.settings().getOrDefault("STOCKFLOW_RUN_POOL_SIZE", "4"));
+    if (size < 1 || size > 16) throw new IllegalArgumentException("STOCKFLOW_RUN_POOL_SIZE must be 1..16");
+    return size;
+  }
+
   static Path registry() {
     return Path.of(".lab/api");
   }
@@ -62,6 +68,7 @@ final class Api {
     var settings = Lab.settings();
     var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
     configureCatalog(builder, config, Path.of(".lab/catalog-reader.properties"));
+    builder.environment().put("STOCKFLOW_RUN_POOL_SIZE", Integer.toString(runPoolSize()));
     String active = settings.getOrDefault("RUN_ID", "");
     if (!active.isBlank()) {
       UUID runId = UUID.fromString(active);

@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 
 /** Fixed loopback inventory target; browser input cannot supply an address. */
 final class TrafficTarget implements TrafficRun.Operation {
-  private static final Pattern ID = Pattern.compile("\"id\"\\s*:\\s*\"([0-9a-f-]{36})\"");
   private static final Pattern AVAILABLE = Pattern.compile("\"available\"\\s*:\\s*(\\d+)");
   private static final Pattern VERSION = Pattern.compile("\"version\"\\s*:\\s*(\\d+)");
   private final HttpClient client = HttpClient.newBuilder()
@@ -37,13 +36,9 @@ final class TrafficTarget implements TrafficRun.Operation {
     this.sku = sku;
   }
 
-  private HttpResponse<String> send(String path, String key, String body) throws Exception {
+  private HttpResponse<String> send(String path) throws Exception {
     var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port.getAsInt() + path))
         .timeout(Duration.ofSeconds(3)).header("Authorization", "Bearer " + token.get());
-    if (key != null) request.header("Idempotency-Key", key);
-    if (body == null) request.GET();
-    else request.header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(body));
     return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
   }
 
@@ -56,22 +51,10 @@ final class TrafficTarget implements TrafficRun.Operation {
   }
 
   @Override public TrafficRun.Observation perform() throws Exception {
-    var before = send(stockPath(), null, null);
-    if (before.statusCode() != 200) throw new IllegalStateException("Inventory read returned " + before.statusCode());
-    var reserved = send("/v1/reservations", UUID.randomUUID().toString(),
-        "{\"warehouseId\":\"" + warehouse + "\",\"sku\":\"" + sku
-            + "\",\"quantity\":1}");
-    if (reserved.statusCode() != 201 && reserved.statusCode() != 200)
-      throw new IllegalStateException("Inventory reservation returned " + reserved.statusCode());
-    var id = ID.matcher(reserved.body());
-    if (!id.find()) throw new IllegalStateException("Inventory reservation ID missing.");
-    var released = send("/v1/reservations/" + id.group(1) + "/release",
-        UUID.randomUUID().toString(), "");
-    if (released.statusCode() != 200)
-      throw new IllegalStateException("Inventory release returned " + released.statusCode());
-    var after = send(stockPath(), null, null);
-    if (after.statusCode() != 200) throw new IllegalStateException("Inventory read returned " + after.statusCode());
-    return new TrafficRun.Observation("read → reserve → release → read",
-        Math.toIntExact(number(AVAILABLE, after.body())), number(VERSION, after.body()));
+    var response = send(stockPath());
+    if (response.statusCode() != 200)
+      throw new IllegalStateException("Inventory read returned " + response.statusCode());
+    return new TrafficRun.Observation("read → Java API → PostgreSQL",
+        Math.toIntExact(number(AVAILABLE, response.body())), number(VERSION, response.body()));
   }
 }

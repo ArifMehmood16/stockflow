@@ -88,18 +88,19 @@ public final class ToolTests {
   }
 
   static void trafficTests() throws Exception {
-    rejects(() -> new TrafficRun.Limits(51, 1, 1), "Reject excessive offered rate");
-    rejects(() -> new TrafficRun.Limits(1, 31, 1), "Reject long unattended runs");
-    rejects(() -> new TrafficRun.Limits(1, 1, 9), "Reject excessive concurrency");
+    rejects(() -> new TrafficRun.Limits(10001, 1, 1), "Reject excessive offered rate");
+    rejects(() -> new TrafficRun.Limits(1, -1, 1), "Reject negative duration");
+    rejects(() -> new TrafficRun.Limits(1, 1, 257), "Reject excessive concurrency");
+    check(new TrafficRun.Limits(10000, 300, 256).seconds() == 300, "Accept a five-minute 10000 request/s run");
     var release = new java.util.concurrent.CountDownLatch(1);
-    try (var run = new TrafficRun(new TrafficRun.Limits(50, 2, 1), () -> {
+    try (var run = new TrafficRun(new TrafficRun.Limits(10000, 0, 1), () -> {
       release.await();
       return new TrafficRun.Observation("read → reserve → release", 7, 3);
     })) {
       run.start();
       Thread.sleep(180);
       var busy = run.status();
-      check(busy.offered() > 1 && busy.dropped() > 0 && busy.inFlight() == 1,
+      check(busy.offered() >= 1000 && busy.dropped() > 0 && busy.running() && busy.inFlight() == 1,
           "Slow target keeps offered arrivals visible and drops excess at concurrency cap");
       run.stop();
       long stopped = run.status().offered();
@@ -172,10 +173,8 @@ public final class ToolTests {
       var observation = target.perform();
       check(observation.available() == 9 && observation.version() == 3,
           "Traffic reports the stock value returned by the real HTTP read");
-      check(paths.size() == 4 && paths.get(0).contains("/stock/00123")
-          && paths.get(1).equals("POST /v1/reservations")
-          && paths.get(2).endsWith("/release") && paths.get(3).contains("/stock/00123"),
-          "A cycle reads, reserves and releases through the owned API");
+      check(paths.size() == 1 && paths.get(0).contains("/stock/00123"),
+          "Each arrival sends exactly one inventory read without writes");
     } finally {
       server.stop(0);
     }
