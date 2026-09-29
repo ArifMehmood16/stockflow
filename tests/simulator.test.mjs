@@ -32,3 +32,11 @@ test('the explanation follows the bottleneck as solutions are added', async () =
   state = transition(state, 'fail');
   assert.match(explain(state), /writes.*unavailable/i);
 });
+
+test('static assets work beneath a repository subpath', async () => {
+  for (const file of ['index.html', 'app.mjs']) {
+    const source = await readFile(new URL(`../prototype/${file}`, import.meta.url), 'utf8');
+    const paths = [...source.matchAll(/(?:src|href)=["'](\/[^"']*)["']/g)].map(match => match[1]);
+    assert.deepEqual(paths, [], `${file} must use relative asset and home links`);
+  }
+});

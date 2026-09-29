@@ -3,16 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; base-uri 'none'" />
     <meta name="theme-color" content="#0c1727" />
     <title>Distributed Systems Simulator — StockFlow</title>
     <meta name="description" content="An interactive browser-only guide to distributed systems: caching, replication, sharding, failure recovery and blue-green deployment." />
-    <link rel="icon" type="image/svg+xml" sizes="any" href="/favicon.svg" />
-    <link rel="stylesheet" href="/styles.css" />
+    <link rel="icon" type="image/svg+xml" sizes="any" href="./favicon.svg" />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <a class="skip" href="#main">Skip to lab</a>
     <header class="topbar">
-      <a class="brand" href="/" aria-label="Distributed Systems Simulator home"
+      <a class="brand" href="./" aria-label="Distributed Systems Simulator home"
         ><span class="brand-icon">s<span>f</span></span
         ><strong>Distributed Systems Simulator</strong></a
       ><span class="breadcrumb">/ &nbsp; STOCKFLOW</span>
@@ -124,7 +125,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/react.svg"
+                        src="./assets/react.svg"
                         alt=""
                       /><span class="node-state" id="client-status"
                         >READY</span
@@ -152,7 +153,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/nginx.svg"
+                        src="./assets/nginx.svg"
                         alt=""
                       /><span class="node-state" id="proxy-status"
                         >READY</span
@@ -180,7 +181,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/java.svg"
+                        src="./assets/java.svg"
                         alt=""
                       /><span class="node-state" id="api-status"
                         >READY</span
@@ -208,7 +209,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/redis.svg"
+                        src="./assets/redis.svg"
                         alt=""
                       /><span class="node-state" id="cache-status"
                         >NOT BUILT</span
@@ -236,7 +237,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/postgresql.svg"
+                        src="./assets/postgresql.svg"
                         alt=""
                       /><span class="node-state" id="db-status"
                         >READY</span
@@ -264,7 +265,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/postgresql.svg"
+                        src="./assets/postgresql.svg"
                         alt=""
                       /><span class="node-state" id="replica-status"
                         >NOT BUILT</span
@@ -292,7 +293,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/postgresql.svg"
+                        src="./assets/postgresql.svg"
                         alt=""
                       /><span class="node-state" id="shard-status"
                         >NOT BUILT</span
@@ -324,7 +325,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/java.svg"
+                        src="./assets/java.svg"
                         alt=""
                       /><span class="node-state" id="api2-status"
                         >NOT BUILT</span
@@ -352,7 +353,7 @@
                     <span class="node-top"
                       ><img
                         class="tech-logo"
-                        src="/assets/spring.svg"
+                        src="./assets/spring.svg"
                         alt=""
                       /><span class="node-state" id="green-status"
                         >NOT BUILT</span
@@ -488,6 +489,6 @@
       <p id="hover-detail"></p>
       <small>Click component to keep details in Inspector</small>
     </div>
-    <script type="module" src="/app.mjs"></script>
+    <script type="module" src="./app.mjs"></script>
   </body>
 </html>
