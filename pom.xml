@@ -5,4 +5,15 @@
   <groupId>dev.stockflow</groupId><artifactId>stockflow</artifactId><version>0.1.0-SNAPSHOT</version><packaging>pom</packaging>
   <modules><module>services/inventory-service</module></modules>
   <properties><java.version>25</java.version><postgresql.version>42.7.13</postgresql.version><project.build.outputTimestamp>2026-09-29T00:00:00Z</project.build.outputTimestamp></properties>
+  <build><plugins>
+    <plugin>
+      <groupId>org.apache.maven.plugins</groupId><artifactId>maven-enforcer-plugin</artifactId><version>3.6.3</version>
+      <executions><execution><id>require-build-toolchain</id><goals><goal>enforce</goal></goals>
+        <configuration><rules>
+          <requireJavaVersion><version>[25,26)</version><message>StockFlow requires JDK 25; set JAVA_HOME to a JDK 25 installation.</message></requireJavaVersion>
+          <requireMavenVersion><version>[3.9.11]</version><message>Use the pinned Java launcher: java tools/MavenBuild.java.</message></requireMavenVersion>
+        </rules></configuration>
+      </execution></executions>
+    </plugin>
+  </plugins></build>
 </project>

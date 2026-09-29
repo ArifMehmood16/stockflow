@@ -9,7 +9,7 @@ JAVA := java
 endif
 LAB = $(JAVA) tools/Build.java
 MAVEN = $(JAVA) tools/MavenBuild.java
-.PHONY: help run preview stop api api-stop api-smoke api-build setup db-init db-import db-status data-fetch test test-java test-api test-api-integration test-integration verify doctor run-docker down
+.PHONY: help run preview stop api api-stop api-smoke api-build setup db-init db-import db-status data-fetch test test-java test-api test-api-integration test-integration lint verify doctor run-docker down
 help:
 	@echo "StockFlow — Java tools and interactive systems design"
 	@echo "  make run               Set up data, build/start real Java API + model UI"
@@ -23,7 +23,8 @@ help:
 	@echo "  make test              Cached/offline Java tooling, API and frontend tests"
 	@echo "  make test-api-integration  Stock API adapter tests in an owned temporary DB"
 	@echo "  make test-integration  JDBC tests in an owned temporary local database"
-	@echo "  make verify            Tests, frontend syntax and documentation links"
+	@echo "  make verify            Tests, core coverage gate and lint"
+	@echo "  make lint              Java compiler warnings, JS syntax, docs and whitespace"
 	@echo "  make run-docker        Isolated PostgreSQL + Java seed + API + UI"
 	@echo "  make down              Stop Docker services; preserve data volumes"
 run: setup api-build
@@ -37,7 +38,7 @@ api-smoke:
 api-build:
 	$(MAVEN) -q package
 test-api:
-	$(MAVEN) -q test
+	$(MAVEN) -q verify
 test-api-integration:
 	$(LAB) test-api-integration
 preview:
@@ -52,12 +53,16 @@ test: test-java test-api
 	node --test tests/model.test.mjs tests/hover.test.mjs tests/topology.test.mjs
 test-integration:
 	$(LAB) test-postgres
-verify: test
+lint:
+	$(MAVEN) -q -DskipTests compile
 	node --check prototype/app.mjs
 	node --check prototype/model.mjs
 	node --check prototype/hover.mjs
 	node --check prototype/topology.mjs
 	$(LAB) check-docs
+	git diff --check HEAD
+	git show --format= --check HEAD
+verify: test lint
 run-docker:
 	docker compose up --build -d
 down:

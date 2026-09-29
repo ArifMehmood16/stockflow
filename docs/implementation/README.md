@@ -1,8 +1,8 @@
-# Cursor implementation task index
+# StockFlow implementation task index
 
-Start with [CURSOR](../../CURSOR.md). [PLAN](../../PLAN.md) remains the phase-level authority; these **43 task cards** refine its implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.
+Start with [PLAN](../../PLAN.md), the current [STATE](STATE.md), and [AGENTS](../../AGENTS.md). These **43 task cards** refine the phase implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.
 
-The initial task is **A01**. Do not redo the delivered prototype, import or read-only API. Execute one requested card, stop, and let the owner choose the next item. A checkpoint blocks the next card until validation is accepted. There is no automatic multi-agent or phase-wide execution.
+V0 accepted A01. The current task is **A02**. Do not redo the delivered prototype, import or read-only API. Execute one requested card, stop, and let the owner choose the next item. A checkpoint blocks the next card until validation is accepted. There is no automatic multi-agent or phase-wide execution.
 
 ## Ordering and completion
 

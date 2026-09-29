@@ -74,7 +74,7 @@ docker compose down
 
 Or use `make run-docker` / `make down`. Compose creates an **independent PostgreSQL database**, a one-shot **Java seed container**, the **inventory API** and a **Java UI server**. It ignores your local `DATABASE_URL`. The database has no published port; UI and API ports are published on loopback only. `STOCKFLOW_DB_PASSWORD` configures the Docker database and JDBC connection; Java passes that password separately from the JDBC URI. Keep the password stable after a volume is initialized.
 
-Named volumes preserve PostgreSQL data and the dataset cache. The UI waits for a healthy database, successful seed and ready API. Recreated seed containers skip a verified existing import. `docker compose down` preserves volumes; do not add `-v` unless you explicitly intend to erase this lab's data. Docker image tags need release-time digest pinning. **Compose configuration has been checked; container build/run is unverified while the Docker daemon is stopped.**
+Named volumes preserve PostgreSQL data and the dataset cache. The UI waits for a healthy database, successful seed and ready API. Recreated seed containers skip a verified existing import. `docker compose down` preserves volumes; do not add `-v` unless you explicitly intend to erase this lab's data. Docker image tags are paired with verified multi-architecture index digests; update them deliberately for security releases. **Compose configuration has been checked; container build/run is unverified while the Docker daemon is stopped.**
 
 ## Use the workbench
 
@@ -96,12 +96,15 @@ make test-java        # Java behavior tests; local loopback/owned child process 
 make test-api         # Service unit, HTTP and architecture tests; no database needed
 make test-api-integration # JDBC stock reads in an owned temporary database
 make test            # Also frontend model tests (Node.js 24+ required for these tests)
-make verify          # Tests, frontend syntax, local Markdown links
+make lint            # Java compiler warnings, JS syntax, docs links, Git whitespace
+make verify          # Tests, core coverage gate and lint
 make test-integration # Real JDBC tests; role needs CREATE DATABASE for an owned temporary DB
 make doctor
 ```
 
 Default tests do not use a database or public API after dependency bootstrap. Integration tests create and remove only a UUID-named `stockflow_test_*` database. They verify schema idempotence, COPY, empty text fields, skipped repeat imports, quantity preservation and rollback. Do not run them against a role that should not have local database-creation privileges.
+
+CI runs `make verify`, a clean Java package and Compose model validation on Ubuntu 24.04 with Java 25 and Node 24. Its token has read-only repository access. Database integration remains an explicit local command; default CI does not require PostgreSQL or Docker daemon access. JaCoCo 0.8.14 enforces at least 80% line and 70% branch coverage in the current domain/application packages; this is a focused policy gate, not a claim of equivalent HTTP/JDBC coverage. The Spring Boot 4.0.8 parent pins the remaining lifecycle plugins and dependency versions. Maven Enforcer requires Java 25 and Maven 3.9.11; use the checksum-verified Java launcher. First build downloads Maven plugins/dependencies, while a populated `.lab/m2` supports offline repeat builds.
 
 Operational tooling is Java under `tools/`; browser code/tests remain JavaScript. Pinned pgJDBC provides the PostgreSQL wire protocol and COPY API; univocity parses the large quoted TSV/CSV streams correctly. The JDK alone has neither capability. No runtime Python remains.
 

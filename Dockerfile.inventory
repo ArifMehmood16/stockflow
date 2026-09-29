@@ -1,11 +1,11 @@
-FROM eclipse-temurin:25-jdk-alpine AS build
+FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a AS build
 WORKDIR /app
 COPY pom.xml ./
 COPY services ./services
 COPY tools ./tools
 RUN java tools/MavenBuild.java -q -Dmaven.test.skip=true package && java tools/Build.java compile
 
-FROM eclipse-temurin:25-jdk-alpine
+FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a
 WORKDIR /app
 COPY --from=build /app/services/inventory-service/target/inventory-service-0.1.0-SNAPSHOT.jar ./inventory.jar
 COPY --from=build /app/.lab/classes ./.lab/classes
