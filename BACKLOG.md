@@ -2,8 +2,8 @@
 
 PLAN.md is authoritative. Do not run later phases concurrently with an incomplete earlier gate.
 
-- Phase 0: review the delivered product design and proposed ADR; approve implementation direction.
-- Phase 1: Java inventory domain, atomic reservations, persistence, baseline HTTP API and quality tools.
+- Phase 0: design/prototype delivered; owner authorized the Java baseline continuation. Licence/hosting remain open.
+- Phase 1: read-only Java catalog API delivered; atomic reservations, tenant/run isolation, migrations and remaining quality gates are next.
 - Phase 2: Java simulation/control plane, React lab shell, guided baseline journey.
 - Phase 3: bounded real traffic and telemetry; scaling/connection-pool lessons.
 - Phase 4: Redis and cache correctness lessons.

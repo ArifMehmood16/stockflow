@@ -17,12 +17,14 @@ help:
 	@echo "  make stop              Stop the registered Java UI and API; keep PostgreSQL"
 	@echo "  make api               Build/start only the read-only inventory API"
 	@echo "  make api-stop          Stop only the registered inventory API"
+	@echo "  make api-smoke         Compare a real stock response with the local database"
 	@echo "  make setup             Create schema; import up to DATASET_ROWS unique products"
 	@echo "  make db-status         Show actual imported rows and bucket distribution"
-	@echo "  make test              Offline Java tooling + frontend model tests"
+	@echo "  make test              Cached/offline Java tooling, API and frontend tests"
+	@echo "  make test-api-integration  Stock API adapter tests in an owned temporary DB"
 	@echo "  make test-integration  JDBC tests in an owned temporary local database"
 	@echo "  make verify            Tests, frontend syntax and documentation links"
-	@echo "  make run-docker        Isolated PostgreSQL + Java seed + Java UI server"
+	@echo "  make run-docker        Isolated PostgreSQL + Java seed + API + UI"
 	@echo "  make down              Stop Docker services; preserve data volumes"
 run: setup api-build
 	$(LAB) run

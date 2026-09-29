@@ -120,3 +120,14 @@ The UI remains illustrative and unchanged in this checkpoint. The public/synthet
 ### Service artifact checkpoint
 
 Formatted the Java changes with the existing local Google Java Format tool. The new launch snapshot passed `API_PORT=8085 make api-smoke` both before and after a full Java-launched Maven `clean package` while the API stayed running. Clean package passed all 10 service tests. This validates real stock access and rebuild isolation; it does not establish the original transient class-loading failure's cause. Code/diff review checked local-only binding, fixed queries, credential handling, response safety and separation from modeled UI metrics. Checkpoint commit follows; final stop/integration repeat covers the final source state.
+
+### Final Phase 1 read-only checkpoint
+
+- Implementation commit `e13cd91` pushed to `codex/phase-1-java-inventory-baseline`.
+- Final `make verify`: 28 Java tool assertions, 10 service/architecture tests, 14 model tests, syntax and 26 local links passed (additional handoff links added afterward).
+- Final `make test-api-integration`: passed and removed its owned temporary database.
+- `docker compose config --quiet` and `git diff --check`: passed.
+- `API_PORT=8085 PORT=4176 make stop`: stopped owned UI and its child API. Repeated stop was harmless. The foreground make run terminal ended with signal status 143, expected when its JVM receives the requested SIGTERM. No user process on 4173/8081 or PostgreSQL was stopped.
+- No frontend source/layout changes in this service checkpoint. Database stock reads and real process lifecycle were tested; Docker execution, reservation writes, tenant credentials, real load and measured animation are still pending.
+
+Follow-up documentation/CLI wording commit records this checkpoint. Future work resumes from PLAN 1.1/1.2, not from a claim that the whole Phase 1 gate has passed.

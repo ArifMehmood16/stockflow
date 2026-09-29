@@ -3,7 +3,7 @@
 ## Start here
 
 1. Read README prerequisites, configure the existing local database, then use `make run`; use `make preview` for the Java-served sketch without setup. Read dataset-and-scale.md for the real import boundary, product.md and design/ux.md for intended versus implemented simulation behavior.
-2. Review ADR 001 with the owner; record accepted/amended decisions. Read PLAN.md; start Phase 1 only after its gate.
+2. Read the owner-directed continuation in ADR 001 and the implemented read-only slice in java-baseline.md. PLAN.md tracks the remaining Phase 1 work; licence and hosting decisions remain open.
 3. Implement inventory correctness before scaling. Use the contracts and fixture from contracts.md; maintain test evidence and journal.
 4. Build authoritative Java simulation, then port UI to React using the same run/command/event contracts. The prototype's aggregate model is disposable.
 5. Add real infrastructure one lesson at a time with operations.md budgets and experiments.md acceptance criteria.
@@ -40,4 +40,4 @@ Observed red then green; related tests and phase checks pass; diff reviewed for 
 
 ## Questions reserved for owner review
 
-Approve inventory use case, Java/storage/frontend proposals, licence, and whether native PostgreSQL replication support on macOS must be first-class in the first release. Public simulation hosting target and any recurring cost are undecided. These questions do not block the delivered prototype/design package.
+Review future frontend changes, licence, and whether native PostgreSQL replication support on macOS must be first-class in the first release. Public simulation hosting target and any recurring cost are undecided. These questions do not block the delivered prototype/design package.

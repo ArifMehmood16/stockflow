@@ -58,3 +58,7 @@ Compose healthchecks signal readiness; they do not implement failover. Single-ho
 - Failed blue/green: route back to still-compatible blue, drain green, retain traces. If schema contract already ran, rollback is blocked and explain why.
 
 Operational guidance references [Compose profiles](https://docs.docker.com/compose/how-tos/profiles/), [service resource settings](https://docs.docker.com/reference/compose-file/services/) and [container resource constraints](https://docs.docker.com/engine/containers/resource_constraints/). Limits are proposals to validate, not measured guarantees.
+
+## Implemented read-only service slice
+
+Current `make run` starts one real inventory JVM and the existing Java preview after dataset setup. `make stop` stops both owned processes. Maven is invoked through Java, not a shell wrapper; only JDK 25 and existing local PostgreSQL are runtime prerequisites after first downloads. The service has a 256 MiB heap, 4-connection JDBC pool and 16 HTTP workers; native total RSS/CPU are not hard-capped. Compose assigns 512 MiB/1 CPU to inventory. See [Java baseline](java-baseline.md) for ports, health, failure limits and commands. The earlier controller/Redis/multi-node budgets and workload ceilings are future implementation proposals; they are not currently enforced by a real load generator.

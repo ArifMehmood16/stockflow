@@ -126,7 +126,9 @@ final class Api {
   }
 
   static String stop() throws Exception {
-    return Preview.stop(registry(), port()).replace("preview", "inventory API");
+    return Preview.stop(registry(), port())
+        .replace(" Older Node previews need Ctrl-C once.", "")
+        .replace("preview", "inventory API");
   }
 
   static void integration() throws Exception {

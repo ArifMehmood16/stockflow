@@ -33,3 +33,7 @@ Finish any final lifecycle/rebuild validation, documentation/diff review and che
 Next implementation scope remains Phase 1: inventory reservations, authenticated run/tenant/warehouse fixtures and explicit SQL concurrency/idempotency/expiry. Resolve the documented imported-catalog versus run-fixture schema distinction at that task. Do not retrofit unscoped writes onto the diagnostic catalog endpoint. Further baseline work includes image digest locking, CI and Docker/fresh-clone checks. Phase 2/3 add authoritative Java simulation, real load generation and frontend telemetry. Do not describe modeled counters as actual database measurements.
 
 No unrelated RAG repository work. Existing Phase 0 and Java bootstrap checkpoints are in Git history. Follow the user's instruction to commit progress incrementally.
+
+## Final checkpoint
+
+Implementation `e13cd91` pushed. Final verify/integration/Compose checks passed. Packaged API smoke passed before and after a clean Maven rebuild. Agent test UI/API on 4176/8085 were stopped; repeated stop succeeded, PostgreSQL untouched. No test API should be left occupying the default ports. Only the final documentation/CLI wording checkpoint and its push may remain if the session ends before the next commit; use git status/log to confirm. Continue the remaining Phase 1 plan, not Phase 2 yet.
