@@ -30,9 +30,10 @@ export function routes(state) {
   ];
 }
 
-export function fitCamera(viewport) {
-  const scale = Math.max(0.01, Math.min(1, (viewport.width - 24) / scene.width, (viewport.height - 24) / scene.height));
-  return { scale, x: (viewport.width - scene.width * scale) / 2, y: (viewport.height - scene.height * scale) / 2 };
+export function fitCamera(viewport, insets = { left: 0, right: 0 }) {
+  const availableWidth = Math.max(24, viewport.width - insets.left - insets.right);
+  const scale = Math.max(0.01, Math.min(1, (availableWidth - 24) / scene.width, (viewport.height - 24) / scene.height));
+  return { scale, x: insets.left + (availableWidth - scene.width * scale) / 2, y: (viewport.height - scene.height * scale) / 2 };
 }
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 export function panCamera(camera, dx, dy, viewport) {
