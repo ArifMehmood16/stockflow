@@ -41,6 +41,16 @@ const server = createServer(async (req, res) => {
     res.end("Preview unavailable");
   }
 });
+server.on("error", (error) => {
+  if (error.code !== "EADDRINUSE") throw error;
+  const alternativePort = port === 65535 ? 4173 : port + 1;
+  process.stderr.write(
+    `Port ${port} is already in use on ${host}.\n` +
+      `If StockFlow is already running, open http://${host}:${port}.\n` +
+      `Otherwise stop that process in its terminal, or use: PORT=${alternativePort} make run\n`,
+  );
+  process.exitCode = 1;
+});
 server.listen(port, host, () =>
   process.stdout.write(`StockFlow design prototype: http://${host}:${port}\n`),
 );

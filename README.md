@@ -33,6 +33,8 @@ make run
 
 `make test` runs the deterministic model tests. `make verify` also checks JavaScript syntax and local documentation links. `make doctor` reports tools without installing them. Ctrl-C stops the local preview. `PORT=4174 make run` changes the port.
 
+If the port is occupied, the preview exits with a short explanation. If it is an existing StockFlow preview, open its URL; otherwise stop that process in its terminal or use `PORT=4174 make run`. The launcher never stops another process automatically.
+
 Docker alternative, without Make:
 
 ```sh

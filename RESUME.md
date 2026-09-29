@@ -11,7 +11,7 @@ First checkpoint: `c1e964b`. Later checkpoints: `git log --oneline` (this file i
 ## Available now
 
 - `make run` → http://127.0.0.1:4173 (Node 24; no install/dependencies).
-- `make verify` → 5 model tests, syntax checks and local Markdown links.
+- `make verify` → 5 model tests plus 1 local preview regression test, syntax checks and local Markdown links.
 - `make doctor` → tool prerequisites.
 - `docker compose up --build -d` / `make run-docker` → optional prototype-only container path.
 
@@ -24,3 +24,7 @@ Five tests passed after four observed behavioural failures. Browser checks cover
 Human reviews proposed ADR 001, visual direction, core scope and licence. Then start **PLAN 1.1** on a new dedicated phase branch. Do not carry on with arbitrary services or claim prototype constants are measured Java throughput. Implement one task at a time with red-green-refactor and checkpoint commits.
 
 Before Phase 1, optionally start Docker and verify the prototype container. No need to redo the completed design package. The unrelated RAG repository was left unchanged. All current work belongs in this StockFlow directory.
+
+## Latest maintenance checkpoint
+
+Fixed occupied-port startup guidance after the agent-started preview conflicted with the user’s `make run`. Agent-owned preview was stopped; port 4173 left free. Tests now include a local loopback listener and require permission to bind a port in restricted agent environments. Phase 1 remains unstarted.

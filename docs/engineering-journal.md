@@ -42,3 +42,11 @@ Architecture choices are proposed in ADR 001. Public visibility and incremental 
 - Review corrected WAL edge activation so a failed primary does not continue illustrating replication. Replica read routing can remain available.
 - Secret-pattern search returned only explanatory documentation terms; no credential-like literal was found. This is a targeted review, not a full secret-scanner certification.
 - Focus regression after fix: Enter on **Send 300 req/s** retained `BUTTON` / `data-action=burst` instead of BODY. Final `make verify`: 5 passes, all syntax checks passed, 16 local links resolved; `git diff --check` passed.
+
+## 2026-09-29 — Phase 0.4a occupied preview port
+
+Cause: the preview left running by the agent conflicted with the user’s `make run`. Stopped that known execution session (exit 130 after Ctrl-C); did not search for and kill arbitrary port owners.
+
+Regression: `node --test tests/serve.test.mjs` first failed because stderr contained the unhandled EADDRINUSE stack rather than recovery guidance. Added narrow server error handling: report occupied port, mention existing-preview URL conditionally, offer a different PORT, exit 1. Existing listener survives and remains responsive. Focused rerun passed (1/1). `make verify` passed (6 tests, syntax, 16 links); `git diff --check` passed. Default tests now include one local ephemeral loopback listener but still use no public network or paid services.
+
+Reviewed the change: no process-killing behaviour, no widened binding, no new dependency; unrelated errors remain visible. README documents the alternatives. RESUME and PLAN record the maintenance checkpoint. Java implementation remains behind the design-review gate.

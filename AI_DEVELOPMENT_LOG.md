@@ -34,3 +34,11 @@ Initial checkpoint commit `c1e964b` was pushed to `codex/phase-0-stockflow-desig
 ### Follow-up
 
 Human reviews this log and ADR 001. Run optional Docker smoke when daemon is available. Begin Phase 1 only after design review. No destructive or paid infrastructure actions were performed.
+
+## 002 — Explain occupied preview ports without a Node crash
+
+Date: 2026-09-29. Tool: Codex. Task: user-reported Phase 0 preview defect (PLAN 0.4a). Status: draft for human review.
+
+The user’s `make run` failed because the agent-started preview still occupied port 4173. Stopped only the known agent-owned preview session. Added a local regression test that starts a temporary listener, launches the preview against its port, expects an actionable message and verifies the original listener still responds. The focused test initially failed on the unhandled EADDRINUSE stack trace; after adding a narrow EADDRINUSE handler it passed. Other unexpected server errors retain their existing failure behaviour.
+
+Verification: `node --test tests/serve.test.mjs` passed (1 test); `make verify` passed (6 tests, syntax checks, 16 local links); `git diff --check` passed. The loopback test needed approved execution in this restricted environment; no public network or Docker involved. Updated README, PLAN, RESUME and engineering journal. No dependencies, automatic process termination, automatic port switching or production architecture changes. Human authorization: user reported the failure and had already requested checkpoint commits. Human review of this log remains pending.
