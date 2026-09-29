@@ -9,10 +9,35 @@ export const initialState = () => ({
   instances: 1,
   shards: 1,
   green: false,
+  greenReady: false,
+  build: null,
 });
 export function transition(state, action, value) {
   const s = { ...state };
   switch (action) {
+    case "begin-build": {
+      const eligible = {
+        cache: !s.cache,
+        replica: !s.replica && !s.primaryDown,
+        shard: s.shards === 1 && !s.primaryDown,
+        scale: s.instances < 3,
+        "prepare-green": !s.greenReady,
+      };
+      if (!s.build && Object.hasOwn(eligible, value) && eligible[value])
+        s.build = { action: value, stage: "provisioning" };
+      break;
+    }
+    case "advance-build":
+      if (s.build) s.build = { ...s.build, stage: "checking" };
+      break;
+    case "finish-build":
+      if (s.build?.stage === "checking") {
+        const ready = { ...s, build: null };
+        if (s.build.action === "prepare-green")
+          return { ...ready, greenReady: true };
+        return transition(ready, s.build.action);
+      }
+      break;
     case "load":
       s.rps = Number.isFinite(Number(value))
         ? Math.max(10, Math.min(500, Number(value)))
@@ -46,7 +71,7 @@ export function transition(state, action, value) {
       s.shards = 2;
       break;
     case "deploy":
-      s.green = !s.green;
+      if (s.greenReady) s.green = !s.green;
       break;
     case "reset":
       return initialState();

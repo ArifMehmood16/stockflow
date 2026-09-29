@@ -2,7 +2,7 @@
 
 ## Visual direction
 
-A calm engineering workbench. Warm off-white shell, dark ink text, teal for primary interactions, amber for degraded state, red for unavailable. Avoid making every service a different bright colour. Use labels/icons/patterns as well as colour. Title “StockFlow”; subtitle “Inventory, under pressure”. Light dotted topology surface, restrained flat panels, compact monospace metrics and a strong readable explanation column.
+A dark technical workbench. Deep navy shell and topology canvas, light ready-component cards, mint read paths, periwinkle write paths, amber replication, and coral unavailable states. Planned slots use dark dashed cards; provisioning brightens them and readiness reveals the light component. Avoid making every service a different bright colour. Use labels/icons/patterns as well as colour. Title “StockFlow”; subtitle “Inventory, under pressure”. Dark dotted topology surface, restrained flat panels, compact monospace metrics and a strong readable explanation column.
 
 Spacing: 4/8/12/16/24/32 px; base text 14–16 px; 28 px page heading; 12 px metadata; corner radius 8–12 px. Proposed production font: system sans and system monospace, no remote font dependency. Controls min 40 px desktop / 44 px touch. Contrast target WCAG AA. Proposed viewport: 1440×900; minimum usable width 375 px.
 
@@ -21,7 +21,7 @@ Spacing: 4/8/12/16/24/32 px; base text 14–16 px; 28 px page heading; 12 px met
 │ 05 Stale      │ Client → Proxy → API × 2           │ Repeated reads compete  │
 │ 06 Stampede   │                   ↘ Redis          │ with writes for DB time │
 │ 07 Replicas   │                    → Primary       │                         │
-│ 08 Recover    │                         ⇣ WAL      │ [Enable Redis]          │
+│ 08 Recover    │                         ⇣ WAL      │ Click Redis on map      │
 │ 09 Shards     │                       Replica      │                         │
 │ 10 Hot key    │ hover: role / queue / source       │ Watch for               │
 │ 11 Deploy     │ click: pin inspector               │ hit rate rises; primary │
@@ -36,7 +36,7 @@ Actual prototype groups the curriculum into six chapters for visual review; prod
 
 ## Right panel
 
-Guide default: hypothesis, current instruction, one primary action, observable success condition, explanation and trade-off. Anchor a subtle outline to target controls. Never put a modal coach mark over emergency stop. Progress advances from observation, not click. “Why didn't this help?” appears when throughput stays flat and points to next bottleneck.
+Guide default: hypothesis, current instruction, a location cue pointing to the relevant on-map control, observable success condition, explanation and trade-off. Anchor a subtle outline to target controls. Never put a modal coach mark over emergency stop. Progress advances from observation, not click. “Why didn't this help?” appears when throughput stays flat and points to next bottleneck.
 
 Inspect: selected node role, instance/version, health, current work, source of metrics, constraints, queue/pool, related request IDs. DB adds write/replay position, row version and role; Redis adds TTL/version/hit/miss/eviction; proxy adds active targets/drain state; shard router adds bucket/epoch. Hover/focus shows brief tooltip; click pins full panel until close. Touch uses tap. Tooltip dismisses with Escape and never traps keyboard focus.
 
@@ -104,7 +104,7 @@ Semantic landmarks/headings, visible focus, real buttons/labels, no hover-only i
 
 ## Prototype scope
 
-Delivered: six chapter selections, traffic start/pause, bounded load slider, cache/replica/shard/instance/deployment toggles, fenced primary promotion, animated architecture, hover/focus/pinned inspector, metric breakdown, right guide, activity log, reset and reduced motion. Instant model transitions are for design review. Stale-fill races, real replication, detailed traces, report export and compare are specified, not falsely simulated by random counters.
+Delivered: dark/light-contrast workbench, locally served technology logos, nine inspectable components, six chapter selections, traffic start/pause, bounded load slider, cache/replica/shard/instance/deployment toggles, fenced primary promotion, animated architecture, hover/focus/pinned inspector, metric breakdown, right guide, activity log, reset and reduced motion. Build actions run through a 1.4-second provisioning stage, then readiness checking until 2.9 seconds. Capacity and routes remain unchanged until completion. These durations illustrate the lifecycle; they do not measure provisioning. Green preparation and traffic switching are separate actions. Reset/chapter change cancels pending build timers. All build/recovery actions are on component cards; the right panel contains explanatory steps and location cues. Stale-fill races, real replication, detailed traces, report export and compare are specified, not falsely simulated by random counters.
 
 ## Captured preview
 

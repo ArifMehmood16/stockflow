@@ -42,3 +42,17 @@ Date: 2026-09-29. Tool: Codex. Task: user-reported Phase 0 preview defect (PLAN 
 The user’s `make run` failed because the agent-started preview still occupied port 4173. Stopped only the known agent-owned preview session. Added a local regression test that starts a temporary listener, launches the preview against its port, expects an actionable message and verifies the original listener still responds. The focused test initially failed on the unhandled EADDRINUSE stack trace; after adding a narrow EADDRINUSE handler it passed. Other unexpected server errors retain their existing failure behaviour.
 
 Verification: `node --test tests/serve.test.mjs` passed (1 test); `make verify` passed (6 tests, syntax checks, 16 local links); `git diff --check` passed. The loopback test needed approved execution in this restricted environment; no public network or Docker involved. Updated README, PLAN, RESUME and engineering journal. No dependencies, automatic process termination, automatic port switching or production architecture changes. Human authorization: user reported the failure and had already requested checkpoint commits. Human review of this log remains pending.
+
+## 003 — Move operations onto a dark architecture map and add make stop
+
+Date: 2026-09-29. Tool: Codex. Task: user-assigned Phase 0.4b. Status: draft for human review; final browser/stop smoke checkpoint follows.
+
+Human requested preserving the learning path, moving add-system/solution controls into the animation, showing components being built and traffic rerouting, using technology logos/names, adding `make stop`, and making the background dark with light/dark contrast.
+
+Implemented dark workbench/light ready cards; on-component controls; timed provisioning and readiness states; no capacity/routing effect until completion; explicit green preparation before route switch; timer cancellation on reset. Guide retains explanatory steps and points to map controls. Vendored six Devicon v2.17.0 SVGs with upstream MIT notice and attribution; no runtime external requests. Python HTTPS failed local certificate validation; system curl succeeded with certificate verification enabled. No security verification was disabled.
+
+Added tracked local preview lifecycle: per-port PID plus OS start-time/command identity in ignored .lab; stop sends SIGTERM only on a match, waits, does not force-kill. Docker leaves tracking disabled. Existing listeners are not killed by port. Test scaffolds first produced two lifecycle/readiness failures and one behavioural stop failure plus missing-registry scaffold error; implementations then passed. Current `make verify`: 11 passing tests, syntax checks, 18 local links. Compose configuration validates; Docker container run remains unverified.
+
+Browser observed: all nine displayed logos loaded locally; no build buttons in guide; cache remains inactive during provisioning and becomes routed after ready; green route switch disabled during build and enabled after readiness; switch mutes old blue path and activates green; reset immediately returns cache to not built. Full build is still an illustrative browser lifecycle, not real provisioning. NGINX/logo labels identify proposed architecture, not a new running infrastructure dependency.
+
+Previous local commit e41fb6a initially could not push because automatic approval review failed due to a usage limit. Further local work was preserved. Publication status is recorded in the final checkpoint rather than assumed.

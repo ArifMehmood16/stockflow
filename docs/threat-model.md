@@ -20,3 +20,7 @@ Resource admission before run; watchdog outside UI; faults auto-expire; one acti
 ## Residual risks
 
 Initial prototype static server is for local preview only. Model is deliberately simplified. No production authentication, multi-tenant internet service, full OS sandbox, automatic HA or independent-host disaster recovery is delivered. Future supervisor is a privileged boundary requiring focused review. Licence and public hosting decisions remain human-owned.
+
+## Phase 0 preview lifecycle update
+
+Technology SVGs are vendored from a pinned upstream tag with attribution, screened, served as images through explicit paths and covered by the existing self-only CSP. No CDN requests at runtime. Local `make stop` uses an ignored per-port registry plus process start/command identity before SIGTERM; it does not infer ownership from listening ports, force-kill, or expose stop through HTTP. The registry is not a defence against malicious code with the same OS permissions. Docker does not enable registry writes. UI build timers are illustrative only and cancel on reset/chapter switch.

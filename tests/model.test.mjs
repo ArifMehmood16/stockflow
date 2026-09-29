@@ -51,3 +51,41 @@ test("model conserves offered requests across completed and rejected categories"
     assert.ok(Math.abs(m.completed + m.rejected - s.rps) < 0.001);
   }
 });
+
+test("a component has no routing or capacity effect until its build completes", () => {
+  const baseline = transition(initialState(), "load", 300);
+  const building = transition(baseline, "begin-build", "cache");
+  assert.equal(building.build?.action, "cache");
+  assert.equal(building.cache, false);
+  assert.equal(metrics(building).dbDemand, metrics(baseline).dbDemand);
+  const checking = transition(building, "advance-build");
+  assert.equal(checking.build?.stage, "checking");
+  assert.equal(checking.cache, false);
+  const ready = transition(checking, "finish-build");
+  assert.equal(ready.build, null);
+  assert.equal(ready.cache, true);
+  assert.ok(metrics(ready).dbDemand < metrics(baseline).dbDemand);
+});
+
+test("builds serialize and reset discards a pending topology change", () => {
+  const building = transition(initialState(), "begin-build", "replica");
+  assert.deepEqual(transition(building, "begin-build", "shard"), building);
+  assert.equal(transition(building, "finish-build").replica, false);
+  const reset = transition(building, "reset");
+  assert.equal(transition(reset, "finish-build").replica, false);
+  assert.deepEqual(
+    transition(initialState(), "begin-build", "arbitrary-command"),
+    initialState(),
+  );
+});
+
+test("green readiness precedes an explicit route switch", () => {
+  let s = transition(initialState(), "deploy");
+  assert.equal(s.green, false);
+  s = transition(s, "begin-build", "prepare-green");
+  s = transition(s, "advance-build");
+  s = transition(s, "finish-build");
+  assert.equal(s.greenReady, true);
+  assert.equal(s.green, false);
+  assert.equal(transition(s, "deploy").green, true);
+});

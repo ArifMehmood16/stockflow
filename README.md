@@ -31,7 +31,7 @@ make run
 # open http://127.0.0.1:4173
 ```
 
-`make test` runs the deterministic model tests. `make verify` also checks JavaScript syntax and local documentation links. `make doctor` reports tools without installing them. Ctrl-C stops the local preview. `PORT=4174 make run` changes the port.
+`make test` runs the deterministic model tests. `make verify` also checks JavaScript syntax and local documentation links. `make doctor` reports tools without installing them. Ctrl-C or `make stop` stops the local preview. `PORT=4174 make run` changes the port; use `PORT=4174 make stop` to stop that instance. Stop verifies the registered process identity and never kills a process merely because it holds a port. Previews started before process registration was added need Ctrl-C once before restarting with `make run`.
 
 If the port is occupied, the preview exits with a short explanation. If it is an existing StockFlow preview, open its URL; otherwise stop that process in its terminal or use `PORT=4174 make run`. The launcher never stops another process automatically.
 
@@ -49,12 +49,12 @@ Or `make run-docker` / `make down`. This Docker configuration serves the **same 
 
 1. Select **Single database**. Start traffic; raise offered load to 300 req/s.
 2. Inspect the database to see demand exceed its modelled capacity.
-3. Select **Caching** and enable Redis. Observe lower database demand and the cache-read path.
-4. Select **Read replicas**; add a replica and inspect the read/write routes.
+3. Select **Caching**, then click **Build Redis** on the cache card in the architecture. Watch provisioning, readiness and the new read route. Observe lower database demand and the cache-read path.
+4. Select **Read replicas**; click **Build replica** on its card and inspect the read/write routes.
 5. Select **Failure recovery**. Fail the primary, fence it, then promote the replica. The guide explains potential asynchronous data loss.
 6. Try **Sharding** and **Blue / green**. These show intended interactions; advanced correctness experiments are specified in the curriculum.
 
-All graph nodes support mouse hover, keyboard focus and click-to-pin. Motion can be disabled. The right panel explains the next operation and its cost. The activity log and metric breakdown remain useful without animation.
+The learning path and guide remain visible; build, scale, deployment and recovery controls sit directly on the architecture components. Planned slots become ready components after an illustrative 2.9-second lifecycle; routes and capacity change only after readiness. Green must be built before switching traffic at the router. All graph nodes support mouse hover, keyboard focus and click-to-pin. Motion can be disabled. The right panel explains the next operation and its cost. The activity log and metric breakdown remain useful without animation.
 
 ## Proposed build
 
@@ -66,4 +66,4 @@ The workload is a multi-tenant warehouse inventory API: browse stock, reserve un
 
 The laptop topology shares a host, disk and network. Multiple containers do not prove multi-machine resilience or production throughput. Public deployment initially offers simulation only. Infrastructure controls are local, bounded and unavailable to anonymous visitors. No real customer data or real payments.
 
-No open-source licence has been selected yet; public visibility alone does not grant reuse rights. AI-assisted work and pending human decisions are recorded in [AI_DEVELOPMENT_LOG.md](AI_DEVELOPMENT_LOG.md).
+Technology logo attribution is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). No open-source licence has been selected yet; public visibility alone does not grant reuse rights. AI-assisted work and pending human decisions are recorded in [AI_DEVELOPMENT_LOG.md](AI_DEVELOPMENT_LOG.md).

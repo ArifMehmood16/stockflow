@@ -1,3 +1,4 @@
+import { registerPreview, unregisterPreview } from "./preview-process.mjs";
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -10,6 +11,10 @@ const files = new Map([
   ["/styles.css", ["styles.css", "text/css; charset=utf-8"]],
   ["/app.mjs", ["app.mjs", "text/javascript; charset=utf-8"]],
   ["/model.mjs", ["model.mjs", "text/javascript; charset=utf-8"]],
+  ...["java", "spring", "postgresql", "redis", "react", "nginx"].map((name) => [
+    `/assets/${name}.svg`,
+    [`assets/${name}.svg`, "image/svg+xml"],
+  ]),
 ]);
 if (!Number.isInteger(port) || port < 1024 || port > 65535)
   throw new Error("PORT must be 1024–65535");
@@ -51,8 +56,25 @@ server.on("error", (error) => {
   );
   process.exitCode = 1;
 });
-server.listen(port, host, () =>
-  process.stdout.write(`StockFlow design prototype: http://${host}:${port}\n`),
-);
+const tracked = process.env.TRACK_PREVIEW === "1";
+server.listen(port, host, async () => {
+  if (tracked) {
+    try {
+      await registerPreview(port);
+    } catch (error) {
+      process.stderr.write(
+        `Could not register the preview for make stop: ${error.message}\n`,
+      );
+      server.close(() => process.exit(1));
+      return;
+    }
+  }
+  process.stdout.write(`StockFlow design prototype: http://${host}:${port}\n`);
+});
 for (const signal of ["SIGINT", "SIGTERM"])
-  process.on(signal, () => server.close(() => process.exit(0)));
+  process.on(signal, () =>
+    server.close(async () => {
+      if (tracked) await unregisterPreview(port);
+      process.exit(0);
+    }),
+  );

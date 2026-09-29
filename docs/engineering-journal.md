@@ -50,3 +50,13 @@ Cause: the preview left running by the agent conflicted with the user’s `make 
 Regression: `node --test tests/serve.test.mjs` first failed because stderr contained the unhandled EADDRINUSE stack rather than recovery guidance. Added narrow server error handling: report occupied port, mention existing-preview URL conditionally, offer a different PORT, exit 1. Existing listener survives and remains responsive. Focused rerun passed (1/1). `make verify` passed (6 tests, syntax, 16 links); `git diff --check` passed. Default tests now include one local ephemeral loopback listener but still use no public network or paid services.
 
 Reviewed the change: no process-killing behaviour, no widened binding, no new dependency; unrelated errors remain visible. README documents the alternatives. RESUME and PLAN record the maintenance checkpoint. Java implementation remains behind the design-review gate.
+
+## 2026-09-29 — Phase 0.4b workbench revision
+
+User-assigned scope: retain learning path, move operations onto architecture cards, animate building/readiness/rerouting, use technology logos, dark background with light contrast, and add make stop. No Java implementation phase started.
+
+Red: `node --test tests/model.test.mjs` produced two new failures for missing build state and green switching before readiness. `node --test tests/process.test.mjs` produced a behavioural stop failure plus missing-registry scaffold error. Green: focused suites passed after implementation. `make verify` passed 11 tests, syntax checks, and 18 local doc links. `docker compose config --quiet` and `git diff --check` passed.
+
+Started isolated `PORT=4175 make run` for verification, leaving any user listener on 4173 untouched. Browser observed local logo loading, on-map controls, readiness gating, old-route muting/new-route activation, and immediate reset of an in-flight build. Logs and visual state explicitly call this lifecycle illustrative. Final native run/stop smoke and screenshots follow below.
+
+Reviewed safety: local registry checks start/command identity before signalling, no port-owner killing, no force kill, no HTTP stop endpoint. SVG assets are local and allowlisted with retained attribution. No licence selected for StockFlow's own code. Node UI model remains a teaching sketch.

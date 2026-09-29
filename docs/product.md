@@ -14,7 +14,7 @@ Available stock never becomes negative. Reserve and release apply at most once p
 
 ## Three honest modes
 
-1. **Design prototype (delivered now):** browser-only aggregate capacity sketch, instant state transitions, fixed 90/10 traffic mix, selected visible lesson controls. No network load. No latency measurement. All values labelled illustrative.
+1. **Design prototype (delivered now):** browser-only aggregate capacity sketch, illustrative staged provisioning/readiness transitions, fixed 90/10 traffic mix, selected visible lesson controls. No network load. No latency measurement. All values labelled illustrative.
 2. **Simulation (to build):** seeded Java discrete-event model, virtual time, bounded queues and explicit cache/replication/failure events. Runs offline with in-memory simulated state. Can teach topology larger than a laptop can host. Outputs labelled modelled, with engine version and seed.
 3. **Real lab (to build):** bounded load against owned local Java/PostgreSQL/Redis processes. Real histograms, request traces, resource metrics and database versions. Controls enabled only when host prerequisites exist. Time follows wall clock; pausing stops new requests but cannot freeze WAL, TTL or in-flight transactions.
 

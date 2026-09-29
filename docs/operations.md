@@ -2,7 +2,7 @@
 
 ## Available today
 
-`make run` starts the static prototype on loopback using Node 24. `make test`, `make verify`, `make doctor`, `make run-docker`, `make down` are implemented. Docker serves only the prototype. No native tools are installed automatically.
+`make run` starts the static prototype on loopback using Node 24. `make stop`, `make test`, `make verify`, `make doctor`, `make run-docker`, `make down` are implemented. Local runs register PID plus OS process start/command identity in ignored `.lab/preview-<port>.json`. Stop sends SIGTERM only on a match and waits up to three seconds; it does not force-kill. A stale or mismatched record leaves the process untouched. Run/stop must use the same PORT. Docker uses `make down` and does not write this local registry. The registry is local process bookkeeping, not a security boundary against another process running as the same OS user. Native stop uses POSIX `ps`, matching macOS/Linux/WSL support. Docker serves only the prototype. No native tools are installed automatically.
 
 ## Target operating modes (not yet implemented)
 

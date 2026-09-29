@@ -28,3 +28,7 @@ Before Phase 1, optionally start Docker and verify the prototype container. No n
 ## Latest maintenance checkpoint
 
 Fixed occupied-port startup guidance after the agent-started preview conflicted with the user’s `make run`. Agent-owned preview was stopped; port 4173 left free. Tests now include a local loopback listener and require permission to bind a port in restricted agent environments. Phase 1 remains unstarted.
+
+## Current UI revision checkpoint
+
+Implemented user-requested dark workbench, light ready components, technology logos, on-map build/scale/recovery controls, readiness stages and route switching. Learning path stays; guide points to map controls. Added `make stop` (same PORT as make run), per-port process identity checks, and tests. `make verify` currently passes 11 tests plus syntax and 18 links. Browser key interactions checked. Remaining before final handoff: finish screenshot/layout inspection, native run/stop smoke on owned test port 4175, final diff review, and push checkpoints. No next Java phase begun.
