@@ -128,7 +128,7 @@
           <div class="graph-scroll">
             <div class="graph-stage">
               <div class="graph" id="graph">
-                <svg class="edges" viewBox="0 0 960 410" aria-hidden="true">
+                <svg class="edges" viewBox="0 0 960 440" aria-hidden="true">
                   <defs>
                     <marker
                       id="arrow"
@@ -142,63 +142,63 @@
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
                     </marker>
                   </defs>
-                  <path id="edge-client" class="edge read" d="M202 184 H236" />
-                  <path id="edge-api" class="edge read" d="M412 184 H446" />
-                  <path id="edge-db" class="edge write" d="M622 196 H758" />
-                  <path id="edge-db-read" class="edge read" d="M622 178 H758" />
+                  <path id="edge-client" class="edge read" d="M202 198 H236" />
+                  <path id="edge-api" class="edge read" d="M412 198 H446" />
+                  <path id="edge-db" class="edge write" d="M622 210 H758" />
+                  <path id="edge-db-read" class="edge read" d="M622 192 H758" />
                   <path
                     id="edge-cache"
                     class="edge read optional"
-                    d="M550 154 V131 H696 V62 H758"
+                    d="M550 168 V160 H696 V62 H758"
                   />
                   <path
                     id="edge-replica"
                     class="edge replication optional"
-                    d="M894 251 V278"
+                    d="M894 288 V304"
                   />
                   <path
                     id="edge-replica-read"
                     class="edge read optional"
-                    d="M622 205 H696 V308 H758"
+                    d="M622 219 H696 V334 H758"
                   />
                   <path
                     id="edge-shard"
                     class="edge write optional"
-                    d="M534 251 V278"
+                    d="M534 288 V304"
                   />
                   <path
                     id="edge-api2"
                     class="edge read optional"
-                    d="M412 165 H426 V62 H446"
+                    d="M412 179 H426 V62 H446"
                   />
                   <path
                     id="edge-api2-db"
                     class="edge write optional"
-                    d="M622 86 H716 V205 H758"
+                    d="M622 86 H716 V219 H758"
                   />
                   <path
                     id="edge-green"
                     class="edge read optional"
-                    d="M324 154 V129"
+                    d="M324 168 V152"
                   />
-                  <text x="653" y="172">READ</text>
-                  <text x="653" y="208">WRITE</text>
-                  <text id="wal-label" x="903" y="268">WAL</text>
+                  <text x="653" y="186">READ</text>
+                  <text x="653" y="222">WRITE</text>
+                  <text id="wal-label" x="903" y="300">WAL</text>
                   <text id="cache-label" x="706" y="54">GET / SET</text>
                 </svg>
-                <div class="zone-label" style="left: 26px; top: 134px">
+                <div class="zone-label" style="left: 26px; top: 150px">
                   REQUEST PATH
                 </div>
                 <div class="zone-label" style="left: 26px; top: 32px">
                   ADD CAPACITY
                 </div>
-                <div class="zone-label" style="left: 26px; top: 284px">
+                <div class="zone-label" style="left: 26px; top: 310px">
                   RESILIENCE & DATA
                 </div>
                 <article
                   class="component-shell ready"
                   id="component-client"
-                  style="left: 26px; top: 154px"
+                  style="left: 26px; top: 168px"
                   aria-label="Workload component"
                 >
                   <button
@@ -226,7 +226,7 @@
                 <article
                   class="component-shell ready"
                   id="component-proxy"
-                  style="left: 236px; top: 154px"
+                  style="left: 236px; top: 168px"
                   aria-label="Traffic router component"
                 >
                   <button
@@ -254,7 +254,7 @@
                 <article
                   class="component-shell ready"
                   id="component-api"
-                  style="left: 446px; top: 154px"
+                  style="left: 446px; top: 168px"
                   aria-label="Inventory API component"
                 >
                   <button
@@ -310,7 +310,7 @@
                 <article
                   class="component-shell ready"
                   id="component-db"
-                  style="left: 758px; top: 154px"
+                  style="left: 758px; top: 168px"
                   aria-label="Primary database component"
                 >
                   <button
@@ -338,7 +338,7 @@
                 <article
                   class="component-shell planned"
                   id="component-replica"
-                  style="left: 758px; top: 278px"
+                  style="left: 758px; top: 304px"
                   aria-label="Read replica component"
                 >
                   <button
@@ -366,7 +366,7 @@
                 <article
                   class="component-shell planned"
                   id="component-shard"
-                  style="left: 236px; top: 278px"
+                  style="left: 236px; top: 304px"
                   aria-label="Shard cluster component"
                 >
                   <button
@@ -451,7 +451,6 @@
                     <span></span>
                   </div>
                 </article>
-                <div class="hover-card" id="hover-card" hidden></div>
               </div>
             </div>
           </div>
@@ -566,6 +565,13 @@
       role="status"
       aria-live="polite"
     ></div>
+    <div class="hover-card" id="hover-card" role="tooltip" hidden>
+      <span class="hover-kicker">ILLUSTRATIVE MODEL</span>
+      <strong id="hover-title"></strong>
+      <span id="hover-state"></span>
+      <p id="hover-detail"></p>
+      <small>Click component to keep details in Inspector</small>
+    </div>
     <script type="module" src="/app.mjs"></script>
   </body>
 </html>

@@ -6,6 +6,7 @@ import {
   faultCatalog,
   componentAvailable,
 } from "./model.mjs";
+import { placeHover, componentSnapshot } from "./hover.mjs";
 let state = initialState();
 let chapter = 0;
 let faultNode = "cache";
@@ -13,9 +14,15 @@ let faultKind = "stampede";
 let running = false;
 let reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 let pinned = null;
+let pinnedShard = null;
 let events = [];
 let buildTimers = [];
 let routeTimer;
+let hoverNode = null;
+let hoverTimer;
+let hoverPoint = null;
+let hoverFrame;
+let buildMessage = "";
 let routeNotice =
   "Build directly on the map. Select a component to inspect it.";
 const $ = (id) => document.getElementById(id);
@@ -342,8 +349,9 @@ function selectPanel(inspect) {
   $("guide-tab").tabIndex = inspect ? -1 : 0;
   $("inspect-tab").tabIndex = inspect ? 0 : -1;
 }
-function inspect(id) {
+function inspect(id, shardIndex = null) {
   pinned = id;
+  pinnedShard = shardIndex;
   selectPanel(true);
   renderInspector();
   document
@@ -354,23 +362,12 @@ function inspect(id) {
 function renderInspector() {
   const id = pinned || "api";
   const d = descriptions[id];
-  const active =
-    id === "green"
-      ? state.greenReady
-      : id === "api2"
-        ? state.instances > 1
-        : id === "cache"
-          ? state.cache
-          : id === "replica"
-            ? state.replica
-            : id === "shard"
-              ? state.shards > 1
-              : id === "db"
-                ? !state.primaryDown
-                : true;
+  const snapshot = componentSnapshot(state, id, running, pinnedShard);
   $("inspect-content").innerHTML =
-    `<span class="guide-kicker">COMPONENT INSPECTOR</span><h3>${d[0]}</h3><span class="inspect-role">${d[1]}</span><dl class="inspect-list"><div><dt>Current state</dt><dd>${active ? "Available in the model" : "Inactive / unavailable"}${id === "proxy" ? " · " + (state.green ? "green v2" : "blue v1") : ""}</dd></div><div><dt>What it does</dt><dd>${d[2]}</dd></div><div><dt>Model assumption</dt><dd>${d[3]}</dd></div></dl><div class="tradeoff"><span class="tiny-label">WHAT TO REMEMBER</span><p>${d[4]}</p></div><p class="inspect-hint">All values are illustrative. Select another architecture component to inspect its role.</p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
+    `<span class="guide-kicker">COMPONENT INSPECTOR</span><h3>${d[0]}</h3><span class="inspect-role">${d[1]}</span><dl class="inspect-list"><div><dt>Current state</dt><dd>${snapshot.status}</dd></div><div><dt>Current model behavior</dt><dd>${snapshot.detail}</dd></div><div><dt>What it does</dt><dd>${d[2]}</dd></div><div><dt>Model assumption</dt><dd>${d[3]}</dd></div></dl><div class="tradeoff"><span class="tiny-label">WHAT TO REMEMBER</span><p>${d[4]}</p></div><p class="inspect-hint">All values are illustrative. Select another architecture component to inspect its role.</p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
   $("back-guide").onclick = () => selectPanel(false);
+  if (id === "shard" && pinnedShard !== null && pinnedShard < state.shards)
+    $("inspect-content").querySelector("h3").textContent = `Shard S${pinnedShard + 1}`;
 }
 const actionLocations = {
   run: "Workload → Start traffic",
@@ -481,6 +478,7 @@ function renderActions() {
         ? "READY"
         : "NOT BUILT";
     const shell = $(`component-${id}`);
+    shell.dataset.buildStage = pending ? state.build.stage : "";
     shell.classList.toggle("building", pending);
     shell.classList.toggle("planned", !active && !pending);
     shell.classList.toggle("ready", active);
@@ -645,12 +643,31 @@ function render() {
   $("shard-meta").textContent =
     `${state.shards} nodes · epoch ${state.epoch} · ${state.migration?.stage || "stable ownership"}`;
   const counts = shardRecords(state);
-  $("shard-bank").innerHTML = counts
-    .map(
-      (count, i) =>
-        `<span class="shard-cell ${count ? "owns-data" : "empty-shard"} ${state.faults.shard === "crash" && i === counts.findLastIndex((n) => n > 0) ? "shard-down" : ""}"><img src="/assets/postgresql.svg" alt=""/><b>S${i + 1}</b><small>${fmt(count)}</small></span>`,
-    )
-    .join("");
+  const bank = $("shard-bank");
+  while (bank.children.length > counts.length) bank.lastElementChild.remove();
+  counts.forEach((count, i) => {
+    let cell = bank.children[i];
+    if (!cell) {
+      cell = document.createElement("button");
+      cell.type = "button";
+      cell.className = "shard-cell new-shard";
+      cell.dataset.node = "shard";
+      cell.dataset.shard = String(i);
+      cell.innerHTML = `<img src="/assets/postgresql.svg" alt=""/><b>S${i + 1}</b><small></small>`;
+      cell.onanimationend = () => cell.classList.remove("new-shard", "moved-buckets");
+      bindComponentHover(cell);
+      bank.append(cell);
+    } else if (Number(cell.dataset.records) !== count && !reduced) {
+      cell.classList.add("moved-buckets");
+    }
+    cell.dataset.records = String(count);
+    cell.querySelector("small").textContent = fmt(count);
+    cell.setAttribute("aria-label", `Inspect shard S${i + 1}: ${fmt(count)} records`);
+    cell.classList.toggle("owns-data", count > 0);
+    cell.classList.toggle("empty-shard", count === 0);
+    cell.classList.toggle("shard-down", state.faults.shard === "crash" && i === counts.findLastIndex(n => n > 0));
+    if (reduced) cell.classList.remove("new-shard", "moved-buckets");
+  });
   $("record-count").textContent =
     `${fmt(state.records)} logical records · ${state.shards} shard${state.shards > 1 ? "s" : ""}`;
   $("quality").textContent =
@@ -682,23 +699,23 @@ function render() {
   );
   $("edge-db").setAttribute(
     "d",
-    state.green ? "M324 32 V15 H948 V196 H934" : "M622 196 H758",
+    state.green ? "M324 32 V15 H948 V210 H934" : "M622 210 H758",
   );
   $("edge-db-read").setAttribute(
     "d",
-    state.green ? "M412 52 H736 V178 H758" : "M622 178 H758",
+    state.green ? "M412 52 H426 V10 H740 V192 H758" : "M622 192 H758",
   );
   $("edge-cache").setAttribute(
     "d",
-    state.green ? "M412 62 H758" : "M550 154 V131 H696 V62 H758",
+    state.green ? "M412 62 H426 V20 H728 V62 H758" : "M550 168 V160 H696 V62 H758",
   );
   $("edge-replica-read").setAttribute(
     "d",
-    state.green ? "M412 83 H676 V308 H758" : "M622 205 H696 V308 H758",
+    state.green ? "M412 83 H430 V160 H676 V334 H758" : "M622 219 H696 V334 H758",
   );
   $("edge-shard").setAttribute(
     "d",
-    state.green ? "M324 129 V265 H534 V278" : "M534 251 V278",
+    state.green ? "M236 105 H222 V296 H534 V304" : "M534 288 V304",
   );
   $("edge-db").classList.toggle("failed", state.primaryDown);
   $("edge-db-read").classList.toggle(
@@ -753,6 +770,8 @@ function render() {
   $("motion").textContent = `Motion: ${reduced ? "off" : "on"}`;
   $("motion").setAttribute("aria-pressed", String(reduced));
   renderActions();
+  buildMessage = $("build-message").textContent;
+  renderHover();
   renderGuide();
   if (pinned) renderInspector();
 }
@@ -931,26 +950,78 @@ for (const id of ["guide-tab", "inspect-tab"])
       $(target).focus();
     }
   };
-for (const n of document.querySelectorAll(".node")) {
-  const show = () => {
-    $("hover-card").textContent = descriptions[n.dataset.node][2];
-    $("hover-card").hidden = false;
+function hideHover() {
+  clearTimeout(hoverTimer);
+  cancelAnimationFrame(hoverFrame);
+  hoverNode?.removeAttribute("aria-describedby");
+  hoverNode?.classList.remove("hovered");
+  hoverNode = null;
+  hoverPoint = null;
+  $("hover-card").hidden = true;
+  $("build-message").textContent = buildMessage;
+}
+function renderHover() {
+  if (!hoverNode) return;
+  if (!hoverNode.isConnected) {
+    hideHover();
+    return;
+  }
+  const id = hoverNode.dataset.node;
+  const shardIndex = hoverNode.dataset.shard === undefined ? null : Number(hoverNode.dataset.shard);
+  const snapshot = componentSnapshot(state, id, running, shardIndex);
+  const tip = $("hover-card");
+  $("hover-title").textContent = shardIndex === null ? descriptions[id][0] : `Shard S${shardIndex + 1}`;
+  $("hover-state").textContent = snapshot.status;
+  $("hover-detail").textContent = snapshot.detail;
+  tip.hidden = false;
+  const rect = tip.getBoundingClientRect();
+  const bounds = { left: 0, top: 0, right: document.documentElement.clientWidth, bottom: innerHeight };
+  const placement = placeHover(hoverNode.closest(".component-shell").getBoundingClientRect(), rect, bounds, hoverPoint);
+  if (placement) {
+    tip.style.left = `${placement.left}px`;
+    tip.style.top = `${placement.top}px`;
+    hoverNode.setAttribute("aria-describedby", "hover-card");
+    $("build-message").textContent = buildMessage;
+  } else {
+    // Small screens may have no safe overlay space. Reuse the status strip.
+    tip.hidden = true;
+    hoverNode.setAttribute("aria-describedby", "build-message");
+    $("build-message").textContent = `${descriptions[id][0]} · ${snapshot.status} · ${snapshot.detail}`;
+  }
+}
+function bindComponentHover(n) {
+  const show = (point) => {
+    hideHover();
+    hoverPoint = point;
+    const reveal = () => {
+      hoverNode = n;
+      n.classList.add("hovered");
+      renderHover();
+    };
+    if (point) hoverTimer = setTimeout(reveal, 180);
+    else reveal();
   };
-  const hide = () => {
-    $("hover-card").hidden = true;
+  n.onpointerenter = e => { if (e.pointerType !== "touch") show({ x: e.clientX, y: e.clientY }); };
+  n.onpointermove = e => {
+    if (e.pointerType === "touch") return;
+    hoverPoint = { x: e.clientX, y: e.clientY };
+    cancelAnimationFrame(hoverFrame);
+    hoverFrame = requestAnimationFrame(renderHover);
   };
-  n.onmouseenter = show;
-  n.onmouseleave = hide;
-  n.onfocus = show;
-  n.onblur = hide;
+  n.onpointerleave = hideHover;
+  n.onfocus = () => { if (n.matches(":focus-visible")) show(null); };
+  n.onblur = hideHover;
   n.onclick = () => {
-    hide();
-    inspect(n.dataset.node);
+    hideHover();
+    inspect(n.dataset.node, n.dataset.shard === undefined ? null : Number(n.dataset.shard));
   };
 }
+document.querySelectorAll(".node").forEach(bindComponentHover);
+window.addEventListener("scroll", hideHover, true);
+window.addEventListener("resize", hideHover);
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    $("hover-card").hidden = true;
+    hideHover();
     selectPanel(false);
   }
 });
@@ -962,9 +1033,10 @@ new ResizeObserver(() => {
   const scale = Math.min(
     1,
     graphViewport.clientWidth / 960,
-    graphViewport.clientHeight / 410,
+    graphViewport.clientHeight / 440,
   );
   $("graph").style.transform = `scale(${scale})`;
   document.querySelector(".graph-stage").style.width = `${960 * scale}px`;
-  document.querySelector(".graph-stage").style.height = `${410 * scale}px`;
+  document.querySelector(".graph-stage").style.height = `${440 * scale}px`;
+  hideHover();
 }).observe(graphViewport);

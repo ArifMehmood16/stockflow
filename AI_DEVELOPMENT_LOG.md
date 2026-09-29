@@ -125,3 +125,15 @@ No runtime code, migration, credential, or database write. Link check and static
 ### Entry 007 validation
 
 Observed: 195 local Markdown links passed; a one-off Java structure check passed all 43 cards, required sections, predecessor/gate consistency and untouched future statuses; diff whitespace check passed. Existing commit `46bcbe6` contains the handoff; preserved it and added only this verification record. No future task or checkpoint is represented as implemented/accepted, and no application/database work was performed for this documentation request.
+
+## 009 — Repair topology layout and runtime interactions
+
+Date: 2026-09-29. Tool: Codex. Owner-requested PLAN 0.4f; draft for human review.
+
+Reproduced card/header overlap, repaired padding/grid rows, separated topology rows and adjusted route geometry. The owner refined hover behavior during implementation: allow surrounding overlap and follow the cursor. Replaced the initial conservative placement accordingly; the inspected card remains clear and the overlay never captures pointer input. Added current lifecycle/fault/mitigation summaries shared with Inspector, keyboard dismissal and viewport handling.
+
+Runtime additions now preserve existing shard elements, animate new arrivals and ownership changes, expose per-shard details and respect reduced motion. Build animation stays inside reserved component slots. Added six hover/summary tests, wired them into Make and registered the exact Java static module route. No new dependency, database work or infrastructure feature.
+
+Verification: browser red showed all nine headers overflowing; behavioral tests exposed incorrect availability and missing empty-shard detail before fixes. Full verification passed 28 Java tooling assertions, API tests, all 20 model/hover tests, syntax and 202 local documentation links. Browser evidence includes six shards, migration, new-tile animation, per-shard inspection, pointer movement, keyboard dismissal, automatic readiness update, cache fault/fix, narrow layout, motion off, cancel and reset. Details and residual phone readability constraints are in docs/ui-interaction-verification.md and the journal.
+
+Preserved concurrent Cursor contract/review commits. This repair neither accepts V0 nor starts A02. The human owns visual acceptance. No production readiness or measured-performance claim was made.

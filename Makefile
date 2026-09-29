@@ -49,12 +49,13 @@ setup db-init db-import db-status data-fetch doctor:
 test-java:
 	$(LAB) test
 test: test-java test-api
-	node --test tests/model.test.mjs
+	node --test tests/model.test.mjs tests/hover.test.mjs
 test-integration:
 	$(LAB) test-postgres
 verify: test
 	node --check prototype/app.mjs
 	node --check prototype/model.mjs
+	node --check prototype/hover.mjs
 	$(LAB) check-docs
 run-docker:
 	docker compose up --build -d

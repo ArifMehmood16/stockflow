@@ -159,3 +159,15 @@ Commands:
 ### Handoff validation
 
 The Java documentation checker passed **195 local links**. An ignored, one-off Java structure check verified **43 indexed cards**, every required section, sequential predecessor references, **ten matching review gates**, and all future task/gate statuses still unstarted. `git diff --check` passed; inspection confirmed this handoff changes documentation only. No runtime tests were rerun because no runtime code changed. The handoff was saved as `46bcbe6`; this follow-up records the observed validation without rewriting that commit. Start Cursor at A01 and request V0 before writable implementation.
+
+## 2026-09-29 — 0.4f layout, cursor hover and runtime additions
+
+Owner-directed prototype repair, independent of Cursor A01/V0. Browser measurements reproduced overflowing content in all nine card headers and in the workload action row. Reserved header/action grid rows, corrected shard spacing, separated topology rows and adjusted green routes to use gutters around other cards.
+
+The owner clarified that surrounding content may overlap and hover should stay near the cursor. Replaced the initial all-control avoidance approach with cursor-relative positioning, viewport flipping and clearance around only the inspected card. Overlays ignore pointer input. Hover and Inspector share dynamic build/fault/mitigation summaries. New shard buttons preserve identity across renders, animate only on arrival/ownership change and expose per-shard records/buckets/epoch. Build effects stay inside fixed slots and respect Motion off.
+
+Red evidence: the browser baseline overflow checks failed for all nine headers. New tests initially lacked the helper module; behavioral assertions then caught incorrect workload/failed-primary states and generic Ready instead of Empty shard. Green evidence: `make verify` passed 28 Java tooling assertions, the API suite, 20 model/hover tests, syntax checks and 202 local documentation links. Existing Maven/JDK warnings remain. The final disconnected-tooltip guard received a syntax/focused test check afterward.
+
+Browser checks covered desktop, Focus canvas, 375×812, pointer movement, keyboard focus/Escape, automatic Provisioning-to-Ready updates, stale-cache fault/mitigation, six-shard additions and migration controls, per-shard Inspector updates, reduced motion, cancel and reset. Final narrow S6 hover fit the viewport without covering its cluster card. No measured database traffic or Docker execution is claimed. Reproduction steps and observed results: [UI interaction verification](ui-interaction-verification.md).
+
+Diff review: no new dependency, credential, database operation or external-input boundary; the Java server only adds the exact `/hover.mjs` static route. Existing contract commits and V0 state are preserved. Restart an older Java preview before refreshing, so it serves the new module. Phone maps still shrink labels; use Inspector for readable detail.

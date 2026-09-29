@@ -87,6 +87,8 @@ Named volumes preserve PostgreSQL data and the dataset cache. The UI waits for a
 
 The canvas fits its available width and height without scrolling. Learning/guide panels scroll independently. **Focus canvas** temporarily expands the architecture; **Show learning path** restores the panels. Narrow screens preserve the full topology but scale labels down; use the inspector and focus view for detail. Motion can be disabled. The right-side walkthrough explains each operation, remaining cost and next action.
 
+Hover or keyboard-focus a component or individual shard for its current modeled state, build progress, fault or mitigation. Details follow the pointer, flip at viewport edges and keep the inspected card clear. They may overlap surrounding content and never intercept clicks. Moving to an action or pressing Escape dismisses them; clicking a component keeps its live details in the Inspector. If no overlay fits, the status strip provides a fallback. Build/readiness effects stay inside reserved card slots; new shards animate into their slots and flash when bucket ownership changes. Motion controls apply to these effects too. Hover values remain illustrative, not database telemetry.
+
 ## Verify and develop
 
 ```sh
