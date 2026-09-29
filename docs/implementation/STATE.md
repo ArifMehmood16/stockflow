@@ -16,10 +16,10 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 - A01: done — R3a correction `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7` on `codex/a01-v0-retention-authority`; prior correction `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`
 - A02: done — build implementation `da8ad31`, then owner-directed CI removal; evidence: [engineering journal](../engineering-journal.md)
 - A03: done — fixture implementation `6520b7d`, native catalog-reader correction `23c9ac6`; evidence: [engineering journal](../engineering-journal.md)
-- A04: done — scoped reads, run-issued credentials and denial tests; live small-fixture read verified; completion commit pending
-- A05: done — conditional decrement, durable idempotency and concurrency test; completion commit pending
-- A06: done — guarded release/expiry, restart and race tests; completion commit pending
-- A07: partial — native lifecycle, coverage, import and API integration passed; isolated Docker runtime smoke blocked by stopped daemon
+- A04: done — scoped reads, run-issued credentials and denial tests; live small-fixture read verified; `feca5dd`
+- A05: done — conditional decrement, durable idempotency and concurrency test; `f48ea77`
+- A06: done — guarded release/expiry, restart and race tests; `6910ab0`
+- A07: partial — native lifecycle, coverage, import and API integration passed at `b83703d`; isolated Docker runtime smoke blocked by stopped daemon
 - B01: todo
 - B02: todo
 - B03: todo
@@ -60,7 +60,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 ## Checkpoints
 
 - V0: accepted — reviewed A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`; prior changes_requested head `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`; packet: [reviews/V0.md](reviews/V0.md)
-- V1: not_requested — after A07; reviewed code commit: none; packet: none
+- V1: pending_review — native implementation head `b83703d`; Docker runtime smoke unavailable; packet: [reviews/V1.md](reviews/V1.md); independent verdict: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none
 - V4: not_requested — after D05; reviewed code commit: none; packet: none
