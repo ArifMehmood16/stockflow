@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f4f5f2" />
+    <meta name="theme-color" content="#0c1727" />
     <title>StockFlow — Inventory, under pressure</title>
     <link rel="stylesheet" href="/styles.css" />
   </head>
@@ -62,9 +62,8 @@
         <div class="notice">
           <span class="notice-mark">i</span>
           <p>
-            <strong>A working design, with illustrative numbers.</strong> This
-            preview models capacity. It does not benchmark Java, Redis or
-            PostgreSQL.
+            <strong>Scale sketch · Open Food Facts catalog planned.</strong> 1M
+            logical rows; no dataset loaded or real traffic generated.
           </p>
         </div>
         <section class="controls" aria-label="Workload controls">
@@ -78,13 +77,13 @@
             <input
               id="load"
               type="range"
-              min="10"
-              max="500"
-              step="10"
-              value="80"
+              min="1000"
+              max="250000"
+              step="1000"
+              value="8000"
             />
             <div class="range-labels">
-              <span>10 · steady</span><span>500 · burst</span>
+              <span>1k · steady</span><span>250k · flash sale</span>
             </div>
           </div>
           <div class="mix-control">
@@ -106,8 +105,14 @@
           <div class="section-heading">
             <div>
               <span class="tiny-label">LIVE TOPOLOGY</span>
-              <h2>Inventory service</h2>
+              <h2>
+                One evolving system
+                <span id="record-count">1,000,000 logical records</span>
+              </h2>
             </div>
+            <button id="focus-map" class="secondary" aria-pressed="false">
+              Focus canvas
+            </button>
             <div class="state-pill" id="run-state"><i></i> Traffic paused</div>
           </div>
           <div class="build-status" id="build-status" role="status">
@@ -120,7 +125,7 @@
           <div class="graph-scroll">
             <div class="graph-stage">
               <div class="graph" id="graph">
-                <svg class="edges" viewBox="0 0 960 670" aria-hidden="true">
+                <svg class="edges" viewBox="0 0 960 410" aria-hidden="true">
                   <defs>
                     <marker
                       id="arrow"
@@ -134,63 +139,63 @@
                       <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor" />
                     </marker>
                   </defs>
-                  <path id="edge-client" class="edge read" d="M202 316 H236" />
-                  <path id="edge-api" class="edge read" d="M412 316 H446" />
-                  <path id="edge-db" class="edge write" d="M622 334 H758" />
-                  <path id="edge-db-read" class="edge read" d="M622 304 H758" />
+                  <path id="edge-client" class="edge read" d="M202 184 H236" />
+                  <path id="edge-api" class="edge read" d="M412 184 H446" />
+                  <path id="edge-db" class="edge write" d="M622 196 H758" />
+                  <path id="edge-db-read" class="edge read" d="M622 178 H758" />
                   <path
                     id="edge-cache"
                     class="edge read optional"
-                    d="M550 264 V224 H696 V106 H758"
+                    d="M550 154 V131 H696 V62 H758"
                   />
                   <path
                     id="edge-replica"
                     class="edge replication optional"
-                    d="M894 430 V474"
+                    d="M894 251 V278"
                   />
                   <path
                     id="edge-replica-read"
                     class="edge read optional"
-                    d="M622 350 H696 V526 H758"
+                    d="M622 205 H696 V308 H758"
                   />
                   <path
                     id="edge-shard"
                     class="edge write optional"
-                    d="M534 430 V474"
+                    d="M534 251 V278"
                   />
                   <path
                     id="edge-api2"
                     class="edge read optional"
-                    d="M412 282 H426 V106 H446"
+                    d="M412 165 H426 V62 H446"
                   />
                   <path
                     id="edge-api2-db"
                     class="edge write optional"
-                    d="M622 146 H716 V350 H758"
+                    d="M622 86 H716 V205 H758"
                   />
                   <path
                     id="edge-green"
                     class="edge read optional"
-                    d="M324 264 V220"
+                    d="M324 154 V129"
                   />
-                  <text x="653" y="293">READ</text>
-                  <text x="653" y="355">WRITE</text>
-                  <text id="wal-label" x="903" y="458">WAL</text>
-                  <text id="cache-label" x="706" y="92">GET / SET</text>
+                  <text x="653" y="172">READ</text>
+                  <text x="653" y="208">WRITE</text>
+                  <text id="wal-label" x="903" y="268">WAL</text>
+                  <text id="cache-label" x="706" y="54">GET / SET</text>
                 </svg>
-                <div class="zone-label" style="left: 26px; top: 230px">
+                <div class="zone-label" style="left: 26px; top: 134px">
                   REQUEST PATH
                 </div>
-                <div class="zone-label" style="left: 26px; top: 55px">
+                <div class="zone-label" style="left: 26px; top: 32px">
                   ADD CAPACITY
                 </div>
-                <div class="zone-label" style="left: 26px; top: 484px">
+                <div class="zone-label" style="left: 26px; top: 284px">
                   RESILIENCE & DATA
                 </div>
                 <article
                   class="component-shell ready"
                   id="component-client"
-                  style="left: 26px; top: 264px"
+                  style="left: 26px; top: 154px"
                   aria-label="Workload component"
                 >
                   <button
@@ -218,7 +223,7 @@
                 <article
                   class="component-shell ready"
                   id="component-proxy"
-                  style="left: 236px; top: 264px"
+                  style="left: 236px; top: 154px"
                   aria-label="Traffic router component"
                 >
                   <button
@@ -246,7 +251,7 @@
                 <article
                   class="component-shell ready"
                   id="component-api"
-                  style="left: 446px; top: 264px"
+                  style="left: 446px; top: 154px"
                   aria-label="Inventory API component"
                 >
                   <button
@@ -274,7 +279,7 @@
                 <article
                   class="component-shell planned"
                   id="component-cache"
-                  style="left: 758px; top: 54px"
+                  style="left: 758px; top: 32px"
                   aria-label="Read cache component"
                 >
                   <button
@@ -302,7 +307,7 @@
                 <article
                   class="component-shell ready"
                   id="component-db"
-                  style="left: 758px; top: 264px"
+                  style="left: 758px; top: 154px"
                   aria-label="Primary database component"
                 >
                   <button
@@ -330,7 +335,7 @@
                 <article
                   class="component-shell planned"
                   id="component-replica"
-                  style="left: 758px; top: 474px"
+                  style="left: 758px; top: 278px"
                   aria-label="Read replica component"
                 >
                   <button
@@ -358,13 +363,13 @@
                 <article
                   class="component-shell planned"
                   id="component-shard"
-                  style="left: 446px; top: 474px"
-                  aria-label="Shard 02 component"
+                  style="left: 236px; top: 278px"
+                  aria-label="Shard cluster component"
                 >
                   <button
                     class="node inactive"
                     data-node="shard"
-                    aria-label="Inspect Shard 02"
+                    aria-label="Inspect Shard cluster"
                   >
                     <span class="node-top"
                       ><img
@@ -374,10 +379,14 @@
                       /><span class="node-state" id="shard-status"
                         >NOT BUILT</span
                       ></span
-                    ><strong id="shard-name">Shard 02</strong
+                    ><strong id="shard-name">Shard cluster</strong
                     ><span class="technology-name">PostgreSQL primary</span
                     ><small id="shard-meta">not built</small>
                   </button>
+                  <div
+                    id="shard-bank"
+                    aria-label="Records owned by each shard"
+                  ></div>
                   <div class="component-action" id="shard-actions"></div>
                   <div class="build-progress" aria-hidden="true">
                     <span></span>
@@ -386,7 +395,7 @@
                 <article
                   class="component-shell planned"
                   id="component-api2"
-                  style="left: 446px; top: 54px"
+                  style="left: 446px; top: 32px"
                   aria-label="Extra API instance component"
                 >
                   <button
@@ -414,7 +423,7 @@
                 <article
                   class="component-shell planned"
                   id="component-green"
-                  style="left: 236px; top: 54px"
+                  style="left: 236px; top: 32px"
                   aria-label="Green deployment component"
                 >
                   <button
@@ -442,6 +451,18 @@
                 <div class="hover-card" id="hover-card" hidden></div>
               </div>
             </div>
+          </div>
+          <div class="fault-console" aria-label="On-map fault controls">
+            <div class="fault-console-controls">
+              <span id="fault-target">Redis cache</span
+              ><label class="sr-only" for="fault-select">Failure scenario</label
+              ><select id="fault-select"></select
+              ><button id="inject-fault">Inject</button
+              ><button id="fix-fault">Apply fix</button
+              ><button id="recover-fault">Recover</button
+              ><span id="quality"></span>
+            </div>
+            <p id="fault-outcome"></p>
           </div>
           <div class="graph-footer">
             <div class="legend">
