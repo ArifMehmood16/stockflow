@@ -137,3 +137,11 @@ Runtime additions now preserve existing shard elements, animate new arrivals and
 Verification: browser red showed all nine headers overflowing; behavioral tests exposed incorrect availability and missing empty-shard detail before fixes. Full verification passed 28 Java tooling assertions, API tests, all 20 model/hover tests, syntax and 202 local documentation links. Browser evidence includes six shards, migration, new-tile animation, per-shard inspection, pointer movement, keyboard dismissal, automatic readiness update, cache fault/fix, narrow layout, motion off, cancel and reset. Details and residual phone readability constraints are in docs/ui-interaction-verification.md and the journal.
 
 Preserved concurrent Cursor contract/review commits. This repair neither accepts V0 nor starts A02. The human owns visual acceptance. No production readiness or measured-performance claim was made.
+
+## 010 — Review checkpoint V0 independently
+
+Date: 2026-09-29. Tool: Codex. Owner explicitly requested checkpoint V0 review; draft for human review.
+
+Reviewed only A01's docs range `9eb2e03..7772cbe`, its V0 packet and relevant baseline/schema/contracts. Confirmed diagnostic preservation and run ownership are described, but requested three corrections: recover correctly from duplicate-key transaction failure before replay; define session-token issuance separately from tenant credential issuance; align retention permissions and timestamps with the promised cleanup. Also noted the small-fixture assumption of at least 100 catalog products. Verified PostgreSQL behavior against official version-17 transaction/INSERT docs rather than executing a migration.
+
+Recorded changes_requested in the packet and STATE. Java link check and diff whitespace check passed; no runtime code, credential or database was changed for this review. Did not approve the proposed contract or begin A02. Cursor should correct A01 and the owner should request V0 recheck.

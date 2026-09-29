@@ -4,10 +4,10 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Planning branch at handoff: `codex/cursor-implementation-handoff`; use the current Git history rather than assuming an old branch is checked out.
-- Current task: **A01** is implemented and self-checked. Stop for V0. Do not start A02.
-- Next review: **V0**.
+- Current task: **A01** needs V0 corrections R1–R3 in the review packet. Do not start A02.
+- Next review: **V0 recheck**, after Cursor commits the documentation corrections.
 - Last accepted Cursor checkpoint: **none**.
-- Active blocker: V0 is not accepted. Docker runtime verification remains untested and was not required for this documentation task.
+- Active blocker: V0 changes_requested — transaction replay, session-token issuance and retention authority/clock are inconsistent. Docker runtime verification remains untested and was not required for this documentation task.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Cursor may prepare pending review but cannot accept its own checkpoint. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
@@ -59,7 +59,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Checkpoints
 
-- V0: pending_review — after A01; reviewed code commit: `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`; packet: [reviews/V0.md](reviews/V0.md)
+- V0: changes_requested — 2026-09-29; after A01; reviewed documentation commit: `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`; findings R1–R3: [reviews/V0.md](reviews/V0.md)
 - V1: not_requested — after A07; reviewed code commit: none; packet: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none

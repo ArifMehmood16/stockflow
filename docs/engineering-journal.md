@@ -171,3 +171,11 @@ Red evidence: the browser baseline overflow checks failed for all nine headers. 
 Browser checks covered desktop, Focus canvas, 375×812, pointer movement, keyboard focus/Escape, automatic Provisioning-to-Ready updates, stale-cache fault/mitigation, six-shard additions and migration controls, per-shard Inspector updates, reduced motion, cancel and reset. Final narrow S6 hover fit the viewport without covering its cluster card. No measured database traffic or Docker execution is claimed. Reproduction steps and observed results: [UI interaction verification](ui-interaction-verification.md).
 
 Diff review: no new dependency, credential, database operation or external-input boundary; the Java server only adds the exact `/hover.mjs` static route. Existing contract commits and V0 state are preserved. Restart an older Java preview before refreshing, so it serves the new module. Phone maps still shrink labels; use Inspector for readable detail.
+
+## 2026-09-29 — Independent V0 review
+
+Reviewed A01 documentation at `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9` against base `9eb2e03` and the V0 packet. Confirmed the range changes documentation only; compared the imported schema and actual read-only service configuration with the proposed run boundary. The separately saved UI repair `ff62408` is outside this review.
+
+Verdict: changes_requested. R1: uniqueness-error replay cannot continue in an aborted PostgreSQL transaction. R2: the required reservation session token has no authorized issuer/interface. R3: the retention worker has no DELETE authority, and the schema lacks a terminal-retention timestamp. Smaller-than-100 catalog behavior is a non-blocking clarification. PostgreSQL 17 transaction and INSERT documentation independently support R1; sources are linked in the packet.
+
+Checks: Git diff scope, line-by-line ADR/contract/schema review, Java documentation check (203 local links before adding review links), and whitespace check passed. No migration or database write was run. Runtime tests from the UI task are not evidence that this proposed writable contract works. Updated the V0 packet and STATE; A02 remains blocked pending corrections and a requested recheck.
