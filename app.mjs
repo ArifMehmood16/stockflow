@@ -13,7 +13,7 @@ let state = initialState();
 let traffic;
 let realMode = false;
 let realStatus = null;
-let realRate = 2;
+let realRate = 1000;
 let realError = "";
 let scalePending = false;
 let chapter = 0;
@@ -452,11 +452,11 @@ function renderGuide() {
   const c = chapters[chapter];
   if (realMode && chapter === 0) {
     const s = realStatus;
-    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Follow a committed stock cycle.</h3><p class="guide-intro">Each cycle reads stock, reserves one unit, releases it, then reads the new version from PostgreSQL.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose 4–200 target requests/s</div><p>Use the workload slider inside the canvas. One cycle makes four local API requests. Slow or failed cycles can lower the actual request rate; requests sent counts actual dispatches since preview startup.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start a 30-second run</div><p>Select Start real traffic on the workload. You can stop it at any time.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Inspect what happened</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">WHAT TO NOTICE</span><p>The stock quantity returns after release while its version advances. Completed, failed and dropped are measured cycles. The other architecture controls are still model lessons.</p></div>`;
+    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Load the inventory API.</h3><p class="guide-intro">Each arrival sends one stock-read request through Java to PostgreSQL. This read workload does not reserve or change stock.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose up to 10,000 requests/s</div><p>Set the target in the workload dock. The generator continues offering that rate until you stop. Actual throughput depends on available capacity.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start and leave it running</div><p>Select Start real traffic. There is no automatic timeout; runs can continue beyond five minutes. Stop before changing the rate.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Compare target and actual rate</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">DEMO LIMITS</span><p>256 maximum in-flight requests from this generator; each API has 16 request threads, a 64-connection HTTP limit, and a small database pool. Dropped requests were not sent because the generator was full. Failures were dispatched but did not complete successfully. Set STOCKFLOW_RUN_POOL_SIZE=1 in .env and restart for a constrained demo (default 4; range 1–16). This profile reads one SKU repeatedly. All processes share your machine, so this is a capacity lesson, not a production benchmark.</p></div>`;
     $("real-guide-result").textContent = s?.offered
-      ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Last path: ${s.lastPath || "in progress"}. Stock ${s.available}, version ${s.version}.`
-      : "Watch offered and completed cycles, the latest elapsed time, stock and version in the workload dock.";
-    $("reflection").textContent = "Why does the stock version rise even when the released quantity returns?";
+      ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Latest stock ${s.available}, version ${s.version}.`
+      : "Watch actual sent/completed requests per second, failures and generator drops in the workload dock.";
+    $("reflection").textContent = "Does another API improve throughput, or does the shared database remain the bottleneck?";
     $("guide-content").querySelector(".tradeoff").insertAdjacentHTML("beforebegin",
       '<div class="step"><div class="step-heading"><span class="step-num">4</span>Add a real API instance</div><p>Select Add real API instance on the extra API card. It becomes routable only after readiness succeeds. Repeat the same load and compare the per-instance request counts. Both APIs still share one PostgreSQL primary. Stop traffic before removing the extra instance.</p></div>');
     return;
@@ -528,7 +528,7 @@ function renderActions() {
   $("client-actions").innerHTML =
     button("run", realMode ? (running ? "Real flow running" : "Start real traffic")
       : (running ? "Flow running" : "Start traffic"), running) +
-    button("burst", realMode ? "Set 40 req/s" : "Send 30,000 req/s", realMode && running);
+    button("burst", realMode ? "Set 10,000 req/s" : "Send 30,000 req/s", realMode && running);
   $("proxy-actions").innerHTML = button(
     "deploy",
     state.green ? "Roll back to blue" : "Switch to green",
@@ -828,8 +828,8 @@ function act(action) {
     return;
   }
   if (realMode && action === "burst") {
-    realRate = 10;
-    log("Real load set to 40 target req/s (10 cycles/s) for the next run.");
+    realRate = 10000;
+    log("Real load set to 10,000 req/s for the next run.");
     render();
     return;
   }
@@ -946,12 +946,12 @@ $("load").oninput = (e) => {
   render();
 };
 $("load").onchange = () => log(realMode
-  ? `Real load set to ${realRate * 4} target req/s (${realRate} cycles/s) for the next run.`
+  ? `Real load set to ${realRate} target req/s for the next run.`
   : `Offered load changed to ${state.rps} req/s.`);
 for (const [id, direction] of [["load-down", -1], ["load-up", 1]]) {
   $(id).onclick = () => {
     if (realMode) {
-      realRate = Math.max(1, Math.min(50, realRate + direction));
+      realRate = Math.max(100, Math.min(10000, realRate + direction * 100));
       render();
       return;
     }
@@ -990,37 +990,39 @@ function paintReal() {
   const s = realStatus;
   $("telemetry-mode").textContent = "REAL";
   $("load-label").textContent = "Target requests/s";
-  $("client-meta").textContent = `${realRate * 4} target req/s · ${realRate} cycles/s`;
+  $("client-meta").textContent = `${realRate} target req/s`;
   $("load").value = realRate;
   $("load").disabled = Boolean(s?.running);
-  $("load-value").textContent = `${realRate * 4} req/s`;
-  $("load").setAttribute("aria-valuetext", `${realRate * 4} target requests per second, ${realRate} cycles per second`);
-  $("load-down").disabled = Boolean(s?.running) || realRate <= 1;
-  $("load-up").disabled = Boolean(s?.running) || realRate >= 50;
-  $("load-step-note").textContent = "4 requests/cycle · 4–200 target req/s · actual rate may be lower";
-  $("traffic-mix").textContent = "Read → reserve → release → read";
-  $("completed-label").textContent = "Cycles completed";
-  $("db-demand-label").textContent = "Requests sent (total)";
-  $("rejected-label").textContent = "Cycles failed / dropped";
+  $("load-value").textContent = `${realRate} req/s`;
+  $("load").setAttribute("aria-valuetext", `${realRate} target requests per second`);
+  $("load-down").disabled = Boolean(s?.running) || realRate <= 100;
+  $("load-up").disabled = Boolean(s?.running) || realRate >= 10000;
+  $("load-step-note").textContent = `Until stopped · 256 in flight · DB pool ${s?.databasePoolSize ?? 4}/API · 16 API threads`;
+  $("traffic-mix").textContent = "Read → Java API → PostgreSQL";
+  $("completed-label").textContent = "Requests completed";
+  $("db-demand-label").textContent = "Requests sent";
+  $("rejected-label").textContent = "Failed / not sent";
   $("completed").textContent = String(s?.completed ?? 0);
-  $("db-demand").textContent = String((s?.primaryRequests ?? 0) + (s?.secondaryRequests ?? 0));
+  $("db-demand").textContent = String(s?.started ?? 0);
   $("rejected").textContent = `${s?.failed ?? 0} / ${s?.dropped ?? 0}`;
-  $("db-pressure").textContent = `${s?.inFlight ?? 0} in flight`;
+  $("db-pressure").textContent = `${s?.inFlight ?? 0}/256 in flight`;
   $("api-meta").textContent = `${s?.primaryRequests ?? 0} dispatched HTTP requests`;
   $("api2-meta").textContent = s?.instances > 1
     ? `${s.secondaryRequests} dispatched HTTP requests` : "not running";
   $("proxy-meta").textContent = "Java round-robin dispatch";
-  document.querySelector(".canvas-telemetry").setAttribute("aria-label", "Real inventory workload and cycle counts");
-  document.querySelector(".canvas-telemetry .metrics").setAttribute("aria-label", "Measured inventory cycles");
+  document.querySelector(".canvas-telemetry").setAttribute("aria-label", "Real inventory request workload");
+  document.querySelector(".canvas-telemetry .metrics").setAttribute("aria-label", "Measured inventory requests");
   $("run").textContent = s?.running ? "Ⅱ Stop real traffic" : "▶ Start real traffic";
   $("run-state").textContent = s?.running ? "Real traffic active" : "Real traffic ready";
   $("run-state").classList.toggle("active", Boolean(s?.running));
   $("real-detail").hidden = false;
+  const elapsedSeconds = Math.max(0.001, (s?.elapsedMillis ?? 0) / 1000);
+  const rates = `${Math.floor(elapsedSeconds)}s · ${Math.round((s?.started ?? 0) / elapsedSeconds)} sent/s · ${Math.round((s?.completed ?? 0) / elapsedSeconds)} completed/s (run average)`;
   $("real-detail").textContent = realError || (s?.lastError
-    ? `Last error: ${s.lastError}`
+    ? `${rates} · Last error: ${s.lastError}`
     : s?.completed
-      ? `Last cycle ${s.lastElapsedMillis} ms · stock ${s.available} · version ${s.version} · ${s.instances ?? 1} API(s)`
-      : "No completed cycle yet · stock and version pending");
+      ? `${rates} · last request ${s.lastElapsedMillis} ms`
+      : "No completed request yet · stock and version pending");
 }
 function updateReal(status) {
   const wasRunning = running;
@@ -1029,6 +1031,7 @@ function updateReal(status) {
   const oldBuilding = Boolean(state.build);
   realStatus = status;
   running = Boolean(status.running);
+  if (running && status.targetRate) realRate = status.targetRate;
   state = { ...state, instances: status.instances ?? 1,
     build: status.building || (scalePending && (status.instances ?? 1) < 2)
       ? { action: "scale", stage: "provisioning" } : null };
@@ -1052,8 +1055,8 @@ function realSnapshot(id) {
     api2: { status: state.build ? "Waiting for readiness" : state.instances > 1 ? "Ready · available for traffic" : "Not running",
       detail: `${s?.secondaryRequests ?? 0} HTTP requests dispatched. Add starts one owned JVM; removal requires stopped, drained traffic.` },
     proxy: { status: "Java request dispatcher", detail: "Alternates HTTP requests between ready API instances. No NGINX process is running in this native experiment." },
-    db: { status: "Shared PostgreSQL primary", detail: s?.completed ? `Latest observed stock ${s.available}, version ${s.version}. A second API adds connections, not database capacity.` : "No completed cycle yet. Both API instances use the same run-owned inventory." },
-    client: { status: s?.running ? "Real workload active" : "Real workload stopped", detail: `${s?.completed ?? 0} completed cycles. Each cycle reads, reserves, releases, then reads stock again.` },
+    db: { status: "Shared PostgreSQL primary", detail: s?.completed ? `Latest observed stock ${s.available}, version ${s.version}. A second API adds connections, not database capacity.` : "No completed request yet. Both API instances use the same run-owned inventory." },
+    client: { status: s?.running ? "Real workload active" : "Real workload stopped", detail: `${s?.completed ?? 0} completed reads. One HTTP request per arrival; runs until stopped.` },
   };
   return snapshots[id] || null;
 }
@@ -1088,7 +1091,7 @@ async function toggleReal() {
     const status = realStatus?.running ? await traffic.stop() : await traffic.start(realRate);
     realError = "";
     updateReal(status);
-    log(realStatus.running ? "Real inventory cycles started on the owned fixture."
+    log(realStatus.running ? "Real inventory reads started; runs until stopped."
       : "Real inventory traffic stopped; committed stock is preserved.");
   } catch (error) {
     showRealError(error);
@@ -1105,13 +1108,13 @@ async function initReal() {
     const status = await traffic.status();
     realMode = true;
     $("preview-mode").textContent = "Owned Java run";
-    $("preview-detail").textContent = "Real inventory cycles enabled. Other components remain illustrative.";
-    $("scale-notice").textContent = "The workload dock shows real Java → PostgreSQL cycles. The million-row map and unbuilt solutions remain illustrative.";
-    $("load").min = 1;
-    $("load").max = 50;
-    $("load").step = 1;
-    $("load-down").setAttribute("aria-label", "Decrease real load by one cycle per second");
-    $("load-up").setAttribute("aria-label", "Increase real load by one cycle per second");
+    $("preview-detail").textContent = "Real inventory read requests enabled. Runs until stopped.";
+    $("scale-notice").textContent = "Real read workload · fixed demo limits are shown in the dock and guide. The million-row map and unbuilt solutions remain illustrative.";
+    $("load").min = 100;
+    $("load").max = 10000;
+    $("load").step = 100;
+    $("load-down").setAttribute("aria-label", "Decrease target by 100 requests per second");
+    $("load-up").setAttribute("aria-label", "Increase target by 100 requests per second");
     $("load").setAttribute("aria-describedby", "load-step-note");
     updateReal(status);
     render();
