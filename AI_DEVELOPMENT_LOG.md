@@ -197,3 +197,9 @@ Date: 2026-09-29. Tool: Codex. Owner requested review of completed work and cont
 Reviewed the already-merged canvas change and the separate A01 retention correction. The canvas remained illustrative, and `make verify` passed. The A01 contract now states its cleanup role has table-wide DELETE on two history tables and gives the 24-hour predicates to a trusted worker. This resolves the earlier false claim of database-enforced row retention. V0 was accepted on correction head `c5e8599`; V1 must test worker predicates and keep the cleanup credential out of HTTP handlers. The smaller-catalog fixture wording remains a non-blocking follow-up.
 
 No migration, runtime write, or Docker fault was performed in this documentation review. The owner requested that Codex and ChatGPT continue development without Cursor; the workflow documents will be updated separately.
+
+## 017 — Reproduce the Java build and add CI
+
+Date: 2026-09-29. Tool: Codex. Task: A02; draft for human review.
+
+The owner switched implementation from Cursor to Codex/ChatGPT. Updated the handoff, then pinned official multi-architecture Java/PostgreSQL image indexes, added Java/Maven toolchain enforcement, compiler warnings, JaCoCo core-policy thresholds, `make lint`, and a read-only commit-pinned CI workflow. Kept the one-module Spring service and separate manual database integration path. The clean-room build without installed Maven succeeded; cached offline verification and `make verify` passed. The compiled architecture guard and coverage threshold were deliberately exercised with temporary failing probes, then returned to green. Exact evidence, measured package coverage, warning inventory and unavailable Docker daemon are in the engineering journal. CI has not yet run on GitHub at this log entry. No database data or credentials were changed.
