@@ -14,7 +14,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 ## Tasks
 
 - A01: done — R3a correction `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7` on `codex/a01-v0-retention-authority`; prior correction `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`
-- A02: done — implementation `da8ad31`; evidence: [engineering journal](../engineering-journal.md); GitHub CI result pending pull-request run
+- A02: done — build implementation `da8ad31`, then owner-directed CI removal; evidence: [engineering journal](../engineering-journal.md)
 - A03: todo
 - A04: todo
 - A05: todo

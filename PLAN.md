@@ -37,7 +37,7 @@ Acceptance: another developer can locate responsibilities, schemas, lesson steps
 - [ ] 1.2 Implement Inventory and Reservation use cases. Red: concurrent reservations cannot reduce available stock below zero. Real SQL atomic update and transaction; idempotency conflict/replay contracts.
 - [ ] 1.3 PostgreSQL migration + fixture seed. Red: tenants cannot read or mutate each other's SKU; repeated release cannot increase stock twice. Add reservation expiry semantics.
 - [ ] 1.4 Explicit request/response DTOs, errors and limits. Red: malformed quantity / tenant mismatch rejected safely; no exception body leaks.
-- [ ] 1.5 Host Make path (no mandatory Docker), equivalent Compose baseline, tool doctor, CI build/static analysis/unit suite; explicit integration command.
+- [ ] 1.5 Host Make path (no mandatory Docker), equivalent Compose baseline, tool doctor, local build/static analysis/unit suite; explicit integration command. Automated CI/CD is deferred by owner direction.
 
 Expected files: `pom.xml`, `tools/MavenBuild.java`, `services/inventory-service/`, `infra/`, `tools/`, `Makefile`, `compose.yaml`, `docs/`. Gate: isolated concurrent PostgreSQL tests, restart persistence, fresh-clone host + Docker smoke, meaningful coverage (target 80% line / 70% branch for domain/application), no stock or tenant invariant violation. Defaults should pass with no paid service. Capture baseline with raw fixture counts; no speed claim yet. The implemented Java Maven launcher replaces the originally proposed shell wrapper.
 

@@ -203,3 +203,9 @@ No migration, runtime write, or Docker fault was performed in this documentation
 Date: 2026-09-29. Tool: Codex. Task: A02; draft for human review.
 
 The owner switched implementation from Cursor to Codex/ChatGPT. Updated the handoff, then pinned official multi-architecture Java/PostgreSQL image indexes, added Java/Maven toolchain enforcement, compiler warnings, JaCoCo core-policy thresholds, `make lint`, and a read-only commit-pinned CI workflow. Kept the one-module Spring service and separate manual database integration path. The clean-room build without installed Maven succeeded; cached offline verification and `make verify` passed. The compiled architecture guard and coverage threshold were deliberately exercised with temporary failing probes, then returned to green. Exact evidence, measured package coverage, warning inventory and unavailable Docker daemon are in the engineering journal. CI has not yet run on GitHub at this log entry. No database data or credentials were changed.
+
+## 018 — Redirect effort to functional backend scenarios
+
+Date: 2026-09-29. Tool: Codex. Owner instruction; draft for human review.
+
+The owner clarified that UI-visible scenarios need real backend and resource behavior, and that CI/CD and Docker polish are not priorities. The A02 GitHub job had passed, but its workflow was removed from the pull request. Local Java build checks and the verified image references remain. Work now continues with A03's database-backed writable fixture before moving through reservation and resource scenarios. No CI/CD completion is claimed.
