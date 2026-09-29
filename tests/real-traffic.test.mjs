@@ -51,3 +51,35 @@ test("opening or changing the fault panel cannot enable model faults during real
   }
   assert.match(node("fault-outcome").textContent, /model preview/i);
 });
+
+test("real workload distinguishes request target, dispatched requests and completed cycles", async () => {
+  const { runInNewContext } = await import("node:vm");
+  const app = await readFile(new URL("../prototype/app.mjs", import.meta.url), "utf8");
+  const paint = app.slice(app.indexOf("function paintReal()"), app.indexOf("function updateReal("));
+  const nodes = {};
+  const node = id => nodes[id] ??= { setAttribute() {}, classList: { toggle() {} } };
+  runInNewContext(`${paint}\npaintReal();`, {
+    realMode: true, realRate: 2, realError: "", $: node,
+    realStatus: { completed: 1, offered: 2, primaryRequests: 3, secondaryRequests: 2 },
+    document: { querySelector: node },
+  });
+  assert.match(node("load-value").textContent, /8.*req\/s/);
+  assert.match(node("load-step-note").textContent, /4 requests/);
+  assert.equal(node("db-demand").textContent, "5");
+  assert.equal(node("db-demand-label").textContent, "Requests sent (total)");
+  assert.equal(node("completed-label").textContent, "Cycles completed");
+});
+
+test("status polling does not erase a failed user action", async () => {
+  const { runInNewContext } = await import("node:vm");
+  const app = await readFile(new URL("../prototype/app.mjs", import.meta.url), "utf8");
+  const update = app.slice(app.indexOf("function updateReal("), app.indexOf("function realSnapshot("));
+  const context = {
+    running: false, realStatus: null, realError: "Traffic control returned 403",
+    state: { instances: 1 }, scalePending: false, pinned: false,
+    paintReal() {}, renderGuide() {}, renderHover() {},
+    $: () => ({ classList: { toggle() {} } }),
+  };
+  runInNewContext(`${update}\nupdateReal({running: false, instances: 1, inFlight: 0});`, context);
+  assert.equal(context.realError, "Traffic control returned 403");
+});

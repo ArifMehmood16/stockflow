@@ -115,7 +115,8 @@ final class TrafficControl implements AutoCloseable {
         }
         String origin = exchange.getRequestHeaders().getFirst("Origin");
         String expected = "http://127.0.0.1:" + server.getAddress().getPort();
-        if (origin != null && !origin.equals(expected)) {
+        String localhost = "http://localhost:" + server.getAddress().getPort();
+        if (origin != null && !origin.equals(expected) && !origin.equals(localhost)) {
           reply(exchange, 403, "{}");
           return;
         }

@@ -191,9 +191,10 @@ public final class ToolTests {
       String base = "http://127.0.0.1:" + server.getAddress().getPort();
       var start = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base
           + "/lab/traffic/start?rate=5&seconds=2&concurrency=1"))
+          .header("Origin", "http://localhost:" + server.getAddress().getPort())
           .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
       check(client.send(start, java.net.http.HttpResponse.BodyHandlers.ofString()).statusCode() == 200,
-          "Local control starts a bounded run");
+          "Localhost browser origin starts a bounded run");
       var status = client.send(java.net.http.HttpRequest.newBuilder(
           java.net.URI.create(base + "/lab/traffic")).build(),
           java.net.http.HttpResponse.BodyHandlers.ofString());
@@ -206,6 +207,11 @@ public final class ToolTests {
           .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
       check(client.send(hostile, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 403,
           "Foreign browser origins cannot control local traffic");
+      var wrongPort = java.net.http.HttpRequest.newBuilder(start.uri())
+          .header("Origin", "http://localhost:1")
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(wrongPort, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 403,
+          "Other localhost ports cannot control traffic");
       var add = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/lab/traffic/add-instance"))
           .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
       check(client.send(add, java.net.http.HttpResponse.BodyHandlers.ofString()).body()

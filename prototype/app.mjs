@@ -452,7 +452,7 @@ function renderGuide() {
   const c = chapters[chapter];
   if (realMode && chapter === 0) {
     const s = realStatus;
-    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Follow a committed stock cycle.</h3><p class="guide-intro">Each cycle reads stock, reserves one unit, releases it, then reads the new version from PostgreSQL.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose 1–50 cycles/s</div><p>Use the workload slider inside the canvas. One cycle makes four local API requests.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start a 30-second run</div><p>Select Start real traffic on the workload. You can stop it at any time.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Inspect what happened</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">WHAT TO NOTICE</span><p>The stock quantity returns after release while its version advances. Completed, failed and dropped are measured cycles. The other architecture controls are still model lessons.</p></div>`;
+    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Follow a committed stock cycle.</h3><p class="guide-intro">Each cycle reads stock, reserves one unit, releases it, then reads the new version from PostgreSQL.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose 4–200 target requests/s</div><p>Use the workload slider inside the canvas. One cycle makes four local API requests. Slow or failed cycles can lower the actual request rate; requests sent counts actual dispatches since preview startup.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start a 30-second run</div><p>Select Start real traffic on the workload. You can stop it at any time.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Inspect what happened</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">WHAT TO NOTICE</span><p>The stock quantity returns after release while its version advances. Completed, failed and dropped are measured cycles. The other architecture controls are still model lessons.</p></div>`;
     $("real-guide-result").textContent = s?.offered
       ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Last path: ${s.lastPath || "in progress"}. Stock ${s.available}, version ${s.version}.`
       : "Watch offered and completed cycles, the latest elapsed time, stock and version in the workload dock.";
@@ -528,7 +528,7 @@ function renderActions() {
   $("client-actions").innerHTML =
     button("run", realMode ? (running ? "Real flow running" : "Start real traffic")
       : (running ? "Flow running" : "Start traffic"), running) +
-    button("burst", realMode ? "Set 10 cycles/s" : "Send 30,000 req/s", realMode && running);
+    button("burst", realMode ? "Set 40 req/s" : "Send 30,000 req/s", realMode && running);
   $("proxy-actions").innerHTML = button(
     "deploy",
     state.green ? "Roll back to blue" : "Switch to green",
@@ -829,7 +829,7 @@ function act(action) {
   }
   if (realMode && action === "burst") {
     realRate = 10;
-    log("Real load set to 10 cycles/s for the next run.");
+    log("Real load set to 40 target req/s (10 cycles/s) for the next run.");
     render();
     return;
   }
@@ -946,7 +946,7 @@ $("load").oninput = (e) => {
   render();
 };
 $("load").onchange = () => log(realMode
-  ? `Real load set to ${realRate} cycles/s for the next run.`
+  ? `Real load set to ${realRate * 4} target req/s (${realRate} cycles/s) for the next run.`
   : `Offered load changed to ${state.rps} req/s.`);
 for (const [id, direction] of [["load-down", -1], ["load-up", 1]]) {
   $(id).onclick = () => {
@@ -989,20 +989,21 @@ function paintReal() {
   if (!realMode) return;
   const s = realStatus;
   $("telemetry-mode").textContent = "REAL";
-  $("load-label").textContent = "Offered cycles/s";
-  $("client-meta").textContent = `${realRate} selected cycles/s · Java fixture`;
+  $("load-label").textContent = "Target requests/s";
+  $("client-meta").textContent = `${realRate * 4} target req/s · ${realRate} cycles/s`;
   $("load").value = realRate;
   $("load").disabled = Boolean(s?.running);
-  $("load-value").textContent = `${realRate} cycles/s`;
+  $("load-value").textContent = `${realRate * 4} req/s`;
+  $("load").setAttribute("aria-valuetext", `${realRate * 4} target requests per second, ${realRate} cycles per second`);
   $("load-down").disabled = Boolean(s?.running) || realRate <= 1;
   $("load-up").disabled = Boolean(s?.running) || realRate >= 50;
-  $("load-step-note").textContent = "1–50 cycles/s · 30s · max 2 concurrent";
+  $("load-step-note").textContent = "4 requests/cycle · 4–200 target req/s · actual rate may be lower";
   $("traffic-mix").textContent = "Read → reserve → release → read";
-  $("completed-label").textContent = "Completed";
-  $("db-demand-label").textContent = "Offered";
-  $("rejected-label").textContent = "Failed / dropped";
+  $("completed-label").textContent = "Cycles completed";
+  $("db-demand-label").textContent = "Requests sent (total)";
+  $("rejected-label").textContent = "Cycles failed / dropped";
   $("completed").textContent = String(s?.completed ?? 0);
-  $("db-demand").textContent = String(s?.offered ?? 0);
+  $("db-demand").textContent = String((s?.primaryRequests ?? 0) + (s?.secondaryRequests ?? 0));
   $("rejected").textContent = `${s?.failed ?? 0} / ${s?.dropped ?? 0}`;
   $("db-pressure").textContent = `${s?.inFlight ?? 0} in flight`;
   $("api-meta").textContent = `${s?.primaryRequests ?? 0} dispatched HTTP requests`;
@@ -1027,7 +1028,6 @@ function updateReal(status) {
   const oldInstances = state.instances;
   const oldBuilding = Boolean(state.build);
   realStatus = status;
-  realError = "";
   running = Boolean(status.running);
   state = { ...state, instances: status.instances ?? 1,
     build: status.building || (scalePending && (status.instances ?? 1) < 2)
@@ -1064,6 +1064,7 @@ async function changeInstance(add) {
   render();
   try {
     const status = await (add ? traffic.addInstance() : traffic.removeInstance());
+    realError = "";
     scalePending = false;
     updateReal(status);
     routeNotice = add ? "Second Java API ready. Requests now alternate between both instances; PostgreSQL is shared."
@@ -1084,7 +1085,9 @@ function showRealError(error) {
 async function toggleReal() {
   $("run").disabled = true;
   try {
-    updateReal(realStatus?.running ? await traffic.stop() : await traffic.start(realRate));
+    const status = realStatus?.running ? await traffic.stop() : await traffic.start(realRate);
+    realError = "";
+    updateReal(status);
     log(realStatus.running ? "Real inventory cycles started on the owned fixture."
       : "Real inventory traffic stopped; committed stock is preserved.");
   } catch (error) {
