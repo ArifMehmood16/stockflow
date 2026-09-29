@@ -24,10 +24,15 @@ Use `make preview` (or an unused `PORT`) and refresh after restarting the Java p
 8. Build green, cache and replica; switch at the router. Paths must go through the gutters around other cards. Test rollback and reset; no stale tooltip or removed shard should remain selected visually.
 9. Drag blank canvas space, use the zoom buttons and scroll over the diagram. Confirm pointer-centered zoom, bounded panning, and Fit system. Focus the canvas and use arrows, +/− and 0. Keyboard focus must bring offscreen component controls into view. Repeat at 375px width without horizontal page overflow.
 10. Build a component while zoomed and compare the transform before/after: it must not reset to Fit. Check hover placement after navigating. Inspect the replica's incoming paths in blue and green: REPLICA READ is green; ASYNC WAL is gold; PRIMARY WRITE remains purple and ends at the primary. Replica crash disables its two paths and restores primary reads.
+11. In the canvas, use the load dock’s −/+ buttons twice to reach 30,000 req/s and check completed, DB demand and rejected values change. The stepper and slider should use 10,000 req/s intervals. Open a component’s ⚡ Faults drawer, verify its target and buttons, then collapse it. Check dock scrolling and canvas panning remain independent at 1280×720 and 375×812.
 
 Useful browser measurements: each `.node`, `.component-action` and `.shard-cell` should have `scrollHeight <= clientHeight + 1`; each `.component-shell` bounding rectangle should be within `.graph-scroll`; a visible tooltip rectangle must not intersect the inspected card. Tooltip `pointer-events` must be `none`.
 
 The card-containment check applies in Fit mode. A deliberately zoomed/panned view may clip components; hover and focus must use the transformed positions.
+
+## Observed canvas-dock verification, 2026-09-29
+
+At 1280×720, the canvas measured 796×421 px. The 154×401 px load dock had no internal overflow, the collapsed fault tab was 38×127 px, and the page had no horizontal overflow. Two + clicks selected 30,000 req/s; the model showed 12,000 completed, 30,000 DB demand against 12,000 capacity, and 18,000 rejected requests/s. Opening Primary database Faults selected that target and focused the scenario selector. Opening Redis Faults selected Redis; Inject stayed disabled until Redis is built. The open drawer remained within the canvas and had no internal overflow. At 375×812, the canvas measured 346×469 px, the dock had no internal overflow, both load and rejected values were visible, and the page had no horizontal overflow. The diagram requires pan/zoom or Inspector for readable phone details. These are browser model values, not measured service traffic.
 
 ## Observed verification, 2026-09-29
 

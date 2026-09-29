@@ -200,6 +200,12 @@ Red/green: new module initially absent; route-clearance regression then found a 
 
 No new dependency or external-input boundary. Exact static module route added to the Java allowlist. No database import, infrastructure fault or Docker run. Cursor's V0 corrections are preserved and not reviewed by this UI task. An existing Java preview must restart to serve the new module.
 
+## 2026-09-29 — Canvas load and fault docks
+
+Owner requested moving the fault bar and load/capacity metrics into the animation to free vertical space. Removed their full-width rows. The canvas now has an expanded compact vertical load/metrics dock and a collapsible vertical fault drawer. Fault buttons on components open the drawer with that component selected. Load changes use 10,000 req/s intervals and remain bounded from 10,000 to 250,000. Fit reserves dock edges on wider screens; panning and zooming ignore input on the docks. The prototype remains illustrative.
+
+Red/green: a model test first failed on the prior 8,000 req/s baseline; it passed after quantizing load. A topology test first failed because Fit ignored the dock inset; it passed after inset-aware fitting. `make verify` passed 28 Java tooling assertions, Maven API tests, 28 frontend tests, JavaScript syntax and 207 local documentation links. Browser checks at 1280×720 and 375×812 observed contained docks, no horizontal page overflow, 30,000 req/s model rates and component-targeted drawer focus. Details are in [UI interaction verification](ui-interaction-verification.md). No real load, database change, or Docker check was made for this visual task.
+
 ## 2026-09-29 — V0 focused recheck
 
 Reviewed correction head `44008c0` against the previous V0 findings, ADR 002, contracts, architecture and threat model. R1 and R2 are resolved. R3 now has a terminal retention clock and table/run-scoped cleanup role, but the role has unrestricted row deletion within its two history tables. The statement that the role can delete only expired or old terminal rows therefore exceeds the documented PostgreSQL grant. V0 remains changes_requested for this one distinction: define database row enforcement or describe the retention predicate as a trusted-worker policy consistently. The smaller-catalog note remains non-blocking.

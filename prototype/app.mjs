@@ -5,6 +5,7 @@ import {
   shardRecords,
   faultCatalog,
   componentAvailable,
+  loadSteps,
 } from "./model.mjs";
 import { placeHover, componentSnapshot } from "./hover.mjs";
 import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
@@ -612,6 +613,7 @@ function renderActions() {
       faultNode = id;
       faultKind = state.faults[id] || Object.keys(faultCatalog[id])[0];
       selectPanel(false);
+      $("fault-console").open = true;
       renderFaultConsole();
       renderGuide();
       $("fault-select").focus({ preventScroll: true });
@@ -661,7 +663,9 @@ function renderFaultConsole() {
 function render() {
   const m = metrics(state);
   $("load").value = state.rps;
-  $("load-value").innerHTML = `${state.rps} <small>req/s</small>`;
+  $("load-value").innerHTML = `${fmt(state.rps)} <small>req/s</small>`;
+  $("load-down").disabled = state.rps <= loadSteps.min;
+  $("load-up").disabled = state.rps >= loadSteps.max;
   $("client-meta").textContent = `${state.rps} offered req/s`;
   $("proxy-meta").textContent = state.green
     ? "green pool · v2"
@@ -746,10 +750,9 @@ function render() {
   const db = document.querySelector("[data-node=db]");
   db.classList.toggle("stressed", m.pressure > 1 && !state.primaryDown);
   db.classList.toggle("failed", state.primaryDown);
-  $("offered").innerHTML = `${fmt(state.rps)}<small>req/s</small>`;
   $("completed").innerHTML = `${fmt(m.completed)}<small>req/s</small>`;
   $("db-demand").innerHTML =
-    `${fmt(m.dbDemand)}<small>/ ${state.primaryDown ? "0" : fmt(m.dbCapacity)} ops/s</small>`;
+    `${fmt(m.dbDemand)}<small>/ ${state.primaryDown ? "0" : fmt(m.dbCapacity)} ops/s capacity</small>`;
   $("rejected").innerHTML = `${fmt(m.rejected)}<small>req/s</small>`;
   $("db-pressure").textContent = state.primaryDown
     ? "Primary writes unavailable"
@@ -880,6 +883,13 @@ $("load").oninput = (e) => {
   render();
 };
 $("load").onchange = () => log(`Offered load changed to ${state.rps} req/s.`);
+for (const [id, direction] of [["load-down", -1], ["load-up", 1]]) {
+  $(id).onclick = () => {
+    state = transition(state, "load", state.rps + direction * loadSteps.interval);
+    log(`Offered load changed to ${fmt(state.rps)} req/s.`);
+    render();
+  };
+}
 $("run").onclick = () => {
   running = !running;
   log(
@@ -1026,7 +1036,10 @@ render();
 renderInspector();
 const graphViewport = document.querySelector(".graph-scroll");
 const viewportSize = () => ({ width: graphViewport.clientWidth, height: graphViewport.clientHeight });
-let camera = fitCamera(viewportSize());
+const dockInsets = () => graphViewport.clientWidth > 760
+  ? { left: 174, right: $("fault-console").open ? 194 : 48 }
+  : { left: 0, right: 0 };
+let camera = fitCamera(viewportSize(), dockInsets());
 let fitted = true;
 let drag = null;
 let previousSize = viewportSize();
@@ -1039,7 +1052,7 @@ function paintCamera() {
 }
 function fitView() {
   fitted = true;
-  camera = fitCamera(viewportSize());
+  camera = fitCamera(viewportSize(), dockInsets());
   paintCamera();
 }
 function zoomView(factor, point) {
@@ -1051,6 +1064,7 @@ function zoomView(factor, point) {
 $("zoom-in").onclick = () => zoomView(1.25);
 $("zoom-out").onclick = () => zoomView(1 / 1.25);
 $("fit-system").onclick = fitView;
+$("fault-console").addEventListener("toggle", () => { if (fitted) fitView(); });
 graphViewport.addEventListener("focusin", event => {
   const card = event.target.closest(".component-shell");
   if (!card) return;
@@ -1058,7 +1072,8 @@ graphViewport.addEventListener("focusin", event => {
   const offset = (start, end, low, high) => end - start > high - low - 24
     ? (low + high - start - end) / 2
     : start < low + 12 ? low + 12 - start : end > high - 12 ? high - 12 - end : 0;
-  const dx = offset(box.left, box.right, frame.left, frame.right);
+  const insets = dockInsets();
+  const dx = offset(box.left, box.right, frame.left + insets.left, frame.right - insets.right);
   const dy = offset(box.top, box.bottom, frame.top, frame.bottom);
   if (!dx && !dy) return;
   fitted = false;
@@ -1071,13 +1086,14 @@ graphViewport.addEventListener("focusin", event => {
   }
 });
 graphViewport.addEventListener("wheel", event => {
+  if (event.target.closest(".canvas-dock")) return;
   event.preventDefault();
   const rect = graphViewport.getBoundingClientRect();
   const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1);
   zoomView(Math.exp(-Math.max(-300, Math.min(300, delta)) * 0.002), { x: event.clientX - rect.left, y: event.clientY - rect.top });
 }, { passive: false });
 graphViewport.addEventListener("pointerdown", event => {
-  if (drag || event.button !== 0 || event.target.closest("button, a, input, select")) return;
+  if (drag || event.button !== 0 || event.target.closest("button, a, input, select, .canvas-dock")) return;
   drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
   graphViewport.setPointerCapture(event.pointerId);
   graphViewport.classList.add("panning");
@@ -1117,7 +1133,7 @@ graphViewport.addEventListener("keydown", event => {
 });
 new ResizeObserver(() => {
   const size = viewportSize();
-  camera = fitted ? fitCamera(size) : panCamera(camera, (size.width - previousSize.width) / 2, (size.height - previousSize.height) / 2, size);
+  camera = fitted ? fitCamera(size, dockInsets()) : panCamera(camera, (size.width - previousSize.width) / 2, (size.height - previousSize.height) / 2, size);
   previousSize = size;
   paintCamera();
 }).observe(graphViewport);

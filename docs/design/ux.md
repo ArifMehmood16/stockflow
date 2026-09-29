@@ -108,6 +108,8 @@ Delivered: dark/light-contrast workbench, locally served technology logos, nine 
 
 ## Captured preview
 
+The current preview places an expanded, compact vertical load/metrics dock over the canvas and a collapsed vertical fault drawer at its opposite edge. The workload selector has 10,000 req/s intervals from 10,000 to 250,000, with −/+ buttons and a slider. Component Faults buttons choose the target and open the drawer. The desktop Fit action reserves space for the docks; narrow screens use the same pan/zoom and Inspector affordances.
+
 The responsive browser preview below was captured during Phase 0. At narrower widths the guide stacks below the architecture; the desktop wireframe above defines the side-by-side layout.
 
 ![StockFlow local preview](screenshots/preview.png)
