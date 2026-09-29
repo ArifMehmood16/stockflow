@@ -9,6 +9,7 @@ public interface RunInventory {
   Optional<RunStock> stock(UUID tenant, UUID warehouse, String sku);
   Optional<ReservationView> reservation(UUID tenant, UUID id);
   OperationResponse reserve(UUID tenant, UUID warehouse, String sku, int quantity, String key);
+  OperationResponse release(UUID tenant, UUID id, String key);
 
   record ReservationView(UUID id, String state, int quantity, long stockVersion) {}
   record OperationResponse(int status, String body, boolean replayed) {}

@@ -12,7 +12,7 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 - **Real local PostgreSQL data:** Open Food Facts products plus deterministic synthetic inventory quantities/tenant assignments. `DATASET_ROWS` is an upper bound: import the lower of that limit and the available valid, unique products. No duplicate products are invented to reach the limit.
 - **Illustrative frontend simulation:** a million logical records and up to 250,000 modeled requests/s. Its rates, failures, build timings and recoveries are teaching assumptions, not measurements from the imported database. No request load is sent to PostgreSQL yet.
 
-Release/expiry, UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
+UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
 
 ## Run locally with Make
 
@@ -72,7 +72,7 @@ RUN_ID=<run ID> make api
 # GET /v1/warehouses/<warehouse UUID>/stock/<SKU> with Authorization: Bearer <token>
 ```
 
-Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped. `POST /v1/reservations` requires a bearer tenant credential, a unique `Idempotency-Key` (1–128 printable non-space ASCII characters), and JSON `{warehouseId,sku,quantity}` with quantity 1–100. A repeated key with the same request returns the stored result and `Idempotency-Replayed: true`; a changed request conflicts. Stock and the response commit in one PostgreSQL transaction. Reservations currently remain ACTIVE until release/expiry is added.
+Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped. `POST /v1/reservations` requires a bearer tenant credential, a unique `Idempotency-Key` (1–128 printable non-space ASCII characters), and JSON `{warehouseId,sku,quantity}` with quantity 1–100. A repeated key with the same request returns the stored result and `Idempotency-Replayed: true`; a changed request conflicts. Stock and the response commit in one PostgreSQL transaction. `POST /v1/reservations/{id}/release` uses its own idempotency key and returns a terminal result. A bounded Java worker expires overdue ACTIVE reservations every second. Release and expiry each credit stock only if their guarded transition wins.
 
 ## Run with Docker (Make optional)
 

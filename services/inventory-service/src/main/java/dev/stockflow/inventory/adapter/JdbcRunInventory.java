@@ -9,6 +9,7 @@ import java.time.Instant;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
 
 @Component
 public final class JdbcRunInventory implements RunInventory {
@@ -261,6 +262,191 @@ public final class JdbcRunInventory implements RunInventory {
       return HexFormat.of().formatHex(bytes);
     } catch (java.security.NoSuchAlgorithmException impossible) {
       throw new IllegalStateException("SHA-256 unavailable.", impossible);
+    }
+  }
+
+  @Override
+  public OperationResponse release(UUID tenant, UUID id, String idempotencyKey) {
+    String hash = sha256("{\"id\":\"" + id + "\",\"op\":\"release\"}");
+    try (var connection = connect()) {
+      connection.setAutoCommit(false);
+      try {
+        try (var timeout = connection.createStatement()) {
+          timeout.execute("SET LOCAL lock_timeout = '2s'");
+          timeout.execute("SET LOCAL statement_timeout = '3s'");
+        }
+        boolean claimed;
+        try (var insert = connection.prepareStatement("INSERT INTO " + schema
+            + ".idempotency_record (tenant_id,key,request_hash,state,expires_at)"
+            + " VALUES (?,?,?,'CLAIMED',transaction_timestamp()+interval '24 hours')"
+            + " ON CONFLICT (tenant_id,key) DO NOTHING RETURNING tenant_id")) {
+          insert.setObject(1, tenant);
+          insert.setString(2, idempotencyKey);
+          insert.setString(3, hash);
+          try (var row = insert.executeQuery()) { claimed = row.next(); }
+        }
+        if (!claimed) {
+          try (var replay = connection.prepareStatement("SELECT request_hash,status_code,"
+              + "response_json::text FROM " + schema
+              + ".idempotency_record WHERE tenant_id=? AND key=?")) {
+            replay.setObject(1, tenant);
+            replay.setString(2, idempotencyKey);
+            try (var row = replay.executeQuery()) {
+              if (!row.next()) throw new RunFailure(409, "IDEMPOTENCY_IN_PROGRESS", true);
+              if (!hash.equals(row.getString(1)))
+                throw new RunFailure(409, "IDEMPOTENCY_CONFLICT", false);
+              if (row.getObject(2) == null) throw new RunFailure(409, "IDEMPOTENCY_IN_PROGRESS", true);
+              OperationResponse result = new OperationResponse(row.getInt(2), row.getString(3), true);
+              connection.rollback();
+              return result;
+            }
+          }
+        }
+        if (count(connection, "idempotency_record") > 200_000)
+          throw new RunFailure(429, "RUN_HISTORY_FULL", true);
+        OperationResponse decision = releaseClaimed(connection, tenant, id);
+        try (var complete = connection.prepareStatement("UPDATE " + schema
+            + ".idempotency_record SET state='COMPLETED',status_code=?,response_json=?::jsonb"
+            + " WHERE tenant_id=? AND key=? RETURNING response_json::text")) {
+          complete.setInt(1, decision.status());
+          complete.setString(2, decision.body());
+          complete.setObject(3, tenant);
+          complete.setString(4, idempotencyKey);
+          try (var row = complete.executeQuery()) {
+            if (!row.next()) throw new SQLException("Claim disappeared before completion.");
+            decision = new OperationResponse(decision.status(), row.getString(1), false);
+          }
+        }
+        connection.commit();
+        return decision;
+      } catch (SQLException failure) {
+        connection.rollback();
+        if ("55P03".equals(failure.getSQLState()))
+          throw new RunFailure(409, "IDEMPOTENCY_IN_PROGRESS", true);
+        throw failure;
+      } catch (RuntimeException failure) {
+        connection.rollback();
+        throw failure;
+      }
+    } catch (SQLException failure) {
+      throw new StockUnavailable(failure);
+    }
+  }
+
+  private OperationResponse releaseClaimed(Connection connection, UUID tenant, UUID id)
+      throws SQLException {
+    Long version = transition(connection, tenant, id, "RELEASED");
+    String state = "RELEASED";
+    if (version == null) {
+      version = transition(connection, tenant, id, "EXPIRED");
+      state = "EXPIRED";
+    }
+    if (version == null) {
+      try (var query = connection.prepareStatement("SELECT state,stock_version FROM " + schema
+          + ".reservation WHERE tenant_id=? AND id=?")) {
+        query.setObject(1, tenant);
+        query.setObject(2, id);
+        try (var row = query.executeQuery()) {
+          if (!row.next())
+            return new OperationResponse(404, "{\"code\":\"RESERVATION_NOT_FOUND\","
+                + "\"message\":\"Reservation was not found.\",\"retryable\":false}", false);
+          state = row.getString(1);
+          version = row.getLong(2);
+        }
+      }
+    }
+    return new OperationResponse(200, "{\"id\":\"" + id + "\",\"state\":\"" + state
+        + "\",\"stockVersion\":" + version + "}", false);
+  }
+
+  private Long transition(Connection connection, UUID tenant, UUID id, String terminal)
+      throws SQLException {
+    String deadline = "EXPIRED".equals(terminal) ? "<= " : "> ";
+    UUID warehouse;
+    String sku;
+    int quantity;
+    try (var change = connection.prepareStatement("UPDATE " + schema
+        + ".reservation SET state=?,terminal_at=transaction_timestamp()"
+        + " WHERE tenant_id=? AND id=? AND state='ACTIVE' AND expires_at " + deadline
+        + "transaction_timestamp() RETURNING warehouse_id,sku,quantity")) {
+      change.setString(1, terminal);
+      change.setObject(2, tenant);
+      change.setObject(3, id);
+      try (var row = change.executeQuery()) {
+        if (!row.next()) return null;
+        warehouse = (UUID) row.getObject(1);
+        sku = row.getString(2);
+        quantity = row.getInt(3);
+      }
+    }
+    long version;
+    try (var stock = connection.prepareStatement("UPDATE " + schema
+        + ".inventory SET available=available+?,version=version+1,updated_at=clock_timestamp()"
+        + " WHERE tenant_id=? AND warehouse_id=? AND sku=? RETURNING version")) {
+      stock.setInt(1, quantity);
+      stock.setObject(2, tenant);
+      stock.setObject(3, warehouse);
+      stock.setString(4, sku);
+      try (var row = stock.executeQuery()) {
+        if (!row.next()) throw new SQLException("Reservation stock row disappeared.");
+        version = row.getLong(1);
+      }
+    }
+    try (var saved = connection.prepareStatement("UPDATE " + schema
+        + ".reservation SET stock_version=? WHERE tenant_id=? AND id=?")) {
+      saved.setLong(1, version);
+      saved.setObject(2, tenant);
+      saved.setObject(3, id);
+      saved.executeUpdate();
+    }
+    return version;
+  }
+
+  /** One bounded scan per tick; due rows remain durable across process restarts. */
+  public int expireDue(int limit) {
+    if (runId == null) return 0;
+    var due = new ArrayList<UUID[]>();
+    try (var connection = connect();
+        var query = connection.prepareStatement("SELECT tenant_id,id FROM " + schema
+            + ".reservation WHERE state='ACTIVE' AND expires_at<=transaction_timestamp()"
+            + " ORDER BY expires_at LIMIT ?")) {
+      query.setQueryTimeout(2);
+      query.setInt(1, Math.min(Math.max(limit, 1), 20));
+      try (var row = query.executeQuery()) {
+        while (row.next()) due.add(new UUID[] {(UUID) row.getObject(1), (UUID) row.getObject(2)});
+      }
+    } catch (SQLException failure) {
+      throw new StockUnavailable(failure);
+    }
+    int expired = 0;
+    for (var item : due) {
+      try (var connection = connect()) {
+        connection.setAutoCommit(false);
+        try {
+          try (var timeout = connection.createStatement()) {
+            timeout.execute("SET LOCAL lock_timeout = '100ms'");
+            timeout.execute("SET LOCAL statement_timeout = '2s'");
+          }
+          if (transition(connection, item[0], item[1], "EXPIRED") != null) expired++;
+          connection.commit();
+        } catch (SQLException failure) {
+          connection.rollback();
+          if (!"55P03".equals(failure.getSQLState())) throw failure;
+        }
+      } catch (SQLException failure) {
+        throw new StockUnavailable(failure);
+      }
+    }
+    return expired;
+  }
+
+  @Scheduled(fixedDelay = 1000)
+  public void expireTick() {
+    if (runId == null) return;
+    try {
+      expireDue(20);
+    } catch (StockUnavailable unavailable) {
+      System.err.println("StockFlow expiry scan postponed; run database unavailable.");
     }
   }
 }

@@ -55,6 +55,9 @@ class RunStockHttpTest {
         String key) {
       return new OperationResponse(201, "{\"id\":\"" + RESERVATION + "\"}", false);
     }
+    public OperationResponse release(UUID tenant, UUID id, String key) {
+      return new OperationResponse(200, "{\"state\":\"RELEASED\"}", false);
+    }
   }
   @TestConfiguration static class Fixture {
     @Bean @Primary FakeRun runInventory() { return new FakeRun(); }
@@ -98,6 +101,32 @@ class RunStockHttpTest {
           .POST(HttpRequest.BodyPublishers.ofString("{\"warehouseId\":\"" + WAREHOUSE
               + "\",\"sku\":\"00123\",\"quantity\":2}")).build();
       assertEquals(201, client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
+  }
+
+  @Test void releaseRouteRequiresTheSameTenantCredential() throws Exception {
+    String token = ScopeToken.issueTenant(RUN, TENANT, Instant.now().plusSeconds(300), KEY);
+    try (var client = HttpClient.newHttpClient()) {
+      var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port
+          + "/v1/reservations/" + RESERVATION + "/release"))
+          .header("Authorization", "Bearer " + token)
+          .header("Idempotency-Key", "release-1")
+          .POST(HttpRequest.BodyPublishers.noBody()).build();
+      assertEquals(200, client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
+  }
+
+  @Test void bodylessReleaseWithoutContentLengthIsAllowed() throws Exception {
+    String token = ScopeToken.issueTenant(RUN, TENANT, Instant.now().plusSeconds(300), KEY);
+    try (var socket = new java.net.Socket("127.0.0.1", port)) {
+      socket.setSoTimeout(3000);
+      String request = "POST /v1/reservations/" + RESERVATION + "/release HTTP/1.1\r\n"
+          + "Host: 127.0.0.1\r\nAuthorization: Bearer " + token
+          + "\r\nIdempotency-Key: release-no-body\r\nConnection: close\r\n\r\n";
+      socket.getOutputStream().write(request.getBytes(java.nio.charset.StandardCharsets.US_ASCII));
+      String response = new String(socket.getInputStream().readAllBytes(),
+          java.nio.charset.StandardCharsets.UTF_8);
+      assertTrue(response.startsWith("HTTP/1.1 200"), response);
     }
   }
 }

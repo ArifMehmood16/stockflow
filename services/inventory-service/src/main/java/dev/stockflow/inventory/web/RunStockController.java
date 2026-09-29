@@ -67,4 +67,18 @@ public final class RunStockController {
     if (result.replayed()) response.header("Idempotency-Replayed", "true");
     return response.body(result.body());
   }
+
+  @PostMapping("/v1/reservations/{id}/release")
+  public ResponseEntity<String> release(
+      @RequestHeader(value = "Authorization", required = false) String token,
+      @RequestHeader(value = "Idempotency-Key", required = false) String key,
+      @PathVariable UUID id) {
+    var scope = inventory.authenticate(token);
+    if (key == null || key.length() < 1 || key.length() > 128 || !key.matches("[!-~]+"))
+      throw new RunHttpError(400, "INVALID_IDEMPOTENCY_KEY", false);
+    var result = inventory.release(scope.tenantId(), id, key);
+    var response = ResponseEntity.status(result.status()).contentType(MediaType.APPLICATION_JSON);
+    if (result.replayed()) response.header("Idempotency-Replayed", "true");
+    return response.body(result.body());
+  }
 }

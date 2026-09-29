@@ -92,6 +92,84 @@ class JdbcRunInventoryIT {
           rows.next();
           assertEquals(2, rows.getLong(1));
         }
+        UUID firstId, expiringId;
+        try (var check = DriverManager.getConnection(target, owner);
+            var statement = check.createStatement();
+            var rows = statement.executeQuery("SELECT id,quantity FROM " + schema + ".reservation")) {
+          UUID seven = null, three = null;
+          while (rows.next()) {
+            if (rows.getInt(2) == 7) seven = (UUID) rows.getObject(1);
+            if (rows.getInt(2) == 3) three = (UUID) rows.getObject(1);
+          }
+          firstId = Objects.requireNonNull(seven);
+          expiringId = Objects.requireNonNull(three);
+        }
+        assertEquals(404, inventory.release(other, firstId, "other-release").status());
+        var released = inventory.release(tenant, firstId, "release-1");
+        assertEquals(200, released.status());
+        assertTrue(released.body().contains("RELEASED"));
+        assertEquals(released.body(), inventory.release(tenant, firstId, "release-1").body());
+        assertEquals(200, inventory.release(tenant, firstId, "release-2").status());
+        assertEquals(7, inventory.stock(tenant, warehouse, "00123").orElseThrow().available());
+        assertEquals(3, inventory.stock(tenant, warehouse, "00123").orElseThrow().version());
+        try (var check = DriverManager.getConnection(target, owner);
+            var update = check.prepareStatement("UPDATE " + schema
+                + ".reservation SET expires_at=transaction_timestamp()-interval '1 second'"
+                + " WHERE tenant_id=? AND id=?")) {
+          update.setObject(1, tenant);
+          update.setObject(2, expiringId);
+          assertEquals(1, update.executeUpdate());
+        }
+        var restarted = new JdbcRunInventory(run.toString(), target, role,
+            "test-only-password", keyFile.toString());
+        try (var executor = Executors.newFixedThreadPool(2)) {
+          var start = new CountDownLatch(1);
+          var calls = new ArrayList<Future<Integer>>();
+          for (int n = 0; n < 2; n++) calls.add(executor.submit(() -> {
+            start.await();
+            return restarted.expireDue(20);
+          }));
+          start.countDown();
+          int expired = 0;
+          for (var call : calls) expired += call.get(5, TimeUnit.SECONDS);
+          assertEquals(1, expired);
+        }
+        assertEquals(0, restarted.expireDue(20));
+        assertEquals(10, inventory.stock(tenant, warehouse, "00123").orElseThrow().available());
+        assertEquals(4, inventory.stock(tenant, warehouse, "00123").orElseThrow().version());
+        assertTrue(inventory.release(tenant, expiringId, "release-expired").body().contains("EXPIRED"));
+        assertEquals(201, inventory.reserve(tenant, warehouse, "00123", 2, "race-reserve").status());
+        UUID raceId;
+        try (var check = DriverManager.getConnection(target, owner);
+            var statement = check.createStatement();
+            var rows = statement.executeQuery("SELECT id FROM " + schema
+                + ".reservation WHERE quantity=2")) {
+          assertTrue(rows.next());
+          raceId = (UUID) rows.getObject(1);
+        }
+        try (var check = DriverManager.getConnection(target, owner);
+            var update = check.prepareStatement("UPDATE " + schema
+                + ".reservation SET expires_at=transaction_timestamp()-interval '1 second'"
+                + " WHERE id=?")) {
+          update.setObject(1, raceId);
+          assertEquals(1, update.executeUpdate());
+        }
+        try (var executor = Executors.newFixedThreadPool(2)) {
+          var start = new CountDownLatch(1);
+          var worker = executor.submit(() -> {
+            start.await();
+            return restarted.expireDue(20);
+          });
+          var release = executor.submit(() -> {
+            start.await();
+            return inventory.release(tenant, raceId, "race-release");
+          });
+          start.countDown();
+          worker.get(5, TimeUnit.SECONDS);
+          assertTrue(release.get(5, TimeUnit.SECONDS).body().contains("EXPIRED"));
+        }
+        assertEquals(10, inventory.stock(tenant, warehouse, "00123").orElseThrow().available());
+        assertEquals(6, inventory.stock(tenant, warehouse, "00123").orElseThrow().version());
       } finally {
         try (var statement = admin.createStatement()) {
           statement.execute("DROP DATABASE " + database + " WITH (FORCE)");

@@ -229,3 +229,9 @@ Added a local fixture tenant-token issuer, strict HMAC verification and run-scop
 Date: 2026-09-29. Tool: Codex. Task: A05; draft for human review.
 
 The focused HTTP test first failed with 405. Opened only the authenticated reservation POST, then added one PostgreSQL transaction for claim, conditional stock decrement, reservation, session token and stored response. Integration against a disposable database showed a 10-unit row becoming 3 after a 7-unit reserve, unchanged after replay and changed-payload conflict, and then 0 after one of two concurrent 3-unit requests succeeded. Two reservations and version 2 remained. `make test-api-integration` and `make test-api` passed. A live port-8083 API returned 201, identical replay bytes, and 404 for the other tenant's reservation; it was stopped after the check. UI data remains illustrative. Expiry and release are the next task.
+
+## 022 — Release and expire stock exactly once
+
+Date: 2026-09-29. Tool: Codex. Task: A06; draft for human review.
+
+The focused release HTTP test failed with 405 before the route was added. The first live bodyless release exposed a 413 filter bug; a raw-HTTP regression test reproduced it, then passed after the route-specific body rule was corrected. Release and expiry now compete on one conditional ACTIVE-to-terminal row update, crediting stock and incrementing its version in that transaction only for the winner. A bounded scheduled scan resumes overdue rows after service restart. Disposable PostgreSQL integration covered duplicate release, two expiry workers, restart and release versus expiry; the final ledger returned to 10 available with one increment per terminal transition. `make test-api-integration` and focused HTTP tests passed. A second live port-8083 reserve/release returned 201/200 and RELEASED, then the temporary API was stopped. The complete A07 gates remain pending.

@@ -4,7 +4,7 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Working base: `main` contains A03; Phase A continuation is on `codex/phase-1-authenticated-run-stock-reads`.
-- Current task: **A05 implemented/self-tested**; A06 is next in the owner-requested Phase A delivery push.
+- Current task: **A06 implemented/self-tested**; A07 baseline proof is next in the owner-requested Phase A delivery push.
 - Next review: **V1 after A07**; A02 itself has a task completion check.
 - Last accepted checkpoint: **V0** on A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`.
 - Active blocker: none for A04. Docker runtime verification remains untested and is still required for V1, but the owner deferred Docker polish.
@@ -18,7 +18,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 - A03: done — fixture implementation `6520b7d`, native catalog-reader correction `23c9ac6`; evidence: [engineering journal](../engineering-journal.md)
 - A04: done — scoped reads, run-issued credentials and denial tests; live small-fixture read verified; completion commit pending
 - A05: done — conditional decrement, durable idempotency and concurrency test; completion commit pending
-- A06: todo
+- A06: done — guarded release/expiry, restart and race tests; completion commit pending
 - A07: todo
 - B01: todo
 - B02: todo

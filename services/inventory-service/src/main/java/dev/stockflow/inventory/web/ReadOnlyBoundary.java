@@ -22,17 +22,24 @@ public final class ReadOnlyBoundary extends OncePerRequestFilter {
     if (!Set.of("localhost", "127.0.0.1", "[::1]", "::1", "inventory")
         .contains(request.getServerName())) {
       reject(response, 400, "INVALID_HOST", id);
-    } else if ("POST".equals(request.getMethod())
-        && "/v1/reservations".equals(request.getRequestURI())
-        && (request.getContentLengthLong() < 0 || request.getContentLengthLong() > 1024
-            || request.getHeader("Origin") != null)) {
+    } else if (allowedPost(request) && (request.getHeader("Origin") != null
+        || ("/v1/reservations".equals(request.getRequestURI())
+            ? request.getContentLengthLong() < 0 || request.getContentLengthLong() > 1024
+            : request.getContentLengthLong() > 0
+                || request.getHeader("Transfer-Encoding") != null))) {
       reject(response, 413, "REQUEST_REJECTED", id);
     } else if (!Set.of("GET", "HEAD").contains(request.getMethod())
-        && !("POST".equals(request.getMethod())
-            && "/v1/reservations".equals(request.getRequestURI()))) {
+        && !allowedPost(request)) {
       response.setHeader("Allow", "GET, HEAD");
       reject(response, 405, "METHOD_NOT_ALLOWED", id);
     } else chain.doFilter(request, response);
+  }
+
+  private boolean allowedPost(HttpServletRequest request) {
+    return "POST".equals(request.getMethod())
+        && ("/v1/reservations".equals(request.getRequestURI())
+            || request.getRequestURI().matches(
+                "/v1/reservations/[0-9a-fA-F-]{36}/release"));
   }
 
   private void reject(HttpServletResponse response, int status, String code, String id)
