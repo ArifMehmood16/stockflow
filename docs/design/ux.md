@@ -105,3 +105,9 @@ Semantic landmarks/headings, visible focus, real buttons/labels, no hover-only i
 ## Prototype scope
 
 Delivered: six chapter selections, traffic start/pause, bounded load slider, cache/replica/shard/instance/deployment toggles, fenced primary promotion, animated architecture, hover/focus/pinned inspector, metric breakdown, right guide, activity log, reset and reduced motion. Instant model transitions are for design review. Stale-fill races, real replication, detailed traces, report export and compare are specified, not falsely simulated by random counters.
+
+## Captured preview
+
+The responsive browser preview below was captured during Phase 0. At narrower widths the guide stacks below the architecture; the desktop wireframe above defines the side-by-side layout.
+
+![StockFlow local preview](screenshots/preview.png)
