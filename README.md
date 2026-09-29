@@ -8,17 +8,18 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 
 - **Real Java tooling:** local HTTP preview, safe process stop, PostgreSQL schema setup, public-catalog download, JDBC COPY import and import verification.
 - **Real Java inventory reads:** Spring Boot service on port 8081; stock lookup reads the loaded PostgreSQL catalog, with liveness/readiness checks and bounded JDBC connections. See the [Java baseline](docs/java-baseline.md).
+- **Real writable run fixtures:** an explicit Java command creates isolated, versioned PostgreSQL inventory stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The existing HTTP API does not write these rows yet.
 - **Real local PostgreSQL data:** Open Food Facts products plus deterministic synthetic inventory quantities/tenant assignments. `DATASET_ROWS` is an upper bound: import the lower of that limit and the available valid, unique products. No duplicate products are invented to reach the limit.
 - **Illustrative frontend simulation:** a million logical records and up to 250,000 modeled requests/s. Its rates, failures, build timings and recoveries are teaching assumptions, not measurements from the imported database. No request load is sent to PostgreSQL yet.
 
-Reservation writes, UI integration with the API, Redis, physical replication, separate shard processes, real load generation and deployment automation remain planned. The animation still uses its illustrative model; starting the API does not convert those counters to measured telemetry.
+Reservation writes, UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
 
 ## Run locally with Make
 
 Prerequisites:
 
 1. **JDK 25** (`java` and `javac`, not a JRE) for the service build. Set `JAVA_HOME` or put Java on PATH. Make also recognizes a project-local macOS JDK at `.lab/jdk/Contents/Home` when present; fresh clones do not include it. [Install Temurin](https://adoptium.net/installation/).
-2. **Make** and an **existing PostgreSQL 17+ server and database**. The supplied role needs CONNECT, CREATE SCHEMA and ownership of StockFlow objects. Setup never creates/replaces your local database and does not change other schemas.
+2. **Make** and an **existing PostgreSQL 17+ server and database**. The trusted setup role needs CONNECT, CREATE SCHEMA, CREATE ROLE and ownership of StockFlow objects. The running native API receives a separate SELECT-only catalog reader login. Setup never creates/replaces your local database and does not change other schemas.
 3. Internet access on first setup for checksum-pinned Java tooling/Maven, Spring dependencies and the public catalog export. Maven is downloaded and invoked by Java into `.lab`; no separate Maven installation, Python, Node, PostgreSQL command-line client or Docker is needed to **run** the app. Later cached builds can use the downloaded dependencies.
 4. Allow several GB of spare disk for catalog, indexes, transaction/WAL growth and the cached subset. Download/import time depends on the chosen limit and network/disk speed. Resource controls are discussed after the scaling lessons; real setup still needs available resources.
 
@@ -39,7 +40,7 @@ STOCKFLOW_DB_PASSWORD=YOUR_LOCAL_DOCKER_PASSWORD
 
 The supplied `postgresql+psycopg://` URL format is accepted and converted to JDBC; **psycopg/Python is not used**. URL-encode credentials containing special characters. `DATASET_ROWS` supports 1–10,000,000; the default is 10,000,000, selecting the full pinned catalog when fewer valid products exist. Stock quantities and tenant assignments are synthetic; product descriptions are real public data.
 
-`make run` creates the `stockflow` schema if absent, checks the import receipt and actual table counts, and **skips download and COPY when the matching dataset is already loaded**. It then builds/tests the Java API and starts it alongside the UI. Incomplete imports are retried transactionally. Existing quantities are preserved. Increasing the limit imports missing products; lowering it never deletes existing data. The startup count check detects missing rows but is not a full corruption audit; see [dataset contract](docs/dataset-and-scale.md).
+`make run` creates the `stockflow` schema if absent, checks the import receipt and actual table counts, and **skips download and COPY when the matching dataset is already loaded**. It provisions the catalog-reader role, builds/tests the Java API and starts it alongside the UI. Incomplete imports are retried transactionally. Existing quantities are preserved. Increasing the limit imports missing products; lowering it never deletes existing data. The startup count check detects missing rows but is not a full corruption audit; see [dataset contract](docs/dataset-and-scale.md).
 
 Useful commands:
 
@@ -49,6 +50,7 @@ make api              # Setup/build/start just the real stock API at 8081
 make api-smoke        # Compare a running API response with the local database
 make api-stop         # Stop only the registered API
 make setup            # Schema + dataset only
+make fixture          # Explicitly create isolated writable run stock after setup
 make db-status        # Actual PostgreSQL row counts and bucket distribution
 make data-fetch       # Download/project dataset without connecting to PostgreSQL
 make db-init          # Schema only
@@ -59,6 +61,8 @@ PORT=4174 API_PORT=8082 make stop   # Stop the matching UI/API
 ```
 
 `make stop` does not stop your PostgreSQL server or delete data. It checks process ID, start time and executable before sending a graceful stop. It never kills an arbitrary port owner. If an old Node preview from an earlier revision occupies the port, use Ctrl-C in that terminal once. An occupied port gives guidance instead of taking over the listener.
+
+`make fixture` is separate from `make run`: it never changes the diagnostic `stockflow.catalog` or `stockflow.inventory`. With `FIXTURE_ROWS` unset it uses the first 100 available catalog codes for each of two tenants and two warehouses (normally 400 stock rows). For a scale run, use `FIXTURE_ROWS=1000000 make fixture`; this creates at most one stock row per available unique product. It estimates disk headroom before copying and records the actual row count, seed and ownership in `stockflow_runs`. The command prints a new run ID; repeat with `RUN_ID=<that ID> make fixture` to verify and reuse the READY fixture without resetting quantities. `FIXTURE_SEED` defaults to `stockflow-demo`; a run ID cannot be reused with a different seed or size. The trusted setup role needs `CREATE ROLE` and database schema-creation authority. Per-run writer, cleanup and reader credentials are stored only under ignored `.lab/runs/<run ID>/` with owner-only permissions. Do not pass these credentials to the current read-only HTTP service; authenticated run routes come next.
 
 ## Run with Docker (Make optional)
 

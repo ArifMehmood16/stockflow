@@ -69,6 +69,7 @@ public final class Lab {
             Database.status(connection);
           } else Database.importDataset(connection, Dataset.fetch(rows));
         }
+        RunFixture.catalogReader(connection);
       }
     }
   }

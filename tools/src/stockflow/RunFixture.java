@@ -224,6 +224,42 @@ final class RunFixture {
     }
   }
 
+  static void catalogReader(Connection connection) throws Exception {
+    boolean original = connection.getAutoCommit();
+    connection.setAutoCommit(false);
+    try {
+      ensureCatalogReader(connection);
+      connection.commit();
+    } catch (Exception error) {
+      connection.rollback();
+      throw error;
+    } finally {
+      connection.setAutoCommit(original);
+    }
+  }
+
+  private static void ensureCatalogReader(Connection connection) throws Exception {
+    String role = "stockflow_catalog_reader";
+    Path path = Path.of(".lab/catalog-reader.properties");
+    boolean exists = roleExists(connection, role);
+    if (!exists || !Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+      String generated = password();
+      if (exists) {
+        try (var statement = connection.createStatement()) {
+          statement.execute("ALTER ROLE " + role + " PASSWORD '" + generated + "'");
+        }
+      } else createRole(connection, role, generated);
+      secret(path, role, generated);
+    }
+    Files.setPosixFilePermissions(path, PRIVATE_FILE);
+    try (var statement = connection.createStatement()) {
+      statement.execute("ALTER ROLE " + role + " SET default_transaction_read_only=on");
+      statement.execute("GRANT USAGE ON SCHEMA stockflow TO " + role);
+      statement.execute("GRANT SELECT ON stockflow.catalog,stockflow.inventory,"
+          + "stockflow.dataset_import TO " + role);
+    }
+  }
+
   private static void fill(
       Connection connection, UUID runId, String schema, String seed, String profile,
       int codes, int actual) throws Exception {
@@ -268,24 +304,12 @@ final class RunFixture {
         throw new IllegalStateException("Fixture stock count mismatch; no READY receipt written.");
       String writer = role("w", runId), cleanup = role("c", runId), reader = role("r", runId);
       String writerPassword = password(), cleanupPassword = password(), readerPassword = password();
-      String catalogReader = "stockflow_catalog_reader";
-      Path catalogSecret = Path.of(".lab/catalog-reader.properties");
-      if (!roleExists(connection, catalogReader)) {
-        String catalogPassword = password();
-        createRole(connection, catalogReader, catalogPassword);
-        secret(catalogSecret, catalogReader, catalogPassword);
-      } else if (!Files.isRegularFile(catalogSecret, LinkOption.NOFOLLOW_LINKS)) {
-        throw new IllegalStateException("Existing catalog reader credentials are unavailable.");
-      }
+      ensureCatalogReader(connection);
       createRole(connection, writer, writerPassword);
       createRole(connection, cleanup, cleanupPassword);
       createRole(connection, reader, readerPassword);
       try (var statement = connection.createStatement()) {
         statement.execute("ALTER ROLE " + reader + " SET default_transaction_read_only=on");
-        statement.execute("ALTER ROLE " + catalogReader + " SET default_transaction_read_only=on");
-        statement.execute("GRANT USAGE ON SCHEMA stockflow TO " + catalogReader);
-        statement.execute("GRANT SELECT ON stockflow.catalog,stockflow.inventory,"
-            + "stockflow.dataset_import TO " + catalogReader);
         statement.execute("GRANT USAGE ON SCHEMA " + schema + " TO " + writer + "," + cleanup + "," + reader);
         statement.execute("GRANT SELECT,INSERT,UPDATE ON ALL TABLES IN SCHEMA " + schema + " TO " + writer);
         statement.execute("GRANT SELECT ON ALL TABLES IN SCHEMA " + schema + " TO " + reader);

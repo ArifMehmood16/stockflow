@@ -209,3 +209,11 @@ The owner switched implementation from Cursor to Codex/ChatGPT. Updated the hand
 Date: 2026-09-29. Tool: Codex. Owner instruction; draft for human review.
 
 The owner clarified that UI-visible scenarios need real backend and resource behavior, and that CI/CD and Docker polish are not priorities. The A02 GitHub job had passed, but its workflow was removed from the pull request. Local Java build checks and the verified image references remain. Work now continues with A03's database-backed writable fixture before moving through reservation and resource scenarios. No CI/CD completion is claimed.
+
+## 019 — Add real run-owned inventory fixtures
+
+Date: 2026-09-29. Tool: Codex. Task: A03; draft for human review.
+
+Following the owner's backend-first direction, added PostgreSQL run migrations and the explicit Java fixture command. Kept the existing public catalog/diagnostic inventory unchanged and created one small and one million-row run-owned fixture on local PostgreSQL. The migrations carry SHA-256 checksums; the registry records READY only after stock, role grants and credential files are prepared. Tests exercised checksum mismatch, interruption rollback/retry, distinct-code capping, repeat preservation, run ownership checks and real role denial across schemas. The source importer and read-only API were not rewritten. Exact commands and observed counts are in the engineering journal. The next backend work is authenticated run reads and then durable reservation writes; the current UI remains illustrative until those services are connected.
+
+The A03 review exposed a remaining owner-login dependency in native API launch. Added a failing configuration test, moved native launch to the catalog-reader credential, and retained owner access only for trusted fixture/isolated integration tooling. A second local API on port 8083 passed live, ready and stock smoke, then was stopped by its owned registry. This correction is part of A03, not a claim that authenticated run HTTP routes exist.

@@ -5,6 +5,20 @@ import java.sql.*;
 import java.util.*;
 
 final class IntegrationTest {
+  private static Connection runLogin(Connection owner, UUID runId, String kind)
+      throws Exception {
+    var credentials = new Properties();
+    try (var source =
+        Files.newBufferedReader(
+            Path.of(".lab/runs", runId.toString(), kind + ".properties"))) {
+      credentials.load(source);
+    }
+    var login = new Properties();
+    login.setProperty("user", credentials.getProperty("role"));
+    login.setProperty("password", credentials.getProperty("password"));
+    return DriverManager.getConnection(owner.getMetaData().getURL(), login);
+  }
+
   static void run() throws Exception {
     var config = Database.config(Lab.settings().getOrDefault("DATABASE_URL", ""), false);
     String name = "stockflow_test_" + UUID.randomUUID().toString().replace("-", "");
@@ -172,6 +186,26 @@ final class IntegrationTest {
             UUID explicitRun = UUID.randomUUID();
             var explicit = RunFixture.prepare(connection, explicitRun, "fixture-test", 3);
             ToolTests.check(explicit.actualRows() == 2, "Explicit fixture caps at real catalog size");
+            try (var writerLogin = runLogin(connection, runId, "writer")) {
+              ToolTests.check(
+                  Database.scalar(writerLogin, "SELECT count(*) FROM " + fixture.schema() + ".inventory")
+                      == 8,
+                  "Run writer can read its own stock");
+              boolean globalDenied = false;
+              try (var statement = writerLogin.createStatement()) {
+                statement.execute("UPDATE stockflow.inventory SET on_hand=0 WHERE code='123'");
+              } catch (SQLException denied) {
+                globalDenied = "42501".equals(denied.getSQLState());
+              }
+              ToolTests.check(globalDenied, "Run writer cannot mutate diagnostic stock");
+              boolean otherRunDenied = false;
+              try {
+                Database.scalar(writerLogin, "SELECT count(*) FROM " + explicit.schema() + ".inventory");
+              } catch (SQLException denied) {
+                otherRunDenied = "42501".equals(denied.getSQLState());
+              }
+              ToolTests.check(otherRunDenied, "Run writer cannot read another run schema");
+            }
             RunFixture.dropOwned(connection, explicitRun);
             RunFixture.dropOwned(connection, runId);
             ToolTests.check(
@@ -179,7 +213,7 @@ final class IntegrationTest {
                 "Owned cleanup leaves unrelated sentinel table untouched");
             System.out.println(
                 "PASS: real JDBC COPY, empty text fields, schema idempotence, stock preservation,"
-                    + " isolation and atomic rollback.");
+                    + " run fixtures, role isolation and atomic rollback.");
           } finally {
             Files.deleteIfExists(csv);
           }
