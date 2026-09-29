@@ -11,9 +11,14 @@ import java.util.*;
 /** Loopback-only control for one owned fixture and one bounded experiment at a time. */
 final class TrafficControl implements AutoCloseable {
   private final TrafficRun.Operation operation;
+  private final ApiPool pool;
   private TrafficRun run;
 
-  TrafficControl(TrafficRun.Operation operation) { this.operation = operation; }
+  TrafficControl(TrafficRun.Operation operation) { this(operation, null); }
+  TrafficControl(TrafficRun.Operation operation, ApiPool pool) {
+    this.operation = operation;
+    this.pool = pool;
+  }
 
   static TrafficControl forSelectedRun() throws Exception {
     var configured = new ProcessBuilder("true");
@@ -35,9 +40,10 @@ final class TrafficControl implements AutoCloseable {
       UUID warehouse = rows.getObject(2, UUID.class);
       String sku = rows.getString(3);
       byte[] key = FixtureCredentials.key(runId);
-      return new TrafficControl(new TrafficTarget(Api.port(),
+      var pool = new ApiPool(Api.port(), Api::start);
+      return new TrafficControl(new TrafficTarget(pool::nextPort,
           () -> ScopeToken.issueTenant(runId, tenant, Instant.now().plusSeconds(3600), key),
-          warehouse, sku));
+          warehouse, sku), pool);
     }
   }
 
@@ -62,6 +68,7 @@ final class TrafficControl implements AutoCloseable {
 
   @Override public synchronized void close() {
     if (run != null) run.close();
+    if (pool != null) pool.close();
   }
 
   private static int parameter(String query, String name) {
@@ -73,14 +80,18 @@ final class TrafficControl implements AutoCloseable {
     throw new IllegalArgumentException("Missing traffic limit: " + name);
   }
 
-  private static String json(TrafficRun.Status status) {
+  private String json(TrafficRun.Status status) {
     return "{\"running\":" + status.running() + ",\"offered\":" + status.offered()
         + ",\"started\":" + status.started() + ",\"completed\":" + status.completed()
         + ",\"failed\":" + status.failed() + ",\"dropped\":" + status.dropped()
         + ",\"inFlight\":" + status.inFlight() + ",\"lastPath\":\""
         + status.lastPath() + "\",\"lastElapsedMillis\":" + status.lastElapsedMillis()
         + ",\"available\":" + status.available() + ",\"version\":"
-        + status.version() + ",\"lastError\":\"" + status.lastError() + "\"}";
+        + status.version() + ",\"lastError\":\"" + status.lastError() + "\""
+        + ",\"instances\":" + (pool == null ? 1 : pool.instances())
+        + ",\"building\":" + (pool != null && pool.building())
+        + ",\"primaryRequests\":" + (pool == null ? 0 : pool.primaryRequests.get())
+        + ",\"secondaryRequests\":" + (pool == null ? 0 : pool.secondaryRequests.get()) + "}";
   }
 
   private static void reply(HttpExchange exchange, int status, String body) throws IOException {
@@ -97,7 +108,8 @@ final class TrafficControl implements AutoCloseable {
       try {
         String path = exchange.getRequestURI().getPath();
         String method = exchange.getRequestMethod();
-        if (!Set.of("/lab/traffic", "/lab/traffic/start", "/lab/traffic/stop").contains(path)) {
+        if (!Set.of("/lab/traffic", "/lab/traffic/start", "/lab/traffic/stop",
+            "/lab/traffic/add-instance", "/lab/traffic/remove-instance").contains(path)) {
           reply(exchange, 404, "{}");
           return;
         }
@@ -122,7 +134,23 @@ final class TrafficControl implements AutoCloseable {
           }
         } else if (path.equals("/lab/traffic/stop") && method.equals("POST"))
           reply(exchange, 200, json(stop()));
-        else reply(exchange, 405, "{}");
+        else if (method.equals("POST") && path.endsWith("-instance")) {
+          if (pool == null) { reply(exchange, 409, "{\"error\":\"CAPABILITY_UNAVAILABLE\"}"); return; }
+          try {
+            if (path.endsWith("/add-instance")) pool.add();
+            else {
+              synchronized (this) {
+                if (status().running() || status().inFlight() > 0)
+                  throw new IllegalStateException("Stop traffic before removing an instance.");
+                pool.remove();
+              }
+            }
+            reply(exchange, 200, json(status()));
+          } catch (Exception error) {
+            if (error instanceof InterruptedException) Thread.currentThread().interrupt();
+            reply(exchange, 409, "{\"error\":\"INSTANCE_CHANGE_FAILED\"}");
+          }
+        } else reply(exchange, 405, "{}");
       } finally {
         exchange.close();
       }

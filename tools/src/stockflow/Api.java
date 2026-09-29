@@ -105,7 +105,10 @@ final class Api {
   }
 
   static Process start() throws Exception {
-    int port = port();
+    return start(port());
+  }
+
+  static Process start(int port) throws Exception {
     // Fail early without starting another JVM or disturbing the existing listener.
     try (var probe = new ServerSocket()) {
       probe.bind(new InetSocketAddress("127.0.0.1", port));
@@ -121,6 +124,7 @@ final class Api {
       throw new IllegalStateException("Build the API first with make api-build.");
     var builder = new ProcessBuilder().inheritIO();
     configure(builder);
+    builder.environment().put("API_PORT", Integer.toString(port));
     Path runtimeJar = snapshot(jar, registry());
     builder.command(java(), "-Xmx256m", "-jar", runtimeJar.toString());
     Process process;
@@ -151,7 +155,7 @@ final class Api {
           try {
             var response =
                 client.send(
-                    HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/health/live"))
+                    HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/health/ready"))
                         .timeout(Duration.ofSeconds(1))
                         .build(),
                     HttpResponse.BodyHandlers.discarding());
@@ -167,7 +171,7 @@ final class Api {
         }
       }
       throw new IllegalStateException(
-          "Inventory API did not become live; check the startup output.");
+          "Inventory API did not become ready; check the startup output.");
     } catch (Exception error) {
       process.destroy();
       process.waitFor(6, TimeUnit.SECONDS);

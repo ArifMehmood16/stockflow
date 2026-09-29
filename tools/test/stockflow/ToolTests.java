@@ -75,6 +75,7 @@ public final class ToolTests {
     trafficTests();
     trafficTargetTest();
     trafficControlTest();
+    apiPoolTest();
     System.out.println("Passed " + passed + " Java behaviour assertions.");
   }
 
@@ -118,6 +119,29 @@ public final class ToolTests {
     }
   }
 
+  static void apiPoolTest() throws Exception {
+    var ready = new java.util.concurrent.CountDownLatch(1);
+    var starting = new java.util.concurrent.CountDownLatch(1);
+    var owned = child();
+    try (var pool = new ApiPool(8081, port -> {
+      starting.countDown();
+      ready.await();
+      return owned;
+    }); var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
+      var added = executor.submit(() -> { pool.add(); return true; });
+      starting.await();
+      check(pool.instances() == 1 && pool.nextPort() == 8081,
+          "Unready extra instance receives no traffic");
+      ready.countDown();
+      added.get(2, java.util.concurrent.TimeUnit.SECONDS);
+      check(Set.of(pool.nextPort(), pool.nextPort()).equals(Set.of(8081, 8082)),
+          "Ready owned instances share consecutive requests");
+      pool.remove();
+      check(!owned.isAlive() && pool.instances() == 1 && pool.nextPort() == 8081,
+          "Removing the owned extra instance restores the primary route");
+    } finally { ready.countDown(); owned.destroy(); }
+  }
+
   static void trafficTargetTest() throws Exception {
     var server = com.sun.net.httpserver.HttpServer.create(
         new java.net.InetSocketAddress("127.0.0.1", 0), 8);
@@ -150,7 +174,9 @@ public final class ToolTests {
   }
 
   static void trafficControlTest() throws Exception {
-    var control = new TrafficControl(() -> new TrafficRun.Observation("read → reserve → release", 8, 4));
+    var owned = child();
+    var pool = new ApiPool(8081, port -> owned);
+    var control = new TrafficControl(() -> new TrafficRun.Observation("read → reserve → release", 8, 4), pool);
     var server = Preview.create(java.nio.file.Path.of("."), 0, control);
     server.start();
     try (var client = java.net.http.HttpClient.newHttpClient()) {
@@ -172,10 +198,20 @@ public final class ToolTests {
           .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
       check(client.send(hostile, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 403,
           "Foreign browser origins cannot control local traffic");
+      var add = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/lab/traffic/add-instance"))
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(add, java.net.http.HttpResponse.BodyHandlers.ofString()).body()
+          .contains("\"instances\":2"), "HTTP control adds one ready owned instance");
+      var remove = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/lab/traffic/remove-instance"))
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(remove, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 409,
+          "Removal is refused until the bounded workload drains");
       var stop = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/lab/traffic/stop"))
           .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
       check(client.send(stop, java.net.http.HttpResponse.BodyHandlers.ofString()).body()
           .contains("\"running\":false"), "Stop reports the final status");
+      check(client.send(remove, java.net.http.HttpResponse.BodyHandlers.ofString()).body()
+          .contains("\"instances\":1") && !owned.isAlive(), "HTTP removal stops only the extra child");
     } finally {
       control.close();
       server.stop(0);

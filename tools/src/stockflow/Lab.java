@@ -158,6 +158,7 @@ public final class Lab {
         case "api-stop" -> System.out.println(Api.stop());
         case "api-smoke" -> Api.smoke();
         case "test-api-integration" -> Api.integration();
+        case "test-scaling" -> ScalingSmoke.run();
         case "check-docs" -> docs();
         case "health", "health-api" -> {
           String target =

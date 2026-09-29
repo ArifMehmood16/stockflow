@@ -43,6 +43,9 @@ test-api:
 	$(MAVEN) -q verify
 test-api-integration:
 	$(LAB) test-api-integration
+.PHONY: test-scaling
+test-scaling: api-build
+	$(LAB) test-scaling
 preview:
 	$(LAB) preview
 stop:
