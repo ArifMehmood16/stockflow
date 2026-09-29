@@ -4,16 +4,16 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Planning branch at handoff: `codex/cursor-implementation-handoff`; use the current Git history rather than assuming an old branch is checked out.
-- Current task: **A01** corrections for V0 findings R1–R3 are ready for recheck. Do not start A02.
-- Next review: **V0 recheck**.
+- Current task: **A01** targeted V0 finding R3a correction. Do not start A02.
+- Next review: **V0 focused recheck** after the retention authority contract is corrected.
 - Last accepted Cursor checkpoint: **none**.
-- Active blocker: V0 is not accepted. Docker runtime verification remains untested and was not required for this documentation correction.
+- Active blocker: V0 recheck requested changes to the cleanup role's claimed row-level retention restriction. Docker runtime verification remains untested and was not required for this documentation correction.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Cursor may prepare pending review but cannot accept its own checkpoint. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
 ## Tasks
 
-- A01: done — documentation contract; correction commit `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6` (R1–R3); prior head `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`
+- A01: in_progress — R3a correction requested; prior correction commit `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6` (R1–R3); prior head `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`
 - A02: todo
 - A03: todo
 - A04: todo
@@ -59,7 +59,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Checkpoints
 
-- V0: pending_review — recheck after R1–R3; previous verdict changes_requested on `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`; correction head `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`; packet: [reviews/V0.md](reviews/V0.md)
+- V0: changes_requested — R1/R2 resolved; R3a retention authority claim remains on correction head `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`; prior review `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9`; packet: [reviews/V0.md](reviews/V0.md)
 - V1: not_requested — after A07; reviewed code commit: none; packet: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none

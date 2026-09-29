@@ -159,3 +159,11 @@ Date: 2026-09-29. Tool: Codex. Owner-requested PLAN 0.4g; draft for human review
 Fixed ambiguous write labeling beside the replica-read line and route highlights that erased flow colors. Added typed route definitions, distinct primary-write/replica-read/WAL labels and arrowheads, replica-failure read fallback and wider component gutters. Added bounded drag/wheel/button/keyboard navigation, focus reveal and Fit system while preserving camera state during builds. Updated the fit-only product/handoff wording because the owner now explicitly requests pan/zoom.
 
 Six topology/camera regressions join the existing suite. A line-through-shard failure and an offscreen-focus browser failure were corrected before completion. Full verification passed 28 Java tooling assertions, API tests and 26 frontend tests; browser checks covered semantic routing in blue/green, failure fallback, mouse/keyboard navigation, narrow Fit, hover and build camera stability. Exact evidence is in the journal and UI verification document. No dependency, database operation or V0 review was introduced; concurrent Cursor documentation remains intact.
+
+## 013 — Recheck V0 contract corrections
+
+Date: 2026-09-29. Tool: Codex. Owner-requested V0 recheck; draft for human review.
+
+Reviewed A01 correction head `44008c0` against the previous three findings, relevant contract documents and baseline scope. R1's conflict-safe claim and separate replay read, R2's session issuer and stored replay token, and R3's terminal retention clock and per-run table privileges are specified. The cleanup role's table-level `DELETE` still permits removal of active reservations and unexpired idempotency rows, although contracts claim the role itself can delete only retained rows. Requested a focused correction that either enforces row predicates in PostgreSQL or accurately assigns them to a trusted worker and updates all role-level claims. PostgreSQL 17 privilege and row-security documentation supports the distinction.
+
+Independent Java documentation link check passed 203 links before the packet edit and 206 afterward; both reviewed Git ranges passed whitespace checks. No migration, live database, or runtime verification was run for this documentation gate. Recorded changes_requested in V0 and STATE. A02 remains blocked.
