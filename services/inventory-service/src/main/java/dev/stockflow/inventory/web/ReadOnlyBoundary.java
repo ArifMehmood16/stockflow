@@ -22,7 +22,14 @@ public final class ReadOnlyBoundary extends OncePerRequestFilter {
     if (!Set.of("localhost", "127.0.0.1", "[::1]", "::1", "inventory")
         .contains(request.getServerName())) {
       reject(response, 400, "INVALID_HOST", id);
-    } else if (!Set.of("GET", "HEAD").contains(request.getMethod())) {
+    } else if ("POST".equals(request.getMethod())
+        && "/v1/reservations".equals(request.getRequestURI())
+        && (request.getContentLengthLong() < 0 || request.getContentLengthLong() > 1024
+            || request.getHeader("Origin") != null)) {
+      reject(response, 413, "REQUEST_REJECTED", id);
+    } else if (!Set.of("GET", "HEAD").contains(request.getMethod())
+        && !("POST".equals(request.getMethod())
+            && "/v1/reservations".equals(request.getRequestURI()))) {
       response.setHeader("Allow", "GET, HEAD");
       reject(response, 405, "METHOD_NOT_ALLOWED", id);
     } else chain.doFilter(request, response);

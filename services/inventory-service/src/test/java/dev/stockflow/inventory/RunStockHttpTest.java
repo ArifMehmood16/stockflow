@@ -51,6 +51,10 @@ class RunStockHttpTest {
       return TENANT.equals(tenant) && RESERVATION.equals(id)
           ? Optional.of(new ReservationView(id, "ACTIVE", 2, 4)) : Optional.empty();
     }
+    public OperationResponse reserve(UUID tenant, UUID warehouse, String sku, int quantity,
+        String key) {
+      return new OperationResponse(201, "{\"id\":\"" + RESERVATION + "\"}", false);
+    }
   }
   @TestConfiguration static class Fixture {
     @Bean @Primary FakeRun runInventory() { return new FakeRun(); }
@@ -83,5 +87,17 @@ class RunStockHttpTest {
     assertEquals(401, get(path + "?consistency=session", good, null).statusCode());
     assertEquals(404, get("/v1/reservations/" + RESERVATION, other, null).statusCode());
     assertEquals(200, get("/v1/reservations/" + RESERVATION, good, null).statusCode());
+  }
+
+  @Test void authenticatedReserveRouteIsTheOnlyOpenedMutation() throws Exception {
+    String token = ScopeToken.issueTenant(RUN, TENANT, Instant.now().plusSeconds(300), KEY);
+    try (var client = HttpClient.newHttpClient()) {
+      var request = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/v1/reservations"))
+          .header("Authorization", "Bearer " + token).header("Idempotency-Key", "reserve-1")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("{\"warehouseId\":\"" + WAREHOUSE
+              + "\",\"sku\":\"00123\",\"quantity\":2}")).build();
+      assertEquals(201, client.send(request, HttpResponse.BodyHandlers.ofString()).statusCode());
+    }
   }
 }

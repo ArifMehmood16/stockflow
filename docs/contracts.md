@@ -111,4 +111,4 @@ Store versioned JSON definitions: `id,title,prerequisites,modeCapabilities,fixtu
 
 ## Implemented Phase 1 read-only catalog slice
 
-The diagnostic `GET /v1/catalog/{code}/stock`, `GET /health/live` and `GET /health/ready` exist. Exact response/error semantics and local-only scope are recorded in [Java baseline](java-baseline.md). Authenticated primary warehouse stock and reservation GET routes now read run-owned data using a run writer login and HMAC tenant credential. They do not write stock. Machine-readable reservation/control-plane specifications remain future work.
+The diagnostic `GET /v1/catalog/{code}/stock`, `GET /health/live` and `GET /health/ready` exist. Exact response/error semantics and local-only scope are recorded in [Java baseline](java-baseline.md). Authenticated primary warehouse stock and reservation GET routes read run-owned data using a run writer login and HMAC tenant credential. `POST /v1/reservations` now commits a conditional stock decrement and idempotent response in one transaction. Release and expiry are not yet implemented. Machine-readable reservation/control-plane specifications remain future work.

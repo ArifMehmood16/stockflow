@@ -1,6 +1,7 @@
 package dev.stockflow.inventory.web;
 
 import dev.stockflow.inventory.application.StockUnavailable;
+import dev.stockflow.inventory.application.RunFailure;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +41,11 @@ public final class ApiErrors {
 
   @ExceptionHandler(RunHttpError.class)
   public ResponseEntity<ErrorResponse> runError(RunHttpError failure, HttpServletRequest request) {
+    return error(failure.status, failure.code, failure.code, failure.retryable, request);
+  }
+
+  @ExceptionHandler(RunFailure.class)
+  public ResponseEntity<ErrorResponse> runFailure(RunFailure failure, HttpServletRequest request) {
     return error(failure.status, failure.code, failure.code, failure.retryable, request);
   }
 }

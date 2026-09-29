@@ -8,11 +8,11 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 
 - **Real Java tooling:** local HTTP preview, safe process stop, PostgreSQL schema setup, public-catalog download, JDBC COPY import and import verification.
 - **Real Java inventory reads:** Spring Boot service on port 8081; stock lookup reads the loaded PostgreSQL catalog, with liveness/readiness checks and bounded JDBC connections. See the [Java baseline](docs/java-baseline.md).
-- **Real writable run fixtures and scoped reads:** an explicit Java command creates isolated, versioned PostgreSQL inventory stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The API can read an active run with a run-issued tenant credential. Reservation writes are still pending.
+- **Real writable run fixtures and reservations:** an explicit Java command creates isolated, versioned PostgreSQL stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The API reads an active run with a run-issued tenant credential and commits atomic, idempotent reservations.
 - **Real local PostgreSQL data:** Open Food Facts products plus deterministic synthetic inventory quantities/tenant assignments. `DATASET_ROWS` is an upper bound: import the lower of that limit and the available valid, unique products. No duplicate products are invented to reach the limit.
 - **Illustrative frontend simulation:** a million logical records and up to 250,000 modeled requests/s. Its rates, failures, build timings and recoveries are teaching assumptions, not measurements from the imported database. No request load is sent to PostgreSQL yet.
 
-Reservation writes, UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
+Release/expiry, UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
 
 ## Run locally with Make
 
@@ -72,7 +72,7 @@ RUN_ID=<run ID> make api
 # GET /v1/warehouses/<warehouse UUID>/stock/<SKU> with Authorization: Bearer <token>
 ```
 
-Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped; writes are added in the next task.
+Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped. `POST /v1/reservations` requires a bearer tenant credential, a unique `Idempotency-Key` (1–128 printable non-space ASCII characters), and JSON `{warehouseId,sku,quantity}` with quantity 1–100. A repeated key with the same request returns the stored result and `Idempotency-Replayed: true`; a changed request conflicts. Stock and the response commit in one PostgreSQL transaction. Reservations currently remain ACTIVE until release/expiry is added.
 
 ## Run with Docker (Make optional)
 

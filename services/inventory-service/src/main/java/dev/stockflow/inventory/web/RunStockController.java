@@ -47,4 +47,24 @@ public final class RunStockController {
     return inventory.reservation(scope.tenantId(), id)
         .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
   }
+
+  public record ReserveRequest(UUID warehouseId, String sku, Integer quantity) {}
+
+  @PostMapping("/v1/reservations")
+  public ResponseEntity<String> reserve(
+      @RequestHeader(value = "Authorization", required = false) String token,
+      @RequestHeader(value = "Idempotency-Key", required = false) String key,
+      @RequestBody ReserveRequest body) {
+    var scope = inventory.authenticate(token);
+    if (key == null || key.length() < 1 || key.length() > 128 || !key.matches("[!-~]+")
+        || body == null || body.warehouseId() == null || body.sku() == null
+        || !body.sku().matches("[0-9]{1,32}") || body.quantity() == null
+        || body.quantity() < 1 || body.quantity() > 100)
+      throw new RunHttpError(400, "INVALID_RESERVATION", false);
+    var result = inventory.reserve(scope.tenantId(), body.warehouseId(), body.sku(),
+        body.quantity(), key);
+    var response = ResponseEntity.status(result.status()).contentType(MediaType.APPLICATION_JSON);
+    if (result.replayed()) response.header("Idempotency-Replayed", "true");
+    return response.body(result.body());
+  }
 }
