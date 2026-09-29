@@ -9,9 +9,8 @@ import {
 } from "./model.mjs";
 import { placeHover, componentSnapshot } from "./hover.mjs";
 import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
-import { realTraffic } from "./real-traffic.mjs";
 let state = initialState();
-const traffic = realTraffic();
+let traffic;
 let realMode = false;
 let realStatus = null;
 let realRate = 2;
@@ -1015,6 +1014,10 @@ async function toggleReal() {
 }
 async function initReal() {
   try {
+    // Older running preview servers may not serve this optional asset yet.
+    // Initialize the workbench first so that a missing asset cannot blank it.
+    const { realTraffic } = await import("./real-traffic.mjs");
+    traffic = realTraffic();
     const status = await traffic.status();
     realMode = true;
     $("preview-mode").textContent = "Owned Java run";

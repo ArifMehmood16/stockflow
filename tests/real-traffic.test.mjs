@@ -1,6 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { realTraffic } from "../prototype/real-traffic.mjs";
+
+test("workbench startup remains compatible with an already-running preview's asset routes", async () => {
+  const app = await readFile(new URL("../prototype/app.mjs", import.meta.url), "utf8");
+  const originalRoutes = new Set(["./model.mjs", "./hover.mjs", "./topology.mjs"]);
+  for (const match of app.matchAll(/^import[\s\S]*?from\s+["']([^"']+)["'];/gm)) {
+    assert.ok(originalRoutes.has(match[1]), `Optional ${match[1]} must not block workbench startup`);
+  }
+});
 
 test("browser control uses only the fixed local path and bounded rate", async () => {
   const calls = [];
