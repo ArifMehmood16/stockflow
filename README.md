@@ -107,7 +107,7 @@ Operational tooling is Java under `tools/`; browser code/tests remain JavaScript
 
 ## Build package
 
-**Continuing development in Cursor:** start with [CURSOR.md](CURSOR.md). It provides copy-and-paste prompts, [43 small task cards](docs/implementation/README.md), a [state ledger](docs/implementation/STATE.md), and [Codex validation checkpoints](docs/implementation/VALIDATION.md). Implement one requested item, commit it, then stop; ask Codex to validate only at the named gates.
+**Continuing development with Codex and ChatGPT:** start with the [43 small task cards](docs/implementation/README.md), [state ledger](docs/implementation/STATE.md), and [validation checkpoints](docs/implementation/VALIDATION.md). Implement one requested item, commit it, then stop at its checkpoint.
 
 - [Plan and acceptance gates](PLAN.md)
 - [Product and learning journey](docs/product.md)

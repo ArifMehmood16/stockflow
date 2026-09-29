@@ -6,9 +6,9 @@ Code baseline: `ba824c7` (includes Java API checkpoints `e13cd91`/`5946eda` and 
 
 ## How the owner wants to work now
 
-Cursor implements one requested item at a time. Codex validates at the named milestones to reduce repeated model usage. Read [CURSOR](CURSOR.md), [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each agent conversation.
+Codex and ChatGPT implement one requested item at a time and validate at named milestones. Read [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each conversation.
 
-**Next action: Cursor corrects V0 finding R3a in A01, then requests a focused Codex recheck. Do not start A02 until V0 is accepted.** A01 recommends the writable contract in ADR 002 and does not change runtime code. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
+**Current action: A02 reproducible build and CI.** V0 was accepted after the A01 retention-authority correction. A01 recommends the writable contract in ADR 002 and does not change runtime code. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
 
 ## Working implementation
 
