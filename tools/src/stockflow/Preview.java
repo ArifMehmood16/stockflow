@@ -20,6 +20,7 @@ final class Preview {
     var files = new HashMap<String, String>();
     files.put("/", "index.html");
     files.put("/index.html", "index.html");
+    files.put("/favicon.svg", "favicon.svg");
     files.put("/styles.css", "styles.css");
     files.put("/app.mjs", "app.mjs");
     files.put("/model.mjs", "model.mjs");

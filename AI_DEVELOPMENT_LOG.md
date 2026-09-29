@@ -1,5 +1,6 @@
 # AI development log
 
+
 ## 001 — Design StockFlow and deliver an interactive prototype
 
 Date: 2026-09-29. Tool: Codex. Phase: 0. Status: draft for human review.
@@ -92,3 +93,11 @@ Real integration creates/removes its own random database, verifies bound SQL, st
 ### Entry 005 final checkpoint
 
 Implementation `e13cd91` pushed on the dedicated Phase 1 branch. Final verify passed 28 tool assertions, 10 service tests and 14 frontend tests; real JDBC integration passed and removed its database. The packaged API matched the loaded catalog both before and after a clean rebuild. Startup uses an owned JAR copy to isolate a running JVM from build output changes. Initial class-loading failure did not recur in the final checks; its original cause remains unestablished and is recorded in the journal. Safe stop and repeated stop passed on the agent's isolated ports; PostgreSQL was left running. Docker config passed; daemon execution, full Phase 1 correctness/coverage/CI and measured frontend integration remain pending. Documentation and resume handoff updated for this exact boundary.
+
+## 006 — Add the StockFlow favicon
+
+Date: 2026-09-29. Tool: Codex. User-requested PLAN 0.4e. Draft for human review.
+
+Added an original mint/navy SF monogram as a small, font-independent SVG, linked it from the page head and included its exact path in the Java preview allowlist. The existing Docker image copies the prototype directory, so no container-specific asset configuration is needed. No new dependency, external image, script or network origin was introduced.
+
+Verification: local preview returned HTTP 200 with image/svg+xml and the page contained the favicon link; xmllint accepted the SVG; make test-java passed all 28 existing assertions; git diff --check passed. This small static-asset change did not require additional tests. Container execution and browser-tab rendering were not separately tested.

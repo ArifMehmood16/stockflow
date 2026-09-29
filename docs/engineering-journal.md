@@ -1,5 +1,6 @@
 # Engineering journal
 
+
 ## 2026-09-29 — Phase 0 design and prototype
 
 Initial state: new directory and empty GitHub repository; no inherited application code. The existing RAG repository was read for instructions and left unchanged. Working branch: `codex/phase-0-stockflow-design-and-prototype`. Repository was first created as private `systems-lab`, then renamed to `stockflow` and made public at the user's explicit request before first push.
@@ -131,3 +132,7 @@ Formatted the Java changes with the existing local Google Java Format tool. The 
 - No frontend source/layout changes in this service checkpoint. Database stock reads and real process lifecycle were tested; Docker execution, reservation writes, tenant credentials, real load and measured animation are still pending.
 
 Follow-up documentation/CLI wording commit records this checkpoint. Future work resumes from PLAN 1.1/1.2, not from a claim that the whole Phase 1 gate has passed.
+
+## 2026-09-29 — StockFlow favicon
+
+User-requested PLAN 0.4e: added a mint/navy SF vector monogram, its HTML icon link and an explicit Java static route. `PORT=4177 make preview` served the asset with HTTP 200 and image/svg+xml; fetched HTML contained the icon link. `xmllint --noout prototype/favicon.svg`, `make test-java` (28 assertions), and `git diff --check` passed. No dependencies or CSP expansion. Existing Docker COPY includes the asset; container execution and browser-tab appearance were not tested for this change.
