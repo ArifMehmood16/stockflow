@@ -1,6 +1,10 @@
 # Threat model
 
-Scope: educational lab using synthetic data, initially local. Public site should expose simulation only. Current prototype has no backend control, external load target or stored secrets.
+Scope: educational lab using synthetic data, initially local. Public site should expose simulation only. Native preview control now supports bounded traffic and one extra owned API when a run is selected; it must not be publicly exposed.
+
+## Current native traffic and scaling control
+
+The preview accepts only fixed start/stop/add-instance/remove-instance paths. Foreign browser Origins are rejected; targets are loopback inventory ports selected by trusted configuration, with redirects disabled. The extra API uses the adjacent configured port, the same selected run credentials and a 256 MiB heap cap. The browser supplies no process arguments, paths, credentials or target URLs. The existing launcher refuses occupied ports, snapshots the trusted application artifact, registers the owned child and waits for database readiness before routing. Removal requires the workload to stop and drain; only the owned child handle is terminated. Normal preview shutdown cleans it up; an abrupt OS kill can leave a registered child requiring `api-stop`. The preview holds the selected run signing key to issue local tenant credentials; it is a trusted local controller, not a public multi-user service. Traffic counters are dispatched requests/cycles, not claims of database capacity or throughput improvement.
 
 ## Boundaries and controls
 

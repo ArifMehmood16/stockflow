@@ -31,7 +31,7 @@ Task states: `todo`, `in_progress`, `partial`, `done` (implemented/self-tested),
 - D01: partial — fixed-target bounded Java cycles and status; workload distributions and benchmark accounting deferred
 - D02: todo
 - D03: partial — first workbench chapter starts/stops and polls the Java fixture run; remaining controls are model-only
-- D04: todo
+- D04: partial — native second API start/readiness, round-robin HTTP dispatch and safe removal; live cross-instance replay passed; broader benchmarking remains deferred
 - D05: todo
 - E01: todo
 - E02: todo

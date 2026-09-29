@@ -14,6 +14,8 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 
 Redis, physical replication and separate shard processes remain planned. The architecture animation and unbuilt solution controls use the illustrative model; creating a fixture does not convert those counters to measured telemetry.
 
+**Real service scaling:** with `RUN_ID` selected, use **Add real API instance** on the extra API card. The preview starts one owned Java process on `API_PORT + 1`, waits for database readiness, then alternates requests between the two APIs. Cards show cumulative dispatched HTTP request counts; both use the same PostgreSQL primary. Stop traffic before **Remove instance**. Unimplemented resource/fault buttons are disabled in real mode; `make preview` without `RUN_ID` retains the model lessons. Each API has a 256 MiB heap cap and its existing bounded pools; this is a functional scaling experiment, not a throughput benchmark. Normal preview shutdown also stops the extra API. After a forced OS kill, use `API_PORT=<extra port> make api-stop` for the registered child.
+
 ## Run locally with Make
 
 Prerequisites:
@@ -115,6 +117,7 @@ Hover or keyboard-focus a component or individual shard for its current modeled 
 make test-java        # Java behavior tests; local loopback/owned child process checks
 make test-api         # Service unit, HTTP and architecture tests; no database needed
 make test-api-integration # JDBC stock reads in an owned temporary database
+RUN_ID=<owned run ID> API_PORT=8083 make test-scaling # Two owned JVMs; shared idempotency and safe removal
 make test            # Also frontend model tests (Node.js 24+ required for these tests)
 make lint            # Java compiler warnings, JS syntax, docs links, Git whitespace
 make verify          # Tests, core coverage gate and lint
