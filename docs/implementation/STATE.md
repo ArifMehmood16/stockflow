@@ -4,10 +4,10 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Working base: `main` contains the Phase 0, Phase 1 baseline and Cursor handoff history. R3a correction branch: `codex/a01-v0-retention-authority`, created from `main`.
-- Current task: **A01** R3a correction is ready for a focused V0 recheck. Do not start A02.
-- Next review: **V0 focused recheck**.
-- Last accepted Cursor checkpoint: **none**.
-- Active blocker: V0 is not accepted. Docker runtime verification remains untested and was not required for this documentation correction.
+- Current task: **A02** reproducible build and CI, after accepted V0.
+- Next review: **V1 after A07**; A02 itself has a task completion check.
+- Last accepted checkpoint: **V0** on A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`.
+- Active blocker: none for A02. Docker runtime verification remains untested and is still required for V1.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Cursor may prepare pending review but cannot accept its own checkpoint. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
@@ -59,7 +59,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Checkpoints
 
-- V0: pending_review — focused recheck of R3a; previous changes_requested head `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`; correction head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`; packet: [reviews/V0.md](reviews/V0.md)
+- V0: accepted — reviewed A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`; prior changes_requested head `44008c067b4f2bdcb1951ae9ba20d0d6b6603db6`; packet: [reviews/V0.md](reviews/V0.md)
 - V1: not_requested — after A07; reviewed code commit: none; packet: none
 - V2: not_requested — after B04; reviewed code commit: none; packet: none
 - V3: not_requested — after C04; reviewed code commit: none; packet: none

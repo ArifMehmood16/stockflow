@@ -215,3 +215,9 @@ Independent checks: `.lab/jdk/Contents/Home/bin/java tools/Build.java check-docs
 ## 2026-09-29 — V0 finding R3a
 
 Documentation-only, on branch `codex/a01-v0-retention-authority` from `main`. The cleanup role's `DELETE` grant is now described as table-wide on the two history tables. The 24-hour clocks stay in the worker's `DELETE` statements. No row-security policy is claimed, so an early delete is not described as a privilege failure. ADR 002, contracts, the threat model and the architecture summary use that same split. A02 was not started. `.lab/jdk/Contents/Home/bin/java tools/Build.java check-docs` passed: `Checked 208 local documentation links.` `git diff --check` passed. Migrations were not applied.
+
+## 2026-09-29 — V0 accepted after retention correction
+
+Reviewed A01 correction `c5e8599` against the R3a finding, ADR 002, contracts, architecture and threat model. The two history-table grants are explicitly table-wide; the retention clocks are trusted-worker DELETE predicates. The documentation no longer claims an early delete is rejected by PostgreSQL. The earlier idempotency and session-token corrections remain intact. Accepted V0 as a technical contract, with worker SQL and credential isolation to be tested at V1. Smaller-than-100 catalog behavior remains a non-blocking documentation issue.
+
+`make verify` passed 28 Java tooling assertions, Maven tests, 28 frontend tests, syntax and 208 links before editing the review packet. The final packet is under 600 words, `git diff --check` passed, and final link check passed 206 links after simplifying historical links. No migration, database write, or Docker run was used for this docs-only gate.

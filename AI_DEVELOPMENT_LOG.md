@@ -189,3 +189,11 @@ Date: 2026-09-29. Tool: Codex. Owner-requested Phase 0 workbench refinement; dra
 Moved the full-width workload, capacity and fault rows into two compact canvas-edge docks. Load and rate statistics stay expanded vertically; the fault drawer starts collapsed and opens from each component’s Faults button. Added 10,000 req/s load steps, inset-aware Fit behavior on wider screens, and pointer handling so dock actions do not pan the map. No service or database contract changed.
 
 Behavioral tests first failed for the old 8,000 req/s baseline and missing Fit inset, then passed after the changes. Full `make verify` passed 28 tooling assertions, Maven API tests, 28 frontend tests, syntax and 207 documentation links. Browser checks covered desktop and phone widths, load rates, drawer target/focus, and dock bounds. The rates remain illustrative. V0 and A02 status are unchanged.
+
+## 016 — Accept the corrected V0 contract
+
+Date: 2026-09-29. Tool: Codex. Owner requested review of completed work and continuation; draft for human review.
+
+Reviewed the already-merged canvas change and the separate A01 retention correction. The canvas remained illustrative, and `make verify` passed. The A01 contract now states its cleanup role has table-wide DELETE on two history tables and gives the 24-hour predicates to a trusted worker. This resolves the earlier false claim of database-enforced row retention. V0 was accepted on correction head `c5e8599`; V1 must test worker predicates and keep the cleanup credential out of HTTP handlers. The smaller-catalog fixture wording remains a non-blocking follow-up.
+
+No migration, runtime write, or Docker fault was performed in this documentation review. The owner requested that Codex and ChatGPT continue development without Cursor; the workflow documents will be updated separately.
