@@ -3,7 +3,7 @@
 This is the single task and checkpoint status ledger. Do not duplicate task checkboxes elsewhere. Task cards contain specifications, not completion claims.
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
-- Planning branch at handoff: `codex/cursor-implementation-handoff`; use the current Git history rather than assuming an old branch is checked out.
+- Working base: `main` contains the Phase 0, Phase 1 baseline and Cursor handoff history. Create a new task branch from `main` for the next item.
 - Current task: **A01** targeted V0 finding R3a correction. Do not start A02.
 - Next review: **V0 focused recheck** after the retention authority contract is corrected.
 - Last accepted Cursor checkpoint: **none**.
