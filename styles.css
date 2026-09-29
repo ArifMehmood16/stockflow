@@ -428,7 +428,6 @@ h2 {
   stroke: #94b3a7;
   stroke-width: 1.5;
   fill: none;
-  marker-end: url(#arrow);
   color: #94b3a7;
 }
 .edge.write {
@@ -1065,7 +1064,6 @@ h2 {
 }
 .routes-changed .edge.enabled {
   stroke-width: 3;
-  stroke: #169a76;
 }
 .routes-changed .edge.read:not(.muted-route) {
   stroke-width: 2.5;
@@ -1451,9 +1449,6 @@ body {
 .edge.failed {
   stroke: #fa8f88;
   color: #fa8f88;
-}
-.routes-changed .edge.enabled {
-  stroke: #abffd6;
 }
 .graph-footer {
   background: #132035;
@@ -2209,7 +2204,58 @@ h1 {
 }
 .graph,
 .edges {
-  height: 440px;
+  width: 1240px;
+  height: 660px;
+}
+.graph-scroll {
+  position: relative;
+  display: block;
+  overflow: clip;
+  cursor: grab;
+  touch-action: none;
+}
+.graph-scroll.panning { cursor: grabbing; user-select: none; }
+.graph-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.graph-stage { position: absolute; inset: 0; overflow: visible; }
+.canvas-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: #132035;
+  border-bottom: 1px solid #354b60;
+  flex: none;
+  font-size: 10px;
+}
+#canvas-help { margin-right: auto; color: #a7bad0; }
+.canvas-toolbar button {
+  border: 1px solid #496077;
+  background: #22354a;
+  color: #e0f1f6;
+  border-radius: 4px;
+  padding: 4px 8px;
+  min-height: 28px;
+  min-width: 28px;
+}
+#zoom-level { min-width: 34px; text-align: center; font-family: var(--mono); }
+.edge.read { marker-end: url(#arrow-read); }
+.edge.write { marker-end: url(#arrow-write); }
+.edge.replication { marker-end: url(#arrow-replication); }
+.running:not(.reduced) .edge.write.enabled { stroke-dasharray: 9 6; }
+.running:not(.reduced) .edge.replication.enabled { stroke-dasharray: 2 7; }
+.edges .route-label {
+  font: 10px var(--mono);
+  paint-order: stroke;
+  stroke: #0c1727;
+  stroke-width: 4px;
+  stroke-linejoin: round;
+  transition: opacity 0.25s;
+}
+.route-label.read { fill: #82e8c5; }
+.route-label.write { fill: #c4ceff; }
+.route-label.replication { fill: #eac57f; }
+@media (max-width: 760px) {
+  #canvas-help { font-size: 9px; max-width: 115px; }
 }
 .component-shell {
   height: 120px;

@@ -7,6 +7,7 @@ import {
   componentAvailable,
 } from "./model.mjs";
 import { placeHover, componentSnapshot } from "./hover.mjs";
+import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
 let state = initialState();
 let chapter = 0;
 let faultNode = "cache";
@@ -27,6 +28,52 @@ let routeNotice =
   "Build directly on the map. Select a component to inspect it.";
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => Math.round(n).toLocaleString("en-GB");
+for (const [id, box] of Object.entries(nodes)) {
+  const shell = $(`component-${id}`);
+  shell.style.left = `${box.x}px`;
+  shell.style.top = `${box.y}px`;
+  shell.style.width = `${box.width}px`;
+  shell.style.height = `${box.height}px`;
+}
+for (const element of [$("graph"), document.querySelector(".edges")]) {
+  element.style.width = `${scene.width}px`;
+  element.style.height = `${scene.height}px`;
+}
+const svgNS = "http://www.w3.org/2000/svg";
+for (const [kind, color] of Object.entries({ read: "#58dbb1", write: "#a6b8ff", replication: "#eac57f" })) {
+  const marker = document.createElementNS(svgNS, "marker");
+  marker.id = `arrow-${kind}`;
+  for (const [name, value] of Object.entries({ viewBox: "0 0 10 10", refX: "9", refY: "5", markerWidth: "5", markerHeight: "5", orient: "auto" })) marker.setAttribute(name, value);
+  const head = document.createElementNS(svgNS, "path");
+  head.setAttribute("d", "M0 0 L10 5 L0 10 Z");
+  head.setAttribute("fill", color);
+  marker.append(head);
+  document.querySelector(".edges defs").append(marker);
+}
+function renderRoutes() {
+  for (const route of routes(state)) {
+    let path = $(route.id);
+    if (!path) {
+      path = document.createElementNS(svgNS, "path");
+      path.id = route.id;
+      const label = document.createElementNS(svgNS, "text");
+      label.id = `${route.id}-label`;
+      $("route-layer").append(path, label);
+    }
+    path.setAttribute("d", route.path);
+    path.setAttribute("class", `edge ${route.kind} optional${route.active ? " enabled" : ""}`);
+    path.setAttribute("marker-end", `url(#arrow-${route.kind})`);
+    path.dataset.from = route.from;
+    path.dataset.to = route.to;
+    path.dataset.kind = route.kind;
+    const label = $(`${route.id}-label`);
+    label.textContent = route.label.text;
+    label.setAttribute("x", route.label.x);
+    label.setAttribute("y", route.label.y);
+    label.setAttribute("class", `route-label ${route.kind}`);
+    label.style.opacity = route.active ? 1 : 0;
+  }
+}
 const chapters = [
   {
     name: "Single database",
@@ -682,57 +729,8 @@ function render() {
     document
       .querySelector(`[data-node=${id}]`)
       .classList.toggle("inactive", !active);
-    $(`edge-${id}`).classList.toggle("enabled", active);
   }
-  $("edge-replica").classList.toggle(
-    "enabled",
-    state.replica && !state.primaryDown && state.faults.replica !== "crash",
-  );
-  $("edge-replica-read").classList.toggle(
-    "enabled",
-    state.replica &&
-      state.faults.replica !== "crash" &&
-      !(
-        state.faults.replica === "lag" &&
-        state.protections.includes("replica:lag")
-      ),
-  );
-  $("edge-db").setAttribute(
-    "d",
-    state.green ? "M324 32 V15 H948 V210 H934" : "M622 210 H758",
-  );
-  $("edge-db-read").setAttribute(
-    "d",
-    state.green ? "M412 52 H426 V10 H740 V192 H758" : "M622 192 H758",
-  );
-  $("edge-cache").setAttribute(
-    "d",
-    state.green ? "M412 62 H426 V20 H728 V62 H758" : "M550 168 V160 H696 V62 H758",
-  );
-  $("edge-replica-read").setAttribute(
-    "d",
-    state.green ? "M412 83 H430 V160 H676 V334 H758" : "M622 219 H696 V334 H758",
-  );
-  $("edge-shard").setAttribute(
-    "d",
-    state.green ? "M236 105 H222 V296 H534 V304" : "M534 288 V304",
-  );
-  $("edge-db").classList.toggle("failed", state.primaryDown);
-  $("edge-db-read").classList.toggle(
-    "muted-route",
-    state.replica || state.primaryDown,
-  );
-  $("edge-db-read").classList.toggle("cache-remainder", m.cacheAvailable);
-  $("edge-api").classList.toggle("muted-route", state.green);
-  $("edge-api2").classList.toggle(
-    "enabled",
-    state.instances > 1 && !state.green,
-  );
-  $("edge-api2-db").classList.toggle(
-    "enabled",
-    state.instances > 1 && !state.green && !state.primaryDown,
-  );
-  $("edge-green").classList.toggle("enabled", state.green);
+  renderRoutes();
 
   $("component-api").classList.toggle("standby", state.green);
   $("component-green").classList.toggle("serving", state.green);
@@ -745,8 +743,6 @@ function render() {
     : state.greenReady
       ? "ready · awaiting switch"
       : "not built";
-  $("wal-label").style.opacity = state.replica ? 1 : 0.2;
-  $("cache-label").style.opacity = state.cache ? 1 : 0.2;
   const db = document.querySelector("[data-node=db]");
   db.classList.toggle("stressed", m.pressure > 1 && !state.primaryDown);
   db.classList.toggle("failed", state.primaryDown);
@@ -1029,14 +1025,99 @@ log("Baseline ready: one API, one database. Select a component to explore.");
 render();
 renderInspector();
 const graphViewport = document.querySelector(".graph-scroll");
-new ResizeObserver(() => {
-  const scale = Math.min(
-    1,
-    graphViewport.clientWidth / 960,
-    graphViewport.clientHeight / 440,
-  );
-  $("graph").style.transform = `scale(${scale})`;
-  document.querySelector(".graph-stage").style.width = `${960 * scale}px`;
-  document.querySelector(".graph-stage").style.height = `${440 * scale}px`;
+const viewportSize = () => ({ width: graphViewport.clientWidth, height: graphViewport.clientHeight });
+let camera = fitCamera(viewportSize());
+let fitted = true;
+let drag = null;
+let previousSize = viewportSize();
+function paintCamera() {
+  $("graph").style.transform = `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`;
+  $("zoom-level").textContent = `${Math.round(camera.scale * 100)}%`;
+  $("zoom-out").disabled = camera.scale <= 0.15;
+  $("zoom-in").disabled = camera.scale >= 2.5;
   hideHover();
+}
+function fitView() {
+  fitted = true;
+  camera = fitCamera(viewportSize());
+  paintCamera();
+}
+function zoomView(factor, point) {
+  const size = viewportSize();
+  fitted = false;
+  camera = zoomCamera(camera, factor, point || { x: size.width / 2, y: size.height / 2 }, size);
+  paintCamera();
+}
+$("zoom-in").onclick = () => zoomView(1.25);
+$("zoom-out").onclick = () => zoomView(1 / 1.25);
+$("fit-system").onclick = fitView;
+graphViewport.addEventListener("focusin", event => {
+  const card = event.target.closest(".component-shell");
+  if (!card) return;
+  const box = card.getBoundingClientRect(), frame = graphViewport.getBoundingClientRect();
+  const offset = (start, end, low, high) => end - start > high - low - 24
+    ? (low + high - start - end) / 2
+    : start < low + 12 ? low + 12 - start : end > high - 12 ? high - 12 - end : 0;
+  const dx = offset(box.left, box.right, frame.left, frame.right);
+  const dy = offset(box.top, box.bottom, frame.top, frame.bottom);
+  if (!dx && !dy) return;
+  fitted = false;
+  camera = panCamera(camera, dx, dy, viewportSize());
+  paintCamera();
+  if (event.target.matches(".node:focus-visible,.shard-cell:focus-visible")) {
+    hoverNode = event.target;
+    hoverNode.classList.add("hovered");
+    renderHover();
+  }
+});
+graphViewport.addEventListener("wheel", event => {
+  event.preventDefault();
+  const rect = graphViewport.getBoundingClientRect();
+  const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? rect.height : 1);
+  zoomView(Math.exp(-Math.max(-300, Math.min(300, delta)) * 0.002), { x: event.clientX - rect.left, y: event.clientY - rect.top });
+}, { passive: false });
+graphViewport.addEventListener("pointerdown", event => {
+  if (drag || event.button !== 0 || event.target.closest("button, a, input, select")) return;
+  drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+  graphViewport.setPointerCapture(event.pointerId);
+  graphViewport.classList.add("panning");
+  graphViewport.focus({ preventScroll: true });
+  hideHover();
+});
+graphViewport.addEventListener("pointermove", event => {
+  if (!drag || drag.id !== event.pointerId) return;
+  fitted = false;
+  camera = panCamera(camera, event.clientX - drag.x, event.clientY - drag.y, viewportSize());
+  drag.x = event.clientX;
+  drag.y = event.clientY;
+  paintCamera();
+});
+function endPan() {
+  const id = drag?.id;
+  drag = null;
+  if (id !== undefined && graphViewport.hasPointerCapture(id)) graphViewport.releasePointerCapture(id);
+  graphViewport.classList.remove("panning");
+}
+graphViewport.addEventListener("pointerup", endPan);
+graphViewport.addEventListener("pointercancel", endPan);
+graphViewport.addEventListener("lostpointercapture", endPan);
+window.addEventListener("blur", endPan);
+graphViewport.addEventListener("keydown", event => {
+  if (event.target !== graphViewport) return;
+  const shifts = { ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] };
+  if (shifts[event.key]) {
+    fitted = false;
+    camera = panCamera(camera, ...shifts[event.key], viewportSize());
+    paintCamera();
+  } else if (["+", "="].includes(event.key)) zoomView(1.25);
+  else if (event.key === "-") zoomView(1 / 1.25);
+  else if (event.key === "0") fitView();
+  else return;
+  event.preventDefault();
+});
+new ResizeObserver(() => {
+  const size = viewportSize();
+  camera = fitted ? fitCamera(size) : panCamera(camera, (size.width - previousSize.width) / 2, (size.height - previousSize.height) / 2, size);
+  previousSize = size;
+  paintCamera();
 }).observe(graphViewport);
