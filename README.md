@@ -2,19 +2,36 @@
 
 **An interactive system-design playground: create a bottleneck, add a solution, and discover the next trade-off.**
 
+[**Try the live demo →**](https://arifmehmood16.github.io/stockflow/) · [Read the article draft](docs/articles/distributed-systems-simulator.md)
+
 The **StockFlow inventory scenario** lets you evolve one architecture from a single API and database into a system with caching, read replicas, multiple shards, failure recovery, and blue/green deployment. Build components directly on the map, follow animated request routes, inspect their behavior, and use the guided learning path to understand each change.
 
 **Everything is simulated in the browser.** No backend, database, dataset, credentials, Java installation, or real load generator is required. Technology logos represent the architecture being taught—not running services.
 
+![The live simulator after adding Redis and a second API, showing 30,000 modeled requests per second.](docs/images/scaled-system.png)
+
+*Actual screenshot of the published browser simulator. All throughput values are teaching-model outputs.*
+
 ## A two-minute walkthrough
 
-1. Run `make run` and open [the simulator](http://127.0.0.1:4173).
+1. Open [the live demo](https://arifmehmood16.github.io/stockflow/)—no setup or sign-in needed. Or use `make run` locally.
 2. Start traffic and set **30,000 requests/s**. The database becomes the modeled bottleneck: about **12,000 requests/s** complete.
 3. Build **Redis** on the map. Repeated reads stop reaching the database; the next limit is the API at **22,000 requests/s**.
 4. Add another **API instance**. After its simulated readiness check, routes change and the modeled system handles **30,000 requests/s**.
 5. Inject a **cache stampede**, inspect its effect, and apply a fix. Compare what improves and what remains constrained.
 
 These are reproducible teaching-model outputs, not measured throughput or recommended production sizing.
+
+<details>
+<summary>Before caching: the database is the bottleneck</summary>
+
+![30,000 offered requests per second; 12,000 complete and 18,000 are rejected in the baseline model.](docs/images/database-bottleneck.png)
+
+Adding Redis moves the next limit to the API:
+
+![Redis lowers database demand to 8,400 operations per second; the single API caps modeled completions at 22,000 requests per second.](docs/images/cache-added.png)
+
+</details>
 
 ## What this portfolio project demonstrates
 
@@ -56,6 +73,10 @@ PORT=4174 make stop
 
 The Node helper serves static files only. All simulation state and behavior live in your browser; it exposes no application API. Reloading resets the scenario. Traffic animation continues until paused; it sends no network requests. `make run` ignores old `.env` files and never imports data or connects to PostgreSQL.
 
+## Free hosted demo
+
+The public demo uses **GitHub Pages**, available free for public repositories, at the default `github.io` address. No paid compute, database or custom domain is used. [Publishing instructions](docs/HOSTING.md) explain how the static `gh-pages` branch is updated; that deployment branch must be retained.
+
 ## Optional Docker run
 
 Prerequisites: a running **Docker Engine/Desktop with Compose v2**. Node and Make are unnecessary on the host if you use Compose directly.
@@ -90,4 +111,4 @@ The app shows the current bottleneck and assumptions. See [the simulation design
 
 [Current plan](PLAN.md) · [Historical design archive](docs/archive/README.md) · [Asset attribution](THIRD_PARTY_NOTICES.md) · [Development record](AI_DEVELOPMENT_LOG.md)
 
-A future Medium article will explain the walkthrough, model choices and trade-offs. No article or hosted demo has been published yet.
+The [Medium article draft](docs/articles/distributed-systems-simulator.md) explains the walkthrough and the decision to remove the backend. It is ready for review, with [publishing notes](docs/articles/medium-publishing-notes.md) and three current screenshots. The demo is live; the article has **not** been published on Medium.

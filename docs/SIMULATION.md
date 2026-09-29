@@ -4,7 +4,7 @@ This is the current architecture. Older documents describe the retired real-serv
 
 ## Runtime
 
-A static HTML page imports four local JavaScript modules. `model.mjs` owns pure state transitions and aggregate metrics. `app.mjs` renders the state and stages build animations. `topology.mjs` calculates routes and camera transforms; `hover.mjs` describes components and places tooltips. Node or Docker may serve these files, but no application backend exists. Network connections from browser scripts are blocked by the local host's content-security policy.
+A static HTML page imports four local JavaScript modules. `model.mjs` owns pure state transitions and aggregate metrics. `app.mjs` renders the state and stages build animations. `topology.mjs` calculates routes and camera transforms; `hover.mjs` describes components and places tooltips. Node or Docker may serve these files, but no application backend exists. Network connections from browser scripts are blocked by the page's content-security policy (also sent as a header by the local host). The public GitHub Pages deployment serves the same static files.
 
 ## One evolving model
 
