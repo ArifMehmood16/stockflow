@@ -1,6 +1,6 @@
 # Codex validation checkpoints
 
-The owner explicitly requests reviews at these gates. Cursor prepares evidence and fixes findings; Codex independently examines the scoped change and records a verdict. **Cursor never accepts its own gate.** Do not call Codex for every small item; use the ten milestones below unless an earlier material decision/security issue genuinely blocks progress.
+The owner explicitly requests reviews at these gates. The implementing agent prepares evidence and fixes findings; a separate review pass examines the scoped change and records a verdict. **Self-testing does not accept a checkpoint.** Use the ten milestones below unless an earlier material decision/security issue genuinely blocks progress.
 
 ## Request a review
 
@@ -26,7 +26,7 @@ Use [the review template](review-template.md) to create `docs/implementation/rev
 - Link to small sanitized fixtures/reports/screenshots and relevant journal entries. Do not commit secrets, full SQL dumps or huge logs. Do not omit a failed attempt that explains a material limitation.
 - Commit implementation first, then the packet as a docs-only checkpoint. A packet's code head is the implementation commit, not its own self-referential hash. Codex also examines any intervening docs changes that affect the contract.
 - An acceptance attaches to the reviewed code head. New implementation fixes after a review require an updated head and targeted revalidation; do not reuse the old verdict blindly.
-- Codex records blocking findings with file/behavior, a reproduction, why it matters and an objective fix criterion. Cosmetic suggestions need not block correctness gates. Cursor implements only those fixes and asks for a scoped recheck; no whole-project restart.
+- The review records blocking findings with file/behavior, a reproduction, why it matters and an objective fix criterion. Cosmetic suggestions need not block correctness gates. The implementing agent fixes only those findings and requests a scoped recheck; no whole-project restart.
 - Human choices such as licence, public hosting and newly proposed data contracts are identified separately from test results. A design recommendation is not already an owner approval. V0 can accept technical consistency while explicitly naming any owner decision that still blocks A02.
 
 ## V0 — Writable contract and data ownership
@@ -115,4 +115,4 @@ Required proof: restored write ledger, reproducible raw benchmark summaries, fin
 
 ## After a review
 
-Codex updates the packet and STATE with verdict, reviewed head, findings and date, commits the review record, and stops. Cursor fixes only requested issues on top of that history. The owner requests either the recheck or next single card. Do not rewrite history to hide a failed check, add unverifiable approval claims, or erase the original evidence.
+The reviewer updates the packet and STATE with verdict, reviewed head, findings and date, commits the review record, and stops. The implementing agent fixes only requested issues on top of that history. The owner requests either the recheck or next single card. Do not rewrite history to hide a failed check, add unverifiable approval claims, or erase the original evidence.

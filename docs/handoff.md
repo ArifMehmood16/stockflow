@@ -2,7 +2,7 @@
 
 ## Start here
 
-For the owner's current Cursor/Codex workflow, begin with [CURSOR](../CURSOR.md). The [task cards](implementation/README.md) split the remaining work into individual implementation requests, and [validation gates](implementation/VALIDATION.md) define when to ask Codex to review. Task status belongs in [STATE](implementation/STATE.md), not in this narrative handoff.
+For the owner's current Codex/ChatGPT workflow, begin with the [task cards](implementation/README.md) and [state ledger](implementation/STATE.md). The [validation gates](implementation/VALIDATION.md) define when to review. Task status belongs in STATE, not in this narrative handoff.
 
 1. Read README prerequisites, configure the existing local database, then use `make run`; use `make preview` for the Java-served sketch without setup. Read dataset-and-scale.md for the real import boundary, product.md and design/ux.md for intended versus implemented simulation behavior.
 2. Read the owner-directed continuation in ADR 001 and the implemented read-only slice in java-baseline.md. PLAN.md tracks the remaining Phase 1 work; licence and hosting decisions remain open.

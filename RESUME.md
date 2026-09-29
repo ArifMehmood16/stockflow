@@ -1,14 +1,14 @@
 # Resume StockFlow
 
 Public repository: https://github.com/ArifMehmood16/stockflow
-Current branch: `main`. Earlier phase and handoff branches were consolidated into this linear history.
+Current work branch: `codex/phase-1-reproducible-build-and-ci` from `main`. Earlier phase and handoff branches were consolidated into main.
 Code baseline: `ba824c7` (includes Java API checkpoints `e13cd91`/`5946eda` and favicon).
 
 ## How the owner wants to work now
 
-Cursor implements one requested item at a time. Codex validates at the named milestones to reduce repeated model usage. Read [CURSOR](CURSOR.md), [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each agent conversation.
+Codex and ChatGPT implement one requested item at a time and validate at named milestones. Read [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each conversation.
 
-**Next action: Cursor corrects V0 finding R3a in A01, then requests a focused Codex recheck. Do not start A02 until V0 is accepted.** A01 recommends the writable contract in ADR 002 and does not change runtime code. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
+**Current state: A02 reproducible build and CI is self-tested; A03 is next when requested.** V0 was accepted after the A01 retention-authority correction. A01 recommends the writable contract in ADR 002 and does not change runtime code. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
 
 ## Working implementation
 
@@ -18,7 +18,7 @@ Cursor implements one requested item at a time. Codex validates at the named mil
 - `make stop`: owned UI/API only; PostgreSQL/data preserved.
 - Existing suites: `make verify`, `make test-integration`, `make test-api-integration`.
 - Java 25, Spring Boot 4.0.8, pgJDBC 42.7.13; Java-launched pinned Maven 3.9.11. No Python scripts/backend. Node currently supports frontend tests and will support React/TypeScript build tooling.
-- Last full runtime verification: 28 tooling assertions, 10 API/architecture tests and 26 frontend model tests. Earlier isolated JDBC integration, real API/database stock comparison and clean-rebuild launch were also observed. These are historical results, not verification of later Cursor changes.
+- Earlier runtime verification: 28 tooling assertions, 10 API/architecture tests and 26 frontend model tests. Earlier isolated JDBC integration, real API/database stock comparison and clean-rebuild launch were also observed. These are historical results, not verification of later changes. See the engineering journal for current A02 results.
 - Docker Compose includes database/seed/API/UI; config parses but container build/run is unverified because the daemon was stopped.
 - UI is a dark fitted cumulative prototype with on-map actions, guide, logos and favicon. Its rates/failures are modeled arithmetic; authoritative Java simulation and measured animation are still future tasks.
 

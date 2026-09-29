@@ -22,7 +22,7 @@ This diagnostic catalog endpoint deliberately exposes **public catalog and synth
 
 - JDK 25, Spring Boot 4.0.8, pgJDBC 42.7.13, Maven 3.9.11.
 - Root Maven reactor currently contains only inventory-service. Add controller/contracts modules when they have actual responsibilities.
-- `tools/MavenBuild.java` fetches a SHA-512-pinned Maven distribution, verifies it before extraction and starts Maven using the current Java executable. Dependencies use `.lab/m2`; no installed Maven or shell wrapper is required. Spring's parent manages exact plugin/dependency versions. A JDK other than 25 fails the service launcher early.
+- `tools/MavenBuild.java` fetches a SHA-512-pinned Maven distribution, verifies it before extraction and starts Maven using the current Java executable. Dependencies use `.lab/m2`; no installed Maven or shell wrapper is required. Enforcer also requires Java 25 and Maven 3.9.11 during the build. Spring's pinned parent manages lifecycle plugin/dependency versions; Enforcer, Boot, compiler, Failsafe and JaCoCo are explicit in the project POMs. The compiler runs `-Xlint:all`.
 - `domain` and `application` contain records/use cases and the repository port, without framework/SQL imports. `adapter` owns JDBC; `web` owns HTTP translation. A JDK jdeps test checks compiled core dependencies.
 - JDBC pool: maximum 4, minimum idle 0, 2-second acquisition/connection timeout, 2-second statement timeout, 3-second socket timeout. HTTP has 16 workers, 64 connections and a 16-entry accept backlog. Heap defaults to 256 MiB. These are containment defaults, not throughput guarantees or a total RSS cap.
 - JDBC is configured read-only and the adapter contains only parameterized SELECTs. It currently uses the owner's configured database role, which may have broader privileges; this is not a database permission boundary. Introduce dedicated service roles before adding real write/read routing.
@@ -34,9 +34,9 @@ This diagnostic catalog endpoint deliberately exposes **public catalog and synth
 
 `make test-api-integration`: explicit Maven integration profile, local PostgreSQL role needs CREATE DATABASE. Creates one random `stockflow_test_*` database, installs existing schema, inserts a small synthetic fixture, checks actual reads/parameters/schema failure and unchanged quantity/version, then closes the pool and drops only that owned database. The user's catalog is not altered.
 
-`make verify`: tooling, API and frontend model tests, syntax and local documentation links. The API is not yet connected to UI counters or animated requests.
+`make verify`: tooling, API and frontend model tests, core coverage gate, syntax, local documentation links and whitespace checks. `make lint` runs the static checks without tests. The API is not yet connected to UI counters or animated requests.
 
-Docker adds the inventory service between seed completion and UI startup. Container build/run and release image digest locking remain unverified/pending; Compose parsing alone is not runtime verification. Maven dependencies emit JDK native-access/Unsafe deprecation warnings from Maven internals; the observed build passes without disabling checks.
+Docker adds the inventory service between seed completion and UI startup. Official multi-architecture index digests for Eclipse Temurin 25 JDK Alpine and PostgreSQL 17 Alpine are pinned in Dockerfiles/Compose, with linux/amd64 and linux/arm64 manifests verified. Container build/run remains unverified while the daemon is stopped; Compose parsing alone is not runtime verification. Maven dependencies emit JDK native-access/Unsafe deprecation warnings from Maven internals; the observed build passes without disabling checks.
 
 Native API launch copies the packaged JAR to a unique ignored runtime file before starting it. Rebuilding or cleaning Maven output therefore cannot replace classes beneath the running process. Owned runtime copies are removed when their process exits; failed cleanup can leave an ignored file. Shutdown does not forcibly kill a stuck JVM.
 

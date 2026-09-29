@@ -1,10 +1,10 @@
 # StockFlow delivery plan
 
-## Cursor execution handoff
+## Implementation handoff
 
-The owner will request implementation one item at a time in Cursor and ask Codex to validate at major checkpoints. Start at [CURSOR.md](CURSOR.md), then [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **A01 is the next item: resolve the writable contract without changing runtime code or data.**
+The owner uses Codex and ChatGPT for implementation and validation, one task at a time. Start at [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **V0 is accepted; A02 is self-tested; A03 is next on request.**
 
-This file remains the phase-level authority. Cards refine dependency order within the phases; they do not authorize skipping an earlier acceptance gate. A01/V0 resolves the imported-catalog versus writable-run schema before A02–A07 finish Phase 1. B/C together implement Phase 2; D through I map to Phases 3–8. Existing completed checkboxes remain evidence of delivered work. Cursor updates task status in STATE; phase checkboxes change only when all required work and checkpoint verification pass. Planning this handoff does not mark any future task completed or any new architecture proposal approved.
+This file remains the phase-level authority. Cards refine dependency order within the phases; they do not authorize skipping an earlier acceptance gate. A01/V0 resolved the imported-catalog versus writable-run schema; A02–A07 finish Phase 1. B/C together implement Phase 2; D through I map to Phases 3–8. Existing completed checkboxes remain evidence of delivered work. Task status lives in STATE; phase checkboxes change only when all required work and checkpoint verification pass.
 
 ## Execution policy
 
@@ -37,7 +37,7 @@ Acceptance: another developer can locate responsibilities, schemas, lesson steps
 - [ ] 1.2 Implement Inventory and Reservation use cases. Red: concurrent reservations cannot reduce available stock below zero. Real SQL atomic update and transaction; idempotency conflict/replay contracts.
 - [ ] 1.3 PostgreSQL migration + fixture seed. Red: tenants cannot read or mutate each other's SKU; repeated release cannot increase stock twice. Add reservation expiry semantics.
 - [ ] 1.4 Explicit request/response DTOs, errors and limits. Red: malformed quantity / tenant mismatch rejected safely; no exception body leaks.
-- [ ] 1.5 Host Make path (no mandatory Docker), equivalent Compose baseline, tool doctor, CI build/static analysis/unit suite; explicit integration command.
+- [ ] 1.5 Host Make path (no mandatory Docker), equivalent Compose baseline, tool doctor, local build/static analysis/unit suite; explicit integration command. Automated CI/CD is deferred by owner direction.
 
 Expected files: `pom.xml`, `tools/MavenBuild.java`, `services/inventory-service/`, `infra/`, `tools/`, `Makefile`, `compose.yaml`, `docs/`. Gate: isolated concurrent PostgreSQL tests, restart persistence, fresh-clone host + Docker smoke, meaningful coverage (target 80% line / 70% branch for domain/application), no stock or tenant invariant violation. Defaults should pass with no paid service. Capture baseline with raw fixture counts; no speed claim yet. The implemented Java Maven launcher replaces the originally proposed shell wrapper.
 
