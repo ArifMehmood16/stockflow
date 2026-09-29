@@ -2,7 +2,7 @@
 
 ## Execution policy
 
-**Current checkpoint: Phase 0 delivery. Next: human review of ADR 001, then Phase 1.** Each phase adds one independently explainable capability. Build the whole core curriculum across phases; do not attempt the final topology first. Checkboxes record observed work, not intent. Time ranges below are planning estimates for one developer, not commitments; core build approximately 8–12 focused weeks, depending on infrastructure experience.
+**Current checkpoint: Phase 1 read-only Java foundation, authorized by the owner's continuation request.** Each phase adds one independently explainable capability. Build the whole core curriculum across phases; do not attempt the final topology first. Checkboxes record observed work, not intent. Time ranges below are planning estimates for one developer, not commitments; core build approximately 8–12 focused weeks, depending on infrastructure experience.
 
 Each implementation task: inspect relevant code → smallest failing behaviour test → observe red → minimal green → refactor → focused and phase checks → full diff review → docs + AI log. Tests default offline; integration suites opt into local services. Stop at the gate.
 
@@ -18,11 +18,12 @@ Each implementation task: inspect relevant code → smallest failing behaviour t
 - [x] 0.4d Add user-requested local PostgreSQL schema/import bootstrap and an isolated Docker database; document prerequisites.
 - [ ] 0.5 Human approves ADR 001 proposals, scope, licence and visual direction.
 
-Acceptance: another developer can locate responsibilities, schemas, lesson steps, limits, tests and implementation order without treating the prototype as a measured system. Verification details in the journal. Gate: 0.5 blocks production implementation, not delivery of this planning package.
+Acceptance: another developer can locate responsibilities, schemas, lesson steps, limits, tests and implementation order without treating the prototype as a measured system. Verification details in the journal. The later owner request to continue explicitly authorizes the baseline Java milestone; outstanding licence/hosting decisions are not required for local implementation.
 
 ## Phase 1 — Correct Java inventory baseline (1–1.5 weeks)
 
 - [ ] 1.1 Scaffold Maven multi-module build (`inventory-service`, `lab-controller`, `contracts` only as needed), Java 25, Spring Boot; lock versions, toolchains and images. Add readiness/liveness contracts and architecture dependency guard.
+- [x] 1.1a Implement the first read-only slice: pinned Java/Maven/Spring build, catalog stock lookup, liveness/readiness, core dependency guard, Make lifecycle and isolated JDBC checks. Image digest locking and clean-room Docker verification remain under 1.1/1.5.
 - [ ] 1.2 Implement Inventory and Reservation use cases. Red: concurrent reservations cannot reduce available stock below zero. Real SQL atomic update and transaction; idempotency conflict/replay contracts.
 - [ ] 1.3 PostgreSQL migration + fixture seed. Red: tenants cannot read or mutate each other's SKU; repeated release cannot increase stock twice. Add reservation expiry semantics.
 - [ ] 1.4 Explicit request/response DTOs, errors and limits. Red: malformed quantity / tenant mismatch rejected safely; no exception body leaks.

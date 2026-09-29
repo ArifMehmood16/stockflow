@@ -1,10 +1,10 @@
 # StockFlow engineering instructions
 
-Scope: this repository only. Read README.md, PLAN.md, this file and the latest AI_DEVELOPMENT_LOG.md entry before work. Follow the first incomplete approved task; stop at each phase gate. The initial assignment is Phase 0 planning and a clearly labelled design prototype, not implementation of the full stack.
+Scope: this repository only. Read README.md, PLAN.md, this file and the latest AI_DEVELOPMENT_LOG.md entry before work. Follow the first incomplete approved task; stop at each phase gate. Phase 0 is delivered. The owner subsequently authorized continuing with the real Java baseline; implement it incrementally without implying approval of all future infrastructure choices.
 
 Human intent: showcase Java, databases and distributed systems with an understandable interactive lab. One normal inventory microservice first; add infrastructure only to explain a demonstrated bottleneck. The separate source repository's Python/RAG architecture does not apply here.
 
-Before edits, restate task, acceptance criteria, expected files and material assumptions. Architecture proposals in ADR 001 need human approval before Phase 1 implementation. Do not add technologies, services or cloud costs merely to look enterprise-ready.
+Before edits, restate task, acceptance criteria, expected files and material assumptions. The owner-directed Phase 1 continuation in ADR 001 authorizes the Java baseline. Ask only for material new choices beyond that scope. Do not add technologies, services or cloud costs merely to look enterprise-ready.
 
 Use red-green-refactor for behaviour: smallest meaningful failing test, observe expected failure, minimal implementation, focused green, refactor, phase checks. Documentation-only edits do not need artificial tests. Test fakes at external boundaries and real domain collaborators. Keep default tests deterministic, offline and free of Docker requirements; integration tests are explicit.
 

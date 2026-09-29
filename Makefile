@@ -8,12 +8,15 @@ else
 JAVA := java
 endif
 LAB = $(JAVA) tools/Build.java
-.PHONY: help run preview stop setup db-init db-import db-status data-fetch test test-java test-integration verify doctor run-docker down
+MAVEN = $(JAVA) tools/MavenBuild.java
+.PHONY: help run preview stop api api-stop api-smoke api-build setup db-init db-import db-status data-fetch test test-java test-api test-api-integration test-integration verify doctor run-docker down
 help:
 	@echo "StockFlow — Java tools and interactive systems design"
-	@echo "  make run               Set up local PostgreSQL + import data, then serve UI"
+	@echo "  make run               Set up data, build/start real Java API + model UI"
 	@echo "  make preview           Serve the browser model without database setup"
-	@echo "  make stop              Stop only the registered Java preview"
+	@echo "  make stop              Stop the registered Java UI and API; keep PostgreSQL"
+	@echo "  make api               Build/start only the read-only inventory API"
+	@echo "  make api-stop          Stop only the registered inventory API"
 	@echo "  make setup             Create schema; import up to DATASET_ROWS unique products"
 	@echo "  make db-status         Show actual imported rows and bucket distribution"
 	@echo "  make test              Offline Java tooling + frontend model tests"
@@ -21,8 +24,20 @@ help:
 	@echo "  make verify            Tests, frontend syntax and documentation links"
 	@echo "  make run-docker        Isolated PostgreSQL + Java seed + Java UI server"
 	@echo "  make down              Stop Docker services; preserve data volumes"
-run: setup
+run: setup api-build
 	$(LAB) run
+api: setup api-build
+	$(LAB) api
+api-stop:
+	$(LAB) api-stop
+api-smoke:
+	$(LAB) api-smoke
+api-build:
+	$(MAVEN) -q package
+test-api:
+	$(MAVEN) -q test
+test-api-integration:
+	$(LAB) test-api-integration
 preview:
 	$(LAB) preview
 stop:
@@ -31,7 +46,7 @@ setup db-init db-import db-status data-fetch doctor:
 	$(LAB) $@
 test-java:
 	$(LAB) test
-test: test-java
+test: test-java test-api
 	node --test tests/model.test.mjs
 test-integration:
 	$(LAB) test-postgres

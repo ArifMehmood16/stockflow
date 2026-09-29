@@ -105,16 +105,30 @@ public final class Lab {
     try {
       switch (action) {
         case "setup", "db-init", "db-import", "db-status", "data-fetch" -> setup(action);
-        case "run", "preview" -> Preview.start(Path.of("."), Preview.port());
-        case "stop" -> System.out.println(Preview.stop(Path.of(".lab"), Preview.port()));
+        case "preview" -> Preview.start(Path.of("."), Preview.port());
+        case "run" -> {
+          Api.start();
+          Preview.start(Path.of("."), Preview.port());
+        }
+        case "api" -> System.exit(Api.start().waitFor());
+        case "stop" -> {
+          System.out.println(Preview.stop(Path.of(".lab"), Preview.port()));
+          System.out.println(Api.stop());
+        }
+        case "api-stop" -> System.out.println(Api.stop());
+        case "api-smoke" -> Api.smoke();
+        case "test-api-integration" -> Api.integration();
         case "check-docs" -> docs();
-        case "health" -> {
+        case "health", "health-api" -> {
+          String target =
+              action.equals("health")
+                  ? "http://127.0.0.1:" + Preview.port() + "/"
+                  : "http://127.0.0.1:" + Api.port() + "/health/ready";
           try (var client = java.net.http.HttpClient.newHttpClient()) {
             var response =
                 client.send(
-                    java.net.http.HttpRequest.newBuilder(
-                            java.net.URI.create("http://127.0.0.1:" + Preview.port() + "/"))
-                        .timeout(java.time.Duration.ofSeconds(2))
+                    java.net.http.HttpRequest.newBuilder(java.net.URI.create(target))
+                        .timeout(java.time.Duration.ofSeconds(5))
                         .build(),
                     java.net.http.HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() != 200) System.exit(1);

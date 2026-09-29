@@ -1,0 +1,17 @@
+FROM eclipse-temurin:25-jdk-alpine AS build
+WORKDIR /app
+COPY pom.xml ./
+COPY services ./services
+COPY tools ./tools
+RUN java tools/MavenBuild.java -q -Dmaven.test.skip=true package && java tools/Build.java compile
+
+FROM eclipse-temurin:25-jdk-alpine
+WORKDIR /app
+COPY --from=build /app/services/inventory-service/target/inventory-service-0.1.0-SNAPSHOT.jar ./inventory.jar
+COPY --from=build /app/.lab/classes ./.lab/classes
+COPY --from=build /app/.lab/lib ./.lab/lib
+RUN adduser -D -u 10001 lab
+USER lab
+ENV STOCKFLOW_API_BIND=0.0.0.0 API_PORT=8081
+EXPOSE 8081
+CMD ["java", "-Xmx256m", "-jar", "inventory.jar"]

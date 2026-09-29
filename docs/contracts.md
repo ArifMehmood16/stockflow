@@ -101,3 +101,7 @@ Only sample up to 20 request traces/s and render at most 30 particles simultaneo
 ## Lesson schema
 
 Store versioned JSON definitions: `id,title,prerequisites,modeCapabilities,fixture,startingConfig,steps[]`. Each step has `instruction,targetControl,allowedAction,expectedObservation,explanation,tradeoff,timeoutHint,recoveryAction`. Completion predicates evaluate server observations, not client clicks. Example: enable cache AND observe at least 20 eligible reads AND hitRate > 0 AND primaryReadRate below recorded baseline under matching workload. Thresholds for real mode calibrated and labelled; insufficient evidence stays incomplete. Quiz answers provide explanation; never gate emergency stop.
+
+## Implemented Phase 1 read-only catalog slice
+
+The diagnostic `GET /v1/catalog/{code}/stock`, `GET /health/live` and `GET /health/ready` now exist. Exact response/error semantics and local-only scope are recorded in [Java baseline](java-baseline.md). This public/synthetic data read does not implement tenant authentication, warehouse stock writes or the above reservation contracts. It uses the existing imported `stockflow.catalog` and `stockflow.inventory` schema without a migration. An executable service contract test covers it; machine-readable reservation/control-plane specifications remain future work.

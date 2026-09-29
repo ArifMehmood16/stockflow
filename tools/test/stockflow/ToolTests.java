@@ -69,7 +69,48 @@ public final class ToolTests {
         Dataset.projectRows(new java.io.StringReader(input), new java.io.StringWriter(), 3) == 2,
         "Use available unique products when the source is smaller than the requested maximum");
     previewTests();
+    apiPortTest();
+    apiArtifactTest();
     System.out.println("Passed " + passed + " Java behaviour assertions.");
+  }
+
+  static void apiPortTest() throws Exception {
+    try (var listener =
+        new java.net.ServerSocket(0, 10, java.net.InetAddress.getByName("127.0.0.1"))) {
+      var builder =
+          new ProcessBuilder(
+              Api.java(), "-cp", System.getProperty("java.class.path"), "stockflow.Lab", "api");
+      builder.environment().put("API_PORT", Integer.toString(listener.getLocalPort()));
+      var process = builder.redirectErrorStream(true).start();
+      check(
+          process.waitFor(10, java.util.concurrent.TimeUnit.SECONDS),
+          "API port check exits promptly");
+      String output =
+          new String(
+              process.getInputStream().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+      check(
+          process.exitValue() != 0 && output.contains("already in use"),
+          "Occupied API port gives actionable guidance");
+      check(!listener.isClosed(), "API startup leaves the existing listener alone");
+    }
+  }
+
+  static void apiArtifactTest() throws Exception {
+    var directory = java.nio.file.Files.createTempDirectory("stockflow-artifact-");
+    var source = directory.resolve("build.jar");
+    java.nio.file.Path snapshot = null;
+    try {
+      java.nio.file.Files.writeString(source, "first build");
+      snapshot = Api.snapshot(source, directory);
+      java.nio.file.Files.writeString(source, "new build with different bytes");
+      check(
+          java.nio.file.Files.readString(snapshot).equals("first build"),
+          "A running API must retain its artifact when Maven replaces the build output");
+    } finally {
+      if (snapshot != null) java.nio.file.Files.deleteIfExists(snapshot);
+      java.nio.file.Files.deleteIfExists(source);
+      java.nio.file.Files.delete(directory);
+    }
   }
 
   static Process child() throws Exception {

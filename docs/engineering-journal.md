@@ -99,3 +99,24 @@ Browser on Java server: 30,000 offered modeled requests retained across chapter 
 `make verify` passed 24 Java assertions, 14 frontend model tests and 24 local documentation links. The extended JDBC integration passed embedded quotes/empty fields, repeat skip, complete-source exhaustion below a requested maximum, detection/repair of missing inventory, quantity preservation and rollback; it removed its owned test database. `docker compose config --quiet` and `git diff --check` passed.
 
 Java-served browser checks observed a third shard remain empty until migration, then ownership counts of 375,000 / 312,500 / 312,500; three installed protections persisted. Naive-modulo routing mitigation worked through the on-map console. No browser error/warning logs were recorded. At 1280×720 the graph scroll/client dimensions both measured 796×274; at 375×812 both measured 346×284 with no page horizontal overflow. Viewport override is reset for the final screenshot. Mobile labels are small because the entire topology remains visible; inspector/focus mode provide detail. A full accessibility audit remains future work.
+
+## 2026-09-29 — Phase 1 read-only Java service foundation
+
+Owner requested continuation after the status report. Started `codex/phase-1-java-inventory-baseline`, retained local PostgreSQL/import behavior and introduced only the previously planned Spring MVC/JDBC service.
+
+Observed red: known-code lookup returned empty and invalid codes were accepted; four HTTP checks returned 404 before endpoint implementation; API occupied-port CLI test lacked its error; artifact-isolation test showed replacement of the build output changed the running artifact. Implemented the corresponding behaviors. Intermediate Spring @Repository proxying of a final adapter failed startup; @Component correctly uses the adapter's explicit SQL exception translation.
+
+Observed checks so far:
+
+- Java-launched Maven service tests: 10 pass (3 use case, 6 HTTP, 1 architecture).
+- `make test-api-integration`: passed real PostgreSQL stock reads, leading zeroes, parameter binding, missing row, schema incompatibility and unchanged stock/version. Owned temporary database removed.
+- `make verify`: passed 28 Java tool assertions, 10 service tests, 14 frontend model tests and 26 documentation links.
+- `API_PORT=8085 PORT=4176 make run`: skipped the verified 4,532,480-row import and started UI/API on isolated ports.
+- Initial packaged `make api-smoke` timed out with a runtime class-loading error; archive integrity check passed. Stopped only the isolated processes, restarted the same artifact, and observed stock/health smoke success. Repackaging identical application output while running also passed. Original cause was not established. Added a per-launch artifact copy with a failing/passing regression to prevent builds from modifying a running artifact; final clean-rebuild/lifecycle checks follow.
+- `docker compose config --quiet`: passed before the later documentation changes. `docker info` confirmed daemon socket absent; no runtime/build claim.
+
+The UI remains illustrative and unchanged in this checkpoint. The public/synthetic catalog endpoint is read-only; tenant authorization and reservation writes remain planned. Final diff, formatting, lifecycle and publication evidence follow below.
+
+### Service artifact checkpoint
+
+Formatted the Java changes with the existing local Google Java Format tool. The new launch snapshot passed `API_PORT=8085 make api-smoke` both before and after a full Java-launched Maven `clean package` while the API stayed running. Clean package passed all 10 service tests. This validates real stock access and rebuild isolation; it does not establish the original transient class-loading failure's cause. Code/diff review checked local-only binding, fixed queries, credential handling, response safety and separation from modeled UI metrics. Checkpoint commit follows; final stop/integration repeat covers the final source state.

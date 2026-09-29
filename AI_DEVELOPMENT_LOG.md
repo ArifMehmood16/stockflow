@@ -76,3 +76,15 @@ Remaining validation at this checkpoint: final broader browser/responsive checks
 ### Entry 004 final validation
 
 Final make verify passed 24 Java assertions, 14 frontend tests and 24 local links. Extended integration verified missing-row repair and complete-source exhaustion handling, in addition to the import/rollback checks. Full Make startup was observed to skip the 4,532,480-row import and serve the app through Java. Browser confirmed third-shard redistribution, persistent protections and canvas containment on desktop/narrow viewports with no console warnings/errors. Docker runtime verification remains unavailable; final screenshot, stop and publication status are recorded in the final checkpoint.
+
+## 005 — Begin the real Java inventory baseline
+
+Date: 2026-09-29. Tool: Codex. PLAN 1.1 read-only foundation, partial 1.4/1.5. Draft for human review.
+
+Human authorization: following the status report identifying a Java API against the loaded catalog as the next milestone, the owner requested continuation. Java/Make/local PostgreSQL remain required. Proceeded with the already proposed Spring MVC/JDBC baseline and recorded the narrower continuation in ADR 001. No new licence, hosting provider, paid service or reservation schema decision was inferred.
+
+Added pinned Java-launched Maven, one inventory-service module, framework-free stock lookup, a JDBC adapter, read-only HTTP/health contracts and bounded local service launch. The public/synthetic diagnostic endpoint is explicitly separate from the future tenant-authorized reservation API. Default UI remains modeled, not live telemetry.
+
+Red evidence: lookup initially returned empty for known product and accepted malformed codes; HTTP tests initially returned 404 for the missing stock/health endpoints; the occupied-port command test initially lacked an error. Green evidence: 27 tooling assertions, 10 service/architecture tests and real JDBC integration passed. An intermediate Spring wiring error attempted to proxy a final @Repository; switched to @Component because the adapter already translates SQL exceptions explicitly. Removed unnecessary Mockito test dependencies/agent behavior; tests use a fake at the repository boundary.
+
+Real integration creates/removes its own random database, verifies bound SQL, stock values, safe outage/schema mapping and unchanged inventory. Combined startup on isolated ports 4176/8085 skipped the 4,532,480-row import and started the real API and existing UI. Final smoke, lifecycle, diff, documentation and publication results follow at the checkpoint. Docker daemon is absent; no container execution claim.
