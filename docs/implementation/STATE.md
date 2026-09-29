@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # StockFlow implementation state
 
 This is the single task and checkpoint status ledger. Do not duplicate task checkboxes elsewhere. Task cards contain specifications, not completion claims.

@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # StockFlow implementation task index
 
 Start with [PLAN](../../PLAN.md), the current [STATE](STATE.md), and [AGENTS](../../AGENTS.md). These **43 task cards** refine the phase implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.

@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Threat model
 
 Scope: educational lab using synthetic data, initially local. Public site should expose simulation only. Native preview control now supports bounded traffic and one extra owned API when a run is selected; it must not be publicly exposed.

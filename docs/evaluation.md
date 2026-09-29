@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Evaluation and verification strategy
 
 Current delivery uses the [reduced scope review](implementation/SCOPE_REVIEW.md): one failing behavior test, minimal implementation, focused checks and a regular commit. The benchmark protocol, histogram/report requirements and full simulator/streaming checks below are future evaluation work. Run infrastructure suites only when the changed behavior depends on them; preserve transaction, isolation and recovery tests.

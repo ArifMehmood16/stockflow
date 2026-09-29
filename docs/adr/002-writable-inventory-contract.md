@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # ADR 002 — Writable inventory contract
 
 Status: **recommended for V0 review**. This freezes the Phase 1 writable data contract. It does not migrate a database, issue a credential, or change the running read-only API. Owner acceptance is the V0 checkpoint, not this document's existence.

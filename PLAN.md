@@ -1,3 +1,11 @@
+# Current scope: Distributed Systems Simulator
+
+The owner explicitly replaced the live backend with a browser-only educational simulation. The old plan below is historical and must not drive implementation.
+
+Current priorities: preserve the six interactive lessons, make limitations and effects understandable, keep startup static-only, and use short focused tests with regular commits. No services, data imports, load generators, observability or long live tests. A Medium walkthrough is future work. See [README](README.md) and [simulation design](docs/SIMULATION.md).
+
+---
+
 # StockFlow delivery plan
 
 ## Implementation handoff

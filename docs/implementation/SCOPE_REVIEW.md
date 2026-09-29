@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Development scope review
 
 Owner direction: deliver the core app quickly, use TDD and regular commits, and defer observability. Reviewed all 43 task cards and V0–V9. This is a scope and sequencing review, not an independent code review or acceptance of V1. Implementation status remains in [STATE](STATE.md).

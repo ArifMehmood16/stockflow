@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # ADR 001 — Proposed StockFlow baseline
 
 Status: **proposed for human review**. User has authorized Java, microservice-based learning, frontend visualization, Make, Docker, repository creation and public visibility. Exact framework versions, inventory domain, runtime boundaries and algorithms below are design proposals; the prototype does not commit a production implementation to them.

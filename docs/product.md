@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Product brief
 
 This is the full product vision. The [current delivery scope](implementation/SCOPE_REVIEW.md) first connects the existing workbench to real Java/PostgreSQL behavior. Detailed observability, complete simulator parity and portfolio packaging are deferred; requested cache, replica, shard and deployment lessons remain in scope as subsequent working features.

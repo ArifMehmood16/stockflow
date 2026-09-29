@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Prototype layout and interaction checks
 
 Scope: owner-requested PLAN 0.4f–0.4g. These checks concern the illustrative browser model; they do not validate real distributed infrastructure or accept Cursor V0.

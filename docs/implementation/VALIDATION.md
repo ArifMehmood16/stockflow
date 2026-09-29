@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](../SIMULATION.md) and [README](../../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Codex validation checkpoints
 
 The owner explicitly requests reviews at these gates. The implementing agent prepares evidence and fixes findings; a separate review pass examines the scoped change and records a verdict. **Self-testing does not accept a checkpoint.** Use the ten milestones below unless an earlier material decision/security issue genuinely blocks progress.

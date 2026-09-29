@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Java inventory baseline
 
 Status: historical first read-only diagnostic slice, now extended by authenticated run reads and reservation writes. The Java simulation engine and measured frontend telemetry remain subsequent tasks. The current run API is described in [the OpenAPI contract](openapi/inventory.yaml) and [README](../README.md).

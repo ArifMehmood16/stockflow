@@ -1,3 +1,5 @@
+> **Historical backend design — superseded.** The app is now a browser-only educational simulator. Use [the current simulation design](SIMULATION.md) and [README](../README.md). The content below is retained for context, not as an implementation backlog.
+
 # Implementation contracts
 
 Status: Phase 1 inventory routes are implemented in [OpenAPI](openapi/inventory.yaml); the browser does not call them yet. Control-plane, streaming and simulation contracts below describe the larger future design. The [current scope review](implementation/SCOPE_REVIEW.md) uses a minimal polling snapshot first and defers SSE, telemetry/report schemas and generated frontend tooling. Inventory ownership, transaction and idempotency guarantees still apply.

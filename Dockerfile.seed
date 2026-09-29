@@ -1,9 +1,0 @@
-FROM eclipse-temurin:25-jdk-alpine@sha256:3fd2d245c4e0eba615fe366a71b8bd25f5db7104f53e4026b24bf508b880bd2a
-WORKDIR /app
-COPY tools ./tools
-COPY services/inventory-service/src/main/java/dev/stockflow/inventory/application/ScopeToken.java ./services/inventory-service/src/main/java/dev/stockflow/inventory/application/ScopeToken.java
-RUN java tools/Build.java compile
-COPY infra ./infra
-RUN adduser -D -u 10001 lab && mkdir -p /app/.lab/dataset && chown -R lab:lab /app
-USER lab
-CMD ["java", "-Xmx768m", "-cp", ".lab/classes:.lab/lib/*", "stockflow.Lab", "setup"]

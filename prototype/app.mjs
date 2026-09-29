@@ -2,6 +2,7 @@ import {
   initialState,
   transition,
   metrics,
+  explain,
   shardRecords,
   faultCatalog,
   componentAvailable,
@@ -10,12 +11,6 @@ import {
 import { placeHover, componentSnapshot } from "./hover.mjs";
 import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
 let state = initialState();
-let traffic;
-let realMode = false;
-let realStatus = null;
-let realRate = 1000;
-let realError = "";
-let scalePending = false;
 let chapter = 0;
 let faultNode = "cache";
 let faultKind = "stampede";
@@ -205,7 +200,7 @@ const chapters = [
       ],
       [
         "Fence the old writer",
-        "In the real lab, this must verify that the old owned process cannot accept writes.",
+        "In a real system, fencing must prevent the old primary from accepting writes. Here this is a modeled safety gate.",
         "Fence primary",
         "fence",
       ],
@@ -262,7 +257,7 @@ const chapters = [
       "Keep a known-good version available while introducing the next one.",
     heading: "Switch with a way back.",
     intro:
-      "Blue and green share a compatible schema. The final lab will check readiness, switch routes and drain old requests.",
+      "Blue and green share a compatible schema. The simulation stages readiness before switching the illustrated request routes.",
     steps: [
       [
         "Keep requests flowing",
@@ -294,7 +289,7 @@ const descriptions = {
     "Traffic source",
     "Schedules synthetic stock reads and reservation writes.",
     "90% reads / 10% writes; selected load is offered demand.",
-    "The preview generates no HTTP load. The real runner will enforce rate, duration and concurrency caps.",
+    "The simulation generates no HTTP load. Selected requests/s is an input to the capacity model.",
   ],
   proxy: [
     "Routing proxy",
@@ -416,14 +411,6 @@ function inspect(id, shardIndex = null) {
 function renderInspector() {
   const id = pinned || "api";
   const d = descriptions[id];
-  const live = realSnapshot(id);
-  if (live) {
-    $("inspect-content").innerHTML = `<span class="guide-kicker">REAL COMPONENT</span><h3>${d[0]}</h3><p id="live-component-status"></p><p id="live-component-detail"></p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
-    $("live-component-status").textContent = live.status;
-    $("live-component-detail").textContent = live.detail;
-    $("back-guide").onclick = () => selectPanel(false);
-    return;
-  }
   const snapshot = componentSnapshot(state, id, running, pinnedShard);
   $("inspect-content").innerHTML =
     `<span class="guide-kicker">COMPONENT INSPECTOR</span><h3>${d[0]}</h3><span class="inspect-role">${d[1]}</span><dl class="inspect-list"><div><dt>Current state</dt><dd>${snapshot.status}</dd></div><div><dt>Current model behavior</dt><dd>${snapshot.detail}</dd></div><div><dt>What it does</dt><dd>${d[2]}</dd></div><div><dt>Model assumption</dt><dd>${d[3]}</dd></div></dl><div class="tradeoff"><span class="tiny-label">WHAT TO REMEMBER</span><p>${d[4]}</p></div><p class="inspect-hint">All values are illustrative. Select another architecture component to inspect its role.</p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
@@ -450,17 +437,6 @@ const actionLocations = {
 };
 function renderGuide() {
   const c = chapters[chapter];
-  if (realMode && chapter === 0) {
-    const s = realStatus;
-    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Load the inventory API.</h3><p class="guide-intro">Each arrival sends one stock-read request through Java to PostgreSQL. This read workload does not reserve or change stock.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose up to 10,000 requests/s</div><p>Set the target in the workload dock. The generator continues offering that rate until you stop. Actual throughput depends on available capacity.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start and leave it running</div><p>Select Start real traffic. There is no automatic timeout; runs can continue beyond five minutes. Stop before changing the rate.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Compare target and actual rate</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">DEMO LIMITS</span><p>256 maximum in-flight requests from this generator; each API has 16 request threads, a 64-connection HTTP limit, and a small database pool. Dropped requests were not sent because the generator was full. Failures were dispatched but did not complete successfully. Set STOCKFLOW_RUN_POOL_SIZE=1 in .env and restart for a constrained demo (default 4; range 1–16). This profile reads one SKU repeatedly. All processes share your machine, so this is a capacity lesson, not a production benchmark.</p></div>`;
-    $("real-guide-result").textContent = s?.offered
-      ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Latest stock ${s.available}, version ${s.version}.`
-      : "Watch actual sent/completed requests per second, failures and generator drops in the workload dock.";
-    $("reflection").textContent = "Does another API improve throughput, or does the shared database remain the bottleneck?";
-    $("guide-content").querySelector(".tradeoff").insertAdjacentHTML("beforebegin",
-      '<div class="step"><div class="step-heading"><span class="step-num">4</span>Add a real API instance</div><p>Select Add real API instance on the extra API card. It becomes routable only after readiness succeeds. Repeat the same load and compare the per-instance request counts. Both APIs still share one PostgreSQL primary. Stop traffic before removing the extra instance.</p></div>');
-    return;
-  }
   const issue = state.faults[faultNode];
   const scenario = faultCatalog[faultNode][issue || faultKind];
   const protectedIssue =
@@ -526,9 +502,8 @@ function renderActions() {
   const button = (action, label, disabled = false) =>
     `<button class="map-action" data-action="${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
   $("client-actions").innerHTML =
-    button("run", realMode ? (running ? "Real flow running" : "Start real traffic")
-      : (running ? "Flow running" : "Start traffic"), running) +
-    button("burst", realMode ? "Set 10,000 req/s" : "Send 30,000 req/s", realMode && running);
+    button("run", running ? "Flow running" : "Start traffic", running) +
+    button("burst", "Send 30,000 req/s");
   $("proxy-actions").innerHTML = button(
     "deploy",
     state.green ? "Roll back to blue" : "Switch to green",
@@ -648,19 +623,6 @@ function renderActions() {
     $(`component-${id}`).append(control);
   }
   renderFaultConsole();
-  if (realMode) {
-    $("api2-actions").innerHTML = state.build?.action === "scale"
-      ? '<span class="map-fact">Starting JVM · waiting for readiness…</span>'
-      : button(state.instances > 1 ? "remove-instance" : "scale",
-          state.instances > 1 ? "Remove instance" : "+ Add real API instance",
-          scalePending || (state.instances > 1 && (running || realStatus?.inFlight > 0)));
-    document.querySelectorAll(".map-action").forEach(b => {
-      if (!["run", "burst", "scale", "remove-instance"].includes(b.dataset.action)) {
-        b.disabled = true;
-        b.title = "Available in model preview; real resource support is still planned.";
-      }
-    });
-  }
   document
     .querySelectorAll(".map-action")
     .forEach((b) => (b.onclick = () => act(b.dataset.action)));
@@ -698,13 +660,10 @@ function renderFaultConsole() {
     : issue
       ? `${faultCatalog[faultNode][issue].label} · ${state.protections.includes(`${faultNode}:${issue}`) ? "mitigation installed; fault remains until recovery" : "fault active — inspect the impact"}`
       : "Select a problem → Inject → Apply a fix → Recover. Architecture and fixes persist.";
-  if (realMode) {
-    for (const id of ["inject-fault", "fix-fault", "recover-fault"]) $(id).disabled = true;
-    $("fault-outcome").textContent = "Fault injection is available in model preview; real fault support is still planned.";
-  }
 }
 function render() {
   const m = metrics(state);
+  $("model-insight").textContent = explain(state);
   $("load").value = state.rps;
   $("load-value").innerHTML = `${fmt(state.rps)} <small>req/s</small>`;
   $("load-down").disabled = state.rps <= loadSteps.min;
@@ -809,7 +768,6 @@ function render() {
   $("run-state").innerHTML =
     `<i></i> ${running ? "Model flow active" : "Traffic paused"}`;
   $("run-state").classList.toggle("active", running);
-  paintReal();
   $("motion").textContent = `Motion: ${reduced ? "off" : "on"}`;
   $("motion").setAttribute("aria-pressed", String(reduced));
   renderActions();
@@ -819,20 +777,6 @@ function render() {
   if (pinned) renderInspector();
 }
 function act(action) {
-  if (realMode && ["scale", "remove-instance"].includes(action)) {
-    changeInstance(action === "scale");
-    return;
-  }
-  if (realMode && action === "run") {
-    toggleReal();
-    return;
-  }
-  if (realMode && action === "burst") {
-    realRate = 10000;
-    log("Real load set to 10,000 req/s for the next run.");
-    render();
-    return;
-  }
   if (
     [
       "start-migration",
@@ -937,34 +881,18 @@ document
   .querySelectorAll("[data-chapter]")
   .forEach((b) => (b.onclick = () => selectChapter(Number(b.dataset.chapter))));
 $("load").oninput = (e) => {
-  if (realMode) {
-    realRate = Number(e.target.value);
-    render();
-    return;
-  }
   state = transition(state, "load", e.target.value);
   render();
 };
-$("load").onchange = () => log(realMode
-  ? `Real load set to ${realRate} target req/s for the next run.`
-  : `Offered load changed to ${state.rps} req/s.`);
+$("load").onchange = () => log(`Offered load changed to ${state.rps} req/s.`);
 for (const [id, direction] of [["load-down", -1], ["load-up", 1]]) {
   $(id).onclick = () => {
-    if (realMode) {
-      realRate = Math.max(100, Math.min(10000, realRate + direction * 100));
-      render();
-      return;
-    }
     state = transition(state, "load", state.rps + direction * loadSteps.interval);
     log(`Offered load changed to ${fmt(state.rps)} req/s.`);
     render();
   };
 }
 $("run").onclick = () => {
-  if (realMode) {
-    toggleReal();
-    return;
-  }
   running = !running;
   log(
     running
@@ -974,7 +902,6 @@ $("run").onclick = () => {
   render();
 };
 $("reset").onclick = () => {
-  if (realMode && realStatus?.running) traffic.stop().then(updateReal).catch(showRealError);
   buildTimers.forEach(clearTimeout);
   buildTimers = [];
   clearTimeout(routeTimer);
@@ -985,147 +912,6 @@ $("reset").onclick = () => {
   selectChapter(chapter);
   log(routeNotice);
 };
-function paintReal() {
-  if (!realMode) return;
-  const s = realStatus;
-  $("telemetry-mode").textContent = "REAL";
-  $("load-label").textContent = "Target requests/s";
-  $("client-meta").textContent = `${realRate} target req/s`;
-  $("load").value = realRate;
-  $("load").disabled = Boolean(s?.running);
-  $("load-value").textContent = `${realRate} req/s`;
-  $("load").setAttribute("aria-valuetext", `${realRate} target requests per second`);
-  $("load-down").disabled = Boolean(s?.running) || realRate <= 100;
-  $("load-up").disabled = Boolean(s?.running) || realRate >= 10000;
-  $("load-step-note").textContent = `Until stopped · 256 in flight · DB pool ${s?.databasePoolSize ?? 4}/API · 16 API threads`;
-  $("traffic-mix").textContent = "Read → Java API → PostgreSQL";
-  $("completed-label").textContent = "Requests completed";
-  $("db-demand-label").textContent = "Requests sent";
-  $("rejected-label").textContent = "Failed / not sent";
-  $("completed").textContent = String(s?.completed ?? 0);
-  $("db-demand").textContent = String(s?.started ?? 0);
-  $("rejected").textContent = `${s?.failed ?? 0} / ${s?.dropped ?? 0}`;
-  $("db-pressure").textContent = `${s?.inFlight ?? 0}/256 in flight`;
-  $("api-meta").textContent = `${s?.primaryRequests ?? 0} dispatched HTTP requests`;
-  $("api2-meta").textContent = s?.instances > 1
-    ? `${s.secondaryRequests} dispatched HTTP requests` : "not running";
-  $("proxy-meta").textContent = "Java round-robin dispatch";
-  document.querySelector(".canvas-telemetry").setAttribute("aria-label", "Real inventory request workload");
-  document.querySelector(".canvas-telemetry .metrics").setAttribute("aria-label", "Measured inventory requests");
-  $("run").textContent = s?.running ? "Ⅱ Stop real traffic" : "▶ Start real traffic";
-  $("run-state").textContent = s?.running ? "Real traffic active" : "Real traffic ready";
-  $("run-state").classList.toggle("active", Boolean(s?.running));
-  $("real-detail").hidden = false;
-  const elapsedSeconds = Math.max(0.001, (s?.elapsedMillis ?? 0) / 1000);
-  const rates = `${Math.floor(elapsedSeconds)}s · ${Math.round((s?.started ?? 0) / elapsedSeconds)} sent/s · ${Math.round((s?.completed ?? 0) / elapsedSeconds)} completed/s (run average)`;
-  $("real-detail").textContent = realError || (s?.lastError
-    ? `${rates} · Last error: ${s.lastError}`
-    : s?.completed
-      ? `${rates} · last request ${s.lastElapsedMillis} ms`
-      : "No completed request yet · stock and version pending");
-}
-function updateReal(status) {
-  const wasRunning = running;
-  const wasInFlight = realStatus?.inFlight ?? 0;
-  const oldInstances = state.instances;
-  const oldBuilding = Boolean(state.build);
-  realStatus = status;
-  running = Boolean(status.running);
-  if (running && status.targetRate) realRate = status.targetRate;
-  state = { ...state, instances: status.instances ?? 1,
-    build: status.building || (scalePending && (status.instances ?? 1) < 2)
-      ? { action: "scale", stage: "provisioning" } : null };
-  if (oldInstances !== state.instances || oldBuilding !== Boolean(state.build)) {
-    render();
-    if (oldInstances !== state.instances) highlightRoutes();
-  }
-  paintReal();
-  renderGuide();
-  $("graph").classList.toggle("running", running);
-  if (running !== wasRunning || (!running && wasInFlight > 0 && status.inFlight === 0)) renderActions();
-  if (pinned) renderInspector();
-  renderHover();
-}
-
-function realSnapshot(id) {
-  if (!realMode) return null;
-  const s = realStatus;
-  const snapshots = {
-    api: { status: "Original Java API", detail: `${s?.primaryRequests ?? 0} HTTP requests dispatched to this instance. Shares the owned PostgreSQL fixture with the second API.` },
-    api2: { status: state.build ? "Waiting for readiness" : state.instances > 1 ? "Ready · available for traffic" : "Not running",
-      detail: `${s?.secondaryRequests ?? 0} HTTP requests dispatched. Add starts one owned JVM; removal requires stopped, drained traffic.` },
-    proxy: { status: "Java request dispatcher", detail: "Alternates HTTP requests between ready API instances. No NGINX process is running in this native experiment." },
-    db: { status: "Shared PostgreSQL primary", detail: s?.completed ? `Latest observed stock ${s.available}, version ${s.version}. A second API adds connections, not database capacity.` : "No completed request yet. Both API instances use the same run-owned inventory." },
-    client: { status: s?.running ? "Real workload active" : "Real workload stopped", detail: `${s?.completed ?? 0} completed reads. One HTTP request per arrival; runs until stopped.` },
-  };
-  return snapshots[id] || null;
-}
-async function changeInstance(add) {
-  if (scalePending) return;
-  scalePending = true;
-  if (add) state = { ...state, build: { action: "scale", stage: "provisioning" } };
-  render();
-  try {
-    const status = await (add ? traffic.addInstance() : traffic.removeInstance());
-    realError = "";
-    scalePending = false;
-    updateReal(status);
-    routeNotice = add ? "Second Java API ready. Requests now alternate between both instances; PostgreSQL is shared."
-      : "Extra API stopped. New requests use the original Java API.";
-    log(routeNotice);
-  } catch {
-    scalePending = false;
-    state = { ...state, build: null };
-    showRealError(new Error("Instance change failed. Stop traffic before removal; check the adjacent API port and readiness."));
-  }
-  render();
-}
-function showRealError(error) {
-  realError = error.message || "Real traffic control is unavailable.";
-  paintReal();
-  log(realError);
-}
-async function toggleReal() {
-  $("run").disabled = true;
-  try {
-    const status = realStatus?.running ? await traffic.stop() : await traffic.start(realRate);
-    realError = "";
-    updateReal(status);
-    log(realStatus.running ? "Real inventory reads started; runs until stopped."
-      : "Real inventory traffic stopped; committed stock is preserved.");
-  } catch (error) {
-    showRealError(error);
-  } finally {
-    $("run").disabled = false;
-  }
-}
-async function initReal() {
-  try {
-    // Older running preview servers may not serve this optional asset yet.
-    // Initialize the workbench first so that a missing asset cannot blank it.
-    const { realTraffic } = await import("./real-traffic.mjs");
-    traffic = realTraffic();
-    const status = await traffic.status();
-    realMode = true;
-    $("preview-mode").textContent = "Owned Java run";
-    $("preview-detail").textContent = "Real inventory read requests enabled. Runs until stopped.";
-    $("scale-notice").textContent = "Real read workload · fixed demo limits are shown in the dock and guide. The million-row map and unbuilt solutions remain illustrative.";
-    $("load").min = 100;
-    $("load").max = 10000;
-    $("load").step = 100;
-    $("load-down").setAttribute("aria-label", "Decrease target by 100 requests per second");
-    $("load-up").setAttribute("aria-label", "Increase target by 100 requests per second");
-    $("load").setAttribute("aria-describedby", "load-step-note");
-    updateReal(status);
-    render();
-    setInterval(async () => {
-      try { updateReal(await traffic.status()); }
-      catch (error) { showRealError(error); }
-    }, 750);
-  } catch {
-    // A preview without a selected run keeps the labelled illustrative model.
-  }
-}
 $("fault-select").onchange = (e) => {
   faultKind = e.target.value;
   renderFaultConsole();
@@ -1190,7 +976,7 @@ function renderHover() {
   }
   const id = hoverNode.dataset.node;
   const shardIndex = hoverNode.dataset.shard === undefined ? null : Number(hoverNode.dataset.shard);
-  const snapshot = realSnapshot(id) || componentSnapshot(state, id, running, shardIndex);
+  const snapshot = componentSnapshot(state, id, running, shardIndex);
   const tip = $("hover-card");
   $("hover-title").textContent = shardIndex === null ? descriptions[id][0] : `Shard S${shardIndex + 1}`;
   $("hover-state").textContent = snapshot.status;
@@ -1353,4 +1139,3 @@ new ResizeObserver(() => {
   previousSize = size;
   paintCamera();
 }).observe(graphViewport);
-initReal();
