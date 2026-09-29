@@ -9,14 +9,17 @@ import java.util.regex.Pattern;
 
 public final class Lab {
   static Map<String, String> settings() throws IOException {
-    var result = new HashMap<>(System.getenv());
-    Path file = Path.of(".env");
+    return settings(Path.of(".env"), System.getenv());
+  }
+
+  static Map<String, String> settings(Path file, Map<String, String> environment) throws IOException {
+    var result = new HashMap<>(environment);
     if (Files.exists(file))
       for (String line : Files.readAllLines(file)) {
         if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
         String[] entry = line.split("=", 2);
         if (entry.length == 2
-            && Set.of("DATABASE_URL", "DATASET_ROWS", "FIXTURE_ROWS", "FIXTURE_SEED")
+            && Set.of("DATABASE_URL", "DATASET_ROWS", "FIXTURE_ROWS", "FIXTURE_SEED", "RUN_ID")
                 .contains(entry[0].trim())) {
           String value = entry[1].trim();
           if (value.length() > 1

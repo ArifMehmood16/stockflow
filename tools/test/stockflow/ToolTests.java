@@ -22,6 +22,14 @@ public final class ToolTests {
   }
 
   public static void main(String[] args) throws Exception {
+    var configFile = java.nio.file.Files.createTempFile("stockflow-settings", ".env");
+    try {
+      java.nio.file.Files.writeString(configFile, "RUN_ID='4646aad0-3c39-499c-92c8-7ca4cd96ca81'\n");
+      check(Lab.settings(configFile, Map.of()).get("RUN_ID").equals("4646aad0-3c39-499c-92c8-7ca4cd96ca81"),
+          "Saved run selection enables real mode without shell exports");
+      check(Lab.settings(configFile, Map.of("RUN_ID", "override")).get("RUN_ID").equals("override"),
+          "Explicit environment run overrides saved selection");
+    } finally { java.nio.file.Files.deleteIfExists(configFile); }
     if (args.length > 0 && args[0].equals("child")) {
       System.out.println("ready");
       Thread.sleep(60000);

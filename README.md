@@ -47,7 +47,7 @@ The supplied `postgresql+psycopg://` URL format is accepted and converted to JDB
 Useful commands:
 
 ```sh
-make preview          # Java server + browser model only; no database setup
+RUN_ID= make preview  # Java server + browser model only; override any saved run
 make api              # Setup/build/start just the real stock API at 8081
 make api-smoke        # Compare a running API response with the local database
 make api-stop         # Stop only the registered API
@@ -65,6 +65,8 @@ PORT=4174 API_PORT=8082 make stop   # Stop the matching UI/API
 `make stop` does not stop your PostgreSQL server or delete data. It checks process ID, start time and executable before sending a graceful stop. It never kills an arbitrary port owner. If an old Node preview from an earlier revision occupies the port, use Ctrl-C in that terminal once. An occupied port gives guidance instead of taking over the listener.
 
 After updating Java preview code, restart with `make stop` then `make run` so new asset routes and controls are loaded. The workbench can still initialize if the optional real-traffic module is unavailable on an older running preview.
+
+For real traffic with plain `make run`, save `RUN_ID=<existing fixture ID>` in `.env`. Both the API and preview read that selection; a shell `RUN_ID` overrides it. Without a selected fixture, the browser shows **Browser only** even though the diagnostic Java API is running. Selecting a run enables controls but does not generate traffic until you press **Start real traffic**. Use `RUN_ID= make preview` to explicitly open model mode.
 
 `make fixture` is separate from `make run`: it never changes the diagnostic `stockflow.catalog` or `stockflow.inventory`. With `FIXTURE_ROWS` unset it uses the first 100 available catalog codes for each of two tenants and two warehouses (normally 400 stock rows). For a scale run, use `FIXTURE_ROWS=1000000 make fixture`; this creates at most one stock row per available unique product. It estimates disk headroom before copying and records the actual row count, seed and ownership in `stockflow_runs`. The command prints a new run ID; repeat with `RUN_ID=<that ID> make fixture` to verify and reuse the READY fixture without resetting quantities. `FIXTURE_SEED` defaults to `stockflow-demo`; a run ID cannot be reused with a different seed or size. The trusted setup role needs `CREATE ROLE` and database schema-creation authority. Per-run writer, cleanup and reader credentials are stored only under ignored `.lab/runs/<run ID>/` with owner-only permissions.
 

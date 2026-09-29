@@ -62,7 +62,7 @@ final class Api {
     var settings = Lab.settings();
     var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
     configureCatalog(builder, config, Path.of(".lab/catalog-reader.properties"));
-    String active = System.getenv().getOrDefault("RUN_ID", "");
+    String active = settings.getOrDefault("RUN_ID", "");
     if (!active.isBlank()) {
       UUID runId = UUID.fromString(active);
       Path directory = Path.of(".lab/runs", runId.toString());

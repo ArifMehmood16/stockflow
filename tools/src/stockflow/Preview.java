@@ -162,7 +162,7 @@ final class Preview {
 
   static void start(Path root, int port) throws Exception {
     HttpServer server;
-    TrafficControl control = System.getenv().getOrDefault("RUN_ID", "").isBlank()
+    TrafficControl control = Lab.settings().getOrDefault("RUN_ID", "").isBlank()
         ? null : TrafficControl.forSelectedRun();
     try {
       server = create(root, port, control);
