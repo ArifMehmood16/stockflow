@@ -74,6 +74,8 @@ RUN_ID=<run ID> make api
 
 Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped. `POST /v1/reservations` requires a bearer tenant credential, a unique `Idempotency-Key` (1–128 printable non-space ASCII characters), and JSON `{warehouseId,sku,quantity}` with quantity 1–100. A repeated key with the same request returns the stored result and `Idempotency-Replayed: true`; a changed request conflicts. Stock and the response commit in one PostgreSQL transaction. `POST /v1/reservations/{id}/release` uses its own idempotency key and returns a terminal result. A bounded Java worker expires overdue ACTIVE reservations every second. Release and expiry each credit stock only if their guarded transition wins.
 
+The implemented HTTP shape is in [the inventory OpenAPI file](docs/openapi/inventory.yaml). The local run API currently supports one selected run per process. It is a correctness baseline, not a measured load or multi-instance deployment. History cleanup and the Java load generator are later work; the current 200,000-row history caps can reject new writes if a long-lived run reaches them.
+
 ## Run with Docker (Make optional)
 
 Prerequisites: **Docker Engine/Desktop running**, **Docker Compose v2**, internet access for images/dependencies/catalog, and enough Docker disk/RAM for the import. No host Java, Node, Python or local PostgreSQL is required.

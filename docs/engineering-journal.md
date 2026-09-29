@@ -1,5 +1,17 @@
 # Engineering journal
 
+## 2026-09-29 — Phase A run-owned inventory baseline
+
+A04–A06 are committed on `codex/phase-1-authenticated-run-stock-reads` as `feca5dd`, `f48ea77` and `6910ab0`. The native service now verifies run-issued tenant credentials, reads run-owned stock, commits and replays reservations, and releases/expires them through guarded transactions. The diagnostic catalog still uses a separate read-only role and pool. The active run uses a four-connection writer pool. There is no UI integration or real load generator yet.
+
+Red/green evidence: the initial reserve and release HTTP tests returned 405, and a bodyless live release returned 413. The focused regression tests passed after route-specific changes. Readiness initially stayed 200 when the selected run fake was down; it now returns 503. Malformed JSON initially lacked the fixed error envelope; the focused test now passes. Disposable PostgreSQL tests exercised a 10-unit row: reserve 7, replay, conflict and insufficient-stock decisions, then two concurrent 3-unit requests with only one success and final available 0/version 2. Release of 7 returned available 7/version 3; expiry of 3 returned 10/version 4. A restarted adapter and two workers credited one overdue reservation once. A later release-versus-expiry race returned to 10 units with one additional terminal version increment.
+
+Observed checks: `make verify` passed 30 Java tooling assertions, Maven API tests/coverage, 28 frontend model tests, JavaScript syntax, documentation links and whitespace. `make test-integration` passed real COPY/import, fixture reuse, role isolation and rollback, then removed its owned temporary database. `make test-api-integration` passed disposable PostgreSQL API transaction tests. `make lint` passed. `docker compose config --quiet` passed, but `docker info` could not connect to the absent daemon socket. A fresh container build/run and Docker small-fixture smoke were not run.
+
+Native port 8083 smoke used the existing READY 400-row fixture (`4646aad0-3c39-499c-92c8-7ca4cd96ca81`). `make api-smoke` matched the diagnostic HTTP response to PostgreSQL. Selected-run readiness and stock read returned 200; a token from the million-row run returned 401; another tenant's reservation returned 404; unauthorized POST returned 401. A second launch refused the occupied port without stopping the listener. The owned API stopped cleanly, restarted, and replayed a previously committed 201 with identical body bytes and `Idempotency-Replayed: true`; it was then stopped. The previously created run fixtures and shared diagnostic catalog were preserved. Tokens and response bodies containing session tokens remain only in ignored `.lab` test files, not this journal.
+
+The application/core JaCoCo report after `make verify` showed 62 covered and 7 missed lines and 28 covered and 6 missed branches for `dev.stockflow.inventory.application`; both configured thresholds passed. This measures core code, not system performance. The native fixture has no measured throughput claim. History retention cleanup and Docker run-owned fixture startup remain future work; the 200,000-row caps therefore bound long-lived write histories.
+
 
 ## 2026-09-29 — Phase 0 design and prototype
 

@@ -2,7 +2,7 @@
 
 ## Implementation handoff
 
-The owner uses Codex and ChatGPT for implementation and validation, one task at a time. Start at [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **V0 is accepted; A03 is self-tested; A04 is next.**
+The owner uses Codex and ChatGPT for implementation and validation. Start at [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **V0 is accepted; A04–A06 are self-tested; A07 native checks passed while Docker runtime smoke remains unavailable. V1 has no independent verdict.**
 
 This file remains the phase-level authority. Cards refine dependency order within the phases; they do not authorize skipping an earlier acceptance gate. A01/V0 resolved the imported-catalog versus writable-run schema; A02–A07 finish Phase 1. B/C together implement Phase 2; D through I map to Phases 3–8. Existing completed checkboxes remain evidence of delivered work. Task status lives in STATE; phase checkboxes change only when all required work and checkpoint verification pass.
 

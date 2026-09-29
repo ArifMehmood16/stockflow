@@ -1,6 +1,9 @@
 package dev.stockflow.inventory.adapter;
 
 import dev.stockflow.inventory.application.*;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.annotation.PreDestroy;
 import java.nio.file.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -19,6 +22,17 @@ public final class JdbcRunInventory implements RunInventory {
   private final String user;
   private final String password;
   private final byte[] key;
+  private final HikariDataSource writer;
+
+  @Override
+  public boolean ready() {
+    if (runId == null) return true;
+    try (var connection = connect();
+        var query = connection.prepareStatement("SELECT 1 FROM " + schema + ".inventory LIMIT 1")) {
+      query.setQueryTimeout(2);
+      try (var row = query.executeQuery()) { return row.next(); }
+    } catch (SQLException unavailable) { return false; }
+  }
 
   public JdbcRunInventory(@Value("${STOCKFLOW_ACTIVE_RUN_ID:}") String active,
       @Value("${STOCKFLOW_RUN_JDBC_URL:}") String url,
@@ -32,6 +46,7 @@ public final class JdbcRunInventory implements RunInventory {
       this.user = null;
       this.password = null;
       this.key = null;
+      this.writer = null;
       return;
     }
     this.runId = UUID.fromString(active);
@@ -49,6 +64,19 @@ public final class JdbcRunInventory implements RunInventory {
       throw new IllegalStateException("Run credential key is not private.");
     this.key = Files.readAllBytes(file);
     if (key.length != 32) throw new IllegalStateException("Run credential key is invalid.");
+    var pool = new HikariConfig();
+    pool.setJdbcUrl(url);
+    pool.setUsername(user);
+    pool.setPassword(password);
+    pool.setMaximumPoolSize(4);
+    pool.setMinimumIdle(0);
+    pool.setConnectionTimeout(2000);
+    pool.setValidationTimeout(1000);
+    pool.setInitializationFailTimeout(-1);
+    pool.addDataSourceProperty("connectTimeout", "2");
+    pool.addDataSourceProperty("socketTimeout", "3");
+    pool.addDataSourceProperty("ApplicationName", "stockflow-run-writer");
+    this.writer = new HikariDataSource(pool);
   }
 
   @Override
@@ -77,13 +105,11 @@ public final class JdbcRunInventory implements RunInventory {
   }
 
   private Connection connect() throws SQLException {
-    var properties = new Properties();
-    properties.setProperty("user", user);
-    properties.setProperty("password", password);
-    properties.setProperty("connectTimeout", "2");
-    properties.setProperty("socketTimeout", "3");
-    return DriverManager.getConnection(url, properties);
+    return writer.getConnection();
   }
+
+  @PreDestroy
+  public void close() { if (writer != null) writer.close(); }
 
   @Override
   public Optional<RunStock> stock(UUID tenant, UUID warehouse, String sku) {

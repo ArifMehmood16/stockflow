@@ -22,11 +22,13 @@ public final class ReadOnlyBoundary extends OncePerRequestFilter {
     if (!Set.of("localhost", "127.0.0.1", "[::1]", "::1", "inventory")
         .contains(request.getServerName())) {
       reject(response, 400, "INVALID_HOST", id);
-    } else if (allowedPost(request) && (request.getHeader("Origin") != null
-        || ("/v1/reservations".equals(request.getRequestURI())
+    } else if (allowedPost(request) && request.getHeader("Origin") != null) {
+      reject(response, 403, "ORIGIN_REJECTED", id);
+    } else if (allowedPost(request)
+        && ("/v1/reservations".equals(request.getRequestURI())
             ? request.getContentLengthLong() < 0 || request.getContentLengthLong() > 1024
             : request.getContentLengthLong() > 0
-                || request.getHeader("Transfer-Encoding") != null))) {
+                || request.getHeader("Transfer-Encoding") != null)) {
       reject(response, 413, "REQUEST_REJECTED", id);
     } else if (!Set.of("GET", "HEAD").contains(request.getMethod())
         && !allowedPost(request)) {

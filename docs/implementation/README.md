@@ -2,7 +2,7 @@
 
 Start with [PLAN](../../PLAN.md), the current [STATE](STATE.md), and [AGENTS](../../AGENTS.md). These **43 task cards** refine the phase implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.
 
-V0 accepted A01, and A02–A03 are self-tested. **A04 is next.** Do not redo the delivered prototype, import or read-only API. Execute one task at a time; a checkpoint blocks the next card until validation is accepted. There is no automatic multi-agent or phase-wide execution.
+V0 accepted A01. A02–A06 are self-tested; A07's native baseline passed while its Docker runtime smoke is unavailable. **V1 has no independent verdict.** Do not redo the delivered prototype, import or Java inventory baseline. The owner explicitly requested a quick Phase A delivery push; subsequent phase work still waits for the named checkpoint. There is no automatic multi-agent execution.
 
 ## Ordering and completion
 

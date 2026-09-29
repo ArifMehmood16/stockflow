@@ -4,10 +4,10 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Working base: `main` contains A03; Phase A continuation is on `codex/phase-1-authenticated-run-stock-reads`.
-- Current task: **A06 implemented/self-tested**; A07 baseline proof is next in the owner-requested Phase A delivery push.
-- Next review: **V1 after A07**; A02 itself has a task completion check.
+- Current task: **A07 partial** — native inventory baseline verified; Docker daemon unavailable for required container smoke.
+- Next review: **V1 packet pending**; no independent verdict yet.
 - Last accepted checkpoint: **V0** on A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`.
-- Active blocker: none for A04. Docker runtime verification remains untested and is still required for V1, but the owner deferred Docker polish.
+- Active blocker: Docker runtime verification remains untested because the daemon socket is unavailable. The owner deferred Docker polish, so native functionality was prioritized.
 
 Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
@@ -19,7 +19,7 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 - A04: done — scoped reads, run-issued credentials and denial tests; live small-fixture read verified; completion commit pending
 - A05: done — conditional decrement, durable idempotency and concurrency test; completion commit pending
 - A06: done — guarded release/expiry, restart and race tests; completion commit pending
-- A07: todo
+- A07: partial — native lifecycle, coverage, import and API integration passed; isolated Docker runtime smoke blocked by stopped daemon
 - B01: todo
 - B02: todo
 - B03: todo

@@ -11,6 +11,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
@@ -25,8 +27,11 @@ class RunStockHttpTest {
   static final UUID RESERVATION = UUID.fromString("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee5");
   static final byte[] KEY = new byte[32];
   @LocalServerPort int port;
+  @Autowired FakeRun run;
 
   static class FakeRun implements RunInventory {
+    boolean up = true;
+    public boolean ready() { return up; }
     public ScopeToken.TenantScope authenticate(String authorization) {
       if (authorization == null || !authorization.startsWith("Bearer ")) throw new SecurityException();
       try {
@@ -59,6 +64,8 @@ class RunStockHttpTest {
       return new OperationResponse(200, "{\"state\":\"RELEASED\"}", false);
     }
   }
+
+  @BeforeEach void reset() { run.up = true; }
   @TestConfiguration static class Fixture {
     @Bean @Primary FakeRun runInventory() { return new FakeRun(); }
   }
@@ -127,6 +134,35 @@ class RunStockHttpTest {
       String response = new String(socket.getInputStream().readAllBytes(),
           java.nio.charset.StandardCharsets.UTF_8);
       assertTrue(response.startsWith("HTTP/1.1 200"), response);
+    }
+  }
+
+  @Test void selectedRunOutageMakesReadinessFail() throws Exception {
+    run.up = false;
+    assertEquals(503, get("/health/ready", null, null).statusCode());
+  }
+
+  @Test void malformedJsonAndBrowserOriginHaveSafeErrors() throws Exception {
+    String token = ScopeToken.issueTenant(RUN, TENANT, Instant.now().plusSeconds(300), KEY);
+    try (var client = HttpClient.newHttpClient()) {
+      var base = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port
+          + "/v1/reservations"))
+          .header("Authorization", "Bearer " + token)
+          .header("Idempotency-Key", "bad-input")
+          .header("Content-Type", "application/json");
+      var malformed = client.send(base.POST(HttpRequest.BodyPublishers.ofString("{bad"))
+          .build(), HttpResponse.BodyHandlers.ofString());
+      assertEquals(400, malformed.statusCode());
+      assertTrue(malformed.body().contains("INVALID_REQUEST"));
+      var origin = client.send(HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port
+              + "/v1/reservations"))
+          .header("Origin", "https://untrusted.example")
+          .header("Authorization", "Bearer " + token)
+          .header("Idempotency-Key", "origin-input")
+          .header("Content-Type", "application/json")
+          .POST(HttpRequest.BodyPublishers.ofString("{}"))
+          .build(), HttpResponse.BodyHandlers.ofString());
+      assertEquals(403, origin.statusCode());
     }
   }
 }
