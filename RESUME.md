@@ -1,14 +1,14 @@
 # Resume StockFlow
 
 Public repository: https://github.com/ArifMehmood16/stockflow
-Current work branch: `codex/phase-1-reproducible-build-and-ci` from `main`. Earlier phase and handoff branches were consolidated into main.
+Current work branch: `codex/phase-1-run-owned-inventory-fixtures` from `main`. A02 is already on main.
 Code baseline: `ba824c7` (includes Java API checkpoints `e13cd91`/`5946eda` and favicon).
 
 ## How the owner wants to work now
 
 Codex and ChatGPT implement one requested item at a time and validate at named milestones. Read [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each conversation.
 
-**Current state: A02 reproducible build and CI is self-tested; A03 is next when requested.** V0 was accepted after the A01 retention-authority correction. A01 recommends the writable contract in ADR 002 and does not change runtime code. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
+**Current state: A03 run-owned fixtures are self-tested; A04 authenticated stock reads are next.** V0 was accepted after the A01 retention-authority correction. See [the V0 packet](docs/implementation/reviews/V0.md), [VALIDATION](docs/implementation/VALIDATION.md) and [STATE](docs/implementation/STATE.md).
 
 ## Working implementation
 

@@ -198,7 +198,7 @@ Bucket assignment, frozen here and tested with golden vectors in G01: SHA-256 of
 
 ## Schema sketch
 
-Not executed. Names are the intended migration objects.
+The approved shape is now implemented by the versioned files in `infra/migrations/`; the sketch below remains the contract reference. The actual migration files are the executable source.
 
 ```sql
 CREATE SCHEMA stockflow_runs;
