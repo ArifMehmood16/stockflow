@@ -778,7 +778,8 @@ const graphViewport = document.querySelector(".graph-scroll");
 new ResizeObserver(() => {
   const scale = Math.max(0.65, Math.min(1, graphViewport.clientWidth / 960));
   $("graph").style.transform = `scale(${scale})`;
-  graphViewport.style.height = `${670 * scale}px`;
+  const scrollbarSpace = 960 * scale > graphViewport.clientWidth ? 20 : 0;
+  graphViewport.style.height = `${670 * scale + scrollbarSpace}px`;
   document.querySelector(".graph-stage").style.width = `${960 * scale}px`;
   document.querySelector(".graph-stage").style.height = `${670 * scale}px`;
 }).observe(graphViewport);

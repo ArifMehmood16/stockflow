@@ -56,3 +56,7 @@ Added tracked local preview lifecycle: per-port PID plus OS start-time/command i
 Browser observed: all nine displayed logos loaded locally; no build buttons in guide; cache remains inactive during provisioning and becomes routed after ready; green route switch disabled during build and enabled after readiness; switch mutes old blue path and activates green; reset immediately returns cache to not built. Full build is still an illustrative browser lifecycle, not real provisioning. NGINX/logo labels identify proposed architecture, not a new running infrastructure dependency.
 
 Previous local commit e41fb6a initially could not push because automatic approval review failed due to a usage limit. Further local work was preserved. Publication status is recorded in the final checkpoint rather than assumed.
+
+### Entry 003 final checkpoint
+
+Completed the browser checks, replaced the screenshot with the dark workbench, removed an unused edge, and fixed the narrow-screen scrollbar allowance. Final `make verify` passed 11 tests and 18 local links; Compose config and diff checks passed. The native isolated preview started on 4175 and exited 0 after `PORT=4175 make stop`; repeated stop was harmless. This preview was stopped deliberately to avoid another agent-owned port conflict. Updated PLAN 0.4b and RESUME. Checkpoint 543c683 pushed successfully, including the previously unpushed fix in its history. Production architecture review remains pending; no real Java/infrastructure claims added.

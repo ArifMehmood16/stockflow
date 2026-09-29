@@ -31,4 +31,8 @@ Fixed occupied-port startup guidance after the agent-started preview conflicted 
 
 ## Current UI revision checkpoint
 
-Implemented user-requested dark workbench, light ready components, technology logos, on-map build/scale/recovery controls, readiness stages and route switching. Learning path stays; guide points to map controls. Added `make stop` (same PORT as make run), per-port process identity checks, and tests. `make verify` currently passes 11 tests plus syntax and 18 links. Browser key interactions checked. Remaining before final handoff: finish screenshot/layout inspection, native run/stop smoke on owned test port 4175, final diff review, and push checkpoints. No next Java phase begun.
+Completed PLAN 0.4b: dark workbench, light ready components, technology logos, on-map build/scale/recovery controls, readiness stages and route switching. Learning path stays; guide points to map controls. Added `make stop` (same PORT as make run), per-port process identity checks, and tests. `make verify` passes 11 tests, syntax checks and 18 links. Browser checks covered building→ready, no early routing, green switch gate, reset cancellation, keyboard inspection, reduced motion and narrow-screen containment. Actual `PORT=4175 make stop` ended the isolated agent preview cleanly; repeated stop reported no registered preview. The test preview is no longer running.
+
+Checkpoint `543c683` was pushed; final evidence/screenshot is in the containing follow-up commit. The previously blocked port fix is also on the remote. Use `git log --oneline` for the latest checkpoint.
+
+If a preview launched before tracking was added still runs in your terminal, use Ctrl-C once and restart with `make run`; thereafter `make stop` manages it. No need to redo this UI revision. Next planned work remains human review of ADR 001, then Phase 1.1; do not start Java without that review.

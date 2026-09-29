@@ -42,7 +42,7 @@ Inspect: selected node role, instance/version, health, current work, source of m
 
 ## Request and data animation
 
-Read line solid teal, write line dashed dark, WAL dotted amber; text legend always present. Edge arrowheads show direction. Return path distinguishable. Particle speed is time-compressed; display “sampled traces, animation not to scale”. Real throughput remains numerical. At high load aggregate streams, max 30 particles; never render one dot per real request. Source badge distinguishes cache, replica, primary. Failures mark edge with x and text. Selecting a trace highlights only its route; show scheduler/admission/API/pool/SQL/cache/return spans with duration and sample provenance.
+Read line solid mint, write line dashed periwinkle, WAL dotted amber; text legend always present. Edge arrowheads show direction. Return path distinguishable. Particle speed is time-compressed; display “sampled traces, animation not to scale”. Real throughput remains numerical. At high load aggregate streams, max 30 particles; never render one dot per real request. Source badge distinguishes cache, replica, primary. Failures mark edge with x and text. Selecting a trace highlights only its route; show scheduler/admission/API/pool/SQL/cache/return spans with duration and sample provenance.
 
 Motion is optional. Respect prefers-reduced-motion plus saved toggle. Reduced motion uses edge highlights and live text, not moving particles. Metric updates at 1 Hz avoid layout jitter; announce meaningful run/lesson/fault state changes politely, not every metric tick.
 

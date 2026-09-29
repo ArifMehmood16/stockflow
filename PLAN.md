@@ -13,7 +13,7 @@ Each implementation task: inspect relevant code → smallest failing behaviour t
 - [x] 0.3 Deliver wireframes, flows and an interactive web prototype with honest model labels.
 - [x] 0.4 Verify prototype model, document checks and record observed outcomes.
 - [x] 0.4a Fix occupied-port preview startup with actionable guidance and a regression test.
-- [ ] 0.4b Revise the prototype with on-map controls, staged builds/rerouting, local technology logos, a dark workbench and safe `make stop`.
+- [x] 0.4b Revise the prototype with on-map controls, staged builds/rerouting, local technology logos, a dark workbench and safe `make stop`.
 - [ ] 0.5 Human approves ADR 001 proposals, scope, licence and visual direction.
 
 Acceptance: another developer can locate responsibilities, schemas, lesson steps, limits, tests and implementation order without treating the prototype as a measured system. Verification details in the journal. Gate: 0.5 blocks production implementation, not delivery of this planning package.

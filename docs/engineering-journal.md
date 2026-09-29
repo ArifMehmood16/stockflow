@@ -60,3 +60,14 @@ Red: `node --test tests/model.test.mjs` produced two new failures for missing bu
 Started isolated `PORT=4175 make run` for verification, leaving any user listener on 4173 untouched. Browser observed local logo loading, on-map controls, readiness gating, old-route muting/new-route activation, and immediate reset of an in-flight build. Logs and visual state explicitly call this lifecycle illustrative. Final native run/stop smoke and screenshots follow below.
 
 Reviewed safety: local registry checks start/command identity before signalling, no port-owner killing, no force kill, no HTTP stop endpoint. SVG assets are local and allowlisted with retained attribution. No licence selected for StockFlow's own code. Node UI model remains a teaching sketch.
+
+### Final revision verification
+
+- `make verify`: 11 tests passed, syntax checks passed, 18 local links resolved.
+- `docker compose config --quiet`: passed. Docker daemon/build/run remain unverified as previously recorded.
+- `git diff --check`: passed.
+- Browser: Redis card showed PROVISIONING while DB demand stayed at baseline; after READY its route became enabled and demand decreased. Guide contained zero action buttons. Green route switch was disabled during provisioning, enabled on readiness, then selected green and muted blue. Reset cancelled the in-flight cache build and it remained unbuilt after timers would have completed. Keyboard inspection and reduced-motion control worked; console error/warning log was empty.
+- At viewport 375, body width was 360 with the scrollbar excluded; graph scroll height and client height both 441 after adjusting scrollbar space. No body horizontal overflow or clipped vertical graph scroll. Viewport override reset afterward.
+- Dark screenshot updated in `docs/design/screenshots/preview.png`; removed an unused graph path during final review.
+- Native smoke: `PORT=4175 make run` started the registered isolated preview; `PORT=4175 make stop` reported it stopped, and the run process exited 0. Repeating stop reported no registered preview and exited 0. No user process on port 4173 was touched.
+- Commit 543c683 pushed successfully; remote includes the prior port-conflict fix. Final documentation checkpoint follows this record.
