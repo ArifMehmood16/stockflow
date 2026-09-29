@@ -32,4 +32,14 @@ public final class ApiErrors {
   public ResponseEntity<ErrorResponse> unavailable(HttpServletRequest request) {
     return error(503, "STOCK_UNAVAILABLE", "Stock data is temporarily unavailable.", true, request);
   }
+
+  @ExceptionHandler(SecurityException.class)
+  public ResponseEntity<ErrorResponse> unauthorized(HttpServletRequest request) {
+    return error(401, "UNAUTHORIZED", "Run credential is invalid or expired.", false, request);
+  }
+
+  @ExceptionHandler(RunHttpError.class)
+  public ResponseEntity<ErrorResponse> runError(RunHttpError failure, HttpServletRequest request) {
+    return error(failure.status, failure.code, failure.code, failure.retryable, request);
+  }
 }

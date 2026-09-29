@@ -8,7 +8,7 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 
 - **Real Java tooling:** local HTTP preview, safe process stop, PostgreSQL schema setup, public-catalog download, JDBC COPY import and import verification.
 - **Real Java inventory reads:** Spring Boot service on port 8081; stock lookup reads the loaded PostgreSQL catalog, with liveness/readiness checks and bounded JDBC connections. See the [Java baseline](docs/java-baseline.md).
-- **Real writable run fixtures:** an explicit Java command creates isolated, versioned PostgreSQL inventory stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The existing HTTP API does not write these rows yet.
+- **Real writable run fixtures and scoped reads:** an explicit Java command creates isolated, versioned PostgreSQL inventory stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The API can read an active run with a run-issued tenant credential. Reservation writes are still pending.
 - **Real local PostgreSQL data:** Open Food Facts products plus deterministic synthetic inventory quantities/tenant assignments. `DATASET_ROWS` is an upper bound: import the lower of that limit and the available valid, unique products. No duplicate products are invented to reach the limit.
 - **Illustrative frontend simulation:** a million logical records and up to 250,000 modeled requests/s. Its rates, failures, build timings and recoveries are teaching assumptions, not measurements from the imported database. No request load is sent to PostgreSQL yet.
 
@@ -62,7 +62,17 @@ PORT=4174 API_PORT=8082 make stop   # Stop the matching UI/API
 
 `make stop` does not stop your PostgreSQL server or delete data. It checks process ID, start time and executable before sending a graceful stop. It never kills an arbitrary port owner. If an old Node preview from an earlier revision occupies the port, use Ctrl-C in that terminal once. An occupied port gives guidance instead of taking over the listener.
 
-`make fixture` is separate from `make run`: it never changes the diagnostic `stockflow.catalog` or `stockflow.inventory`. With `FIXTURE_ROWS` unset it uses the first 100 available catalog codes for each of two tenants and two warehouses (normally 400 stock rows). For a scale run, use `FIXTURE_ROWS=1000000 make fixture`; this creates at most one stock row per available unique product. It estimates disk headroom before copying and records the actual row count, seed and ownership in `stockflow_runs`. The command prints a new run ID; repeat with `RUN_ID=<that ID> make fixture` to verify and reuse the READY fixture without resetting quantities. `FIXTURE_SEED` defaults to `stockflow-demo`; a run ID cannot be reused with a different seed or size. The trusted setup role needs `CREATE ROLE` and database schema-creation authority. Per-run writer, cleanup and reader credentials are stored only under ignored `.lab/runs/<run ID>/` with owner-only permissions. Do not pass these credentials to the current read-only HTTP service; authenticated run routes come next.
+`make fixture` is separate from `make run`: it never changes the diagnostic `stockflow.catalog` or `stockflow.inventory`. With `FIXTURE_ROWS` unset it uses the first 100 available catalog codes for each of two tenants and two warehouses (normally 400 stock rows). For a scale run, use `FIXTURE_ROWS=1000000 make fixture`; this creates at most one stock row per available unique product. It estimates disk headroom before copying and records the actual row count, seed and ownership in `stockflow_runs`. The command prints a new run ID; repeat with `RUN_ID=<that ID> make fixture` to verify and reuse the READY fixture without resetting quantities. `FIXTURE_SEED` defaults to `stockflow-demo`; a run ID cannot be reused with a different seed or size. The trusted setup role needs `CREATE ROLE` and database schema-creation authority. Per-run writer, cleanup and reader credentials are stored only under ignored `.lab/runs/<run ID>/` with owner-only permissions.
+
+To read a run, issue a one-hour tenant credential locally and start the API for that run. Keep token output private; `TENANT_INDEX` is 0 or 1. The API receives only its run writer login and the separate diagnostic catalog reader, never the setup owner. Only one run is active per API process; the public diagnostic catalog route remains read-only.
+
+```sh
+RUN_ID=<run ID> TENANT_INDEX=0 make -s fixture-issue
+RUN_ID=<run ID> make api
+# GET /v1/warehouses/<warehouse UUID>/stock/<SKU> with Authorization: Bearer <token>
+```
+
+Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped; writes are added in the next task.
 
 ## Run with Docker (Make optional)
 

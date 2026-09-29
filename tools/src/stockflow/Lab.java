@@ -96,6 +96,19 @@ public final class Lab {
     }
   }
 
+  static void fixtureIssue(String[] args) throws Exception {
+    var settings = settings();
+    UUID runId = args.length > 1 ? UUID.fromString(args[1])
+        : UUID.fromString(settings.getOrDefault("RUN_ID", ""));
+    var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
+    try (var connection = Database.connect(config)) {
+      UUID tenant = args.length > 2 ? UUID.fromString(args[2])
+          : FixtureCredentials.tenantAt(
+              connection, runId, Integer.parseInt(settings.getOrDefault("TENANT_INDEX", "0")));
+      System.out.println(FixtureCredentials.issue(connection, runId, tenant));
+    }
+  }
+
   static void docs() throws IOException {
     int checked = 0;
     var pattern = Pattern.compile("\\[[^\\]]*\\]\\(([^)]+)\\)");
@@ -131,6 +144,7 @@ public final class Lab {
       switch (action) {
         case "setup", "db-init", "db-import", "db-status", "data-fetch" -> setup(action);
         case "fixture" -> fixture();
+        case "fixture-issue" -> fixtureIssue(args);
         case "preview" -> Preview.start(Path.of("."), Preview.port());
         case "run" -> {
           Api.start();

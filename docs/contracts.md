@@ -1,6 +1,6 @@
 # Implementation contracts
 
-Status: proposed v1 contract. These endpoints do not exist in the design prototype. Maintain machine-readable OpenAPI and JSON Schema from Phase 1/2, with generated strict frontend types and compatibility tests.
+Status: proposed v1 contract, with Phase 1 run-scoped GET routes now implemented. The design prototype still does not call them. Maintain machine-readable OpenAPI and JSON Schema from Phase 1/2, with generated strict frontend types and compatibility tests.
 
 ## Inventory data
 
@@ -111,4 +111,4 @@ Store versioned JSON definitions: `id,title,prerequisites,modeCapabilities,fixtu
 
 ## Implemented Phase 1 read-only catalog slice
 
-The diagnostic `GET /v1/catalog/{code}/stock`, `GET /health/live` and `GET /health/ready` now exist. Exact response/error semantics and local-only scope are recorded in [Java baseline](java-baseline.md). This public/synthetic data read does not implement tenant authentication, warehouse stock writes or the above reservation contracts. It uses the existing imported `stockflow.catalog` and `stockflow.inventory` schema without a migration. An executable service contract test covers it; machine-readable reservation/control-plane specifications remain future work.
+The diagnostic `GET /v1/catalog/{code}/stock`, `GET /health/live` and `GET /health/ready` exist. Exact response/error semantics and local-only scope are recorded in [Java baseline](java-baseline.md). Authenticated primary warehouse stock and reservation GET routes now read run-owned data using a run writer login and HMAC tenant credential. They do not write stock. Machine-readable reservation/control-plane specifications remain future work.

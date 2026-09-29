@@ -73,6 +73,8 @@ public class Build {
           .filter(p -> p.toString().endsWith(".java") && !p.equals(Path.of("tools/Build.java")))
           .forEach(p -> options.add(p.toString()));
     }
+    options.add(
+        "services/inventory-service/src/main/java/dev/stockflow/inventory/application/ScopeToken.java");
     if (ToolProvider.getSystemJavaCompiler().run(null, null, null, options.toArray(String[]::new))
         != 0) System.exit(1);
     String action = args.length == 0 ? "help" : args[0];

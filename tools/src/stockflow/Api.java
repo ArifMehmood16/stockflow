@@ -62,6 +62,30 @@ final class Api {
     var settings = Lab.settings();
     var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
     configureCatalog(builder, config, Path.of(".lab/catalog-reader.properties"));
+    String active = System.getenv().getOrDefault("RUN_ID", "");
+    if (!active.isBlank()) {
+      UUID runId = UUID.fromString(active);
+      Path directory = Path.of(".lab/runs", runId.toString());
+      Path credentials = directory.resolve("writer.properties");
+      if (!Files.isRegularFile(credentials, LinkOption.NOFOLLOW_LINKS))
+        throw new IllegalStateException("Run writer credentials are missing; run make fixture.");
+      if (Files.getPosixFilePermissions(credentials).stream()
+          .anyMatch(permission -> !permission.name().startsWith("OWNER_")))
+        throw new IllegalStateException("Run writer credentials must be owner-only.");
+      var writer = new Properties();
+      try (var source = Files.newBufferedReader(credentials)) { writer.load(source); }
+      String expected = "sf_w_" + runId.toString().replace("-", "");
+      if (!expected.equals(writer.getProperty("role")) || writer.getProperty("password", "").isBlank())
+        throw new IllegalStateException("Run writer credentials are invalid.");
+      Path key = directory.resolve("credential.key");
+      if (!Files.isRegularFile(key, LinkOption.NOFOLLOW_LINKS))
+        throw new IllegalStateException("Issue a tenant credential with make fixture-issue first.");
+      builder.environment().put("STOCKFLOW_ACTIVE_RUN_ID", active);
+      builder.environment().put("STOCKFLOW_RUN_JDBC_URL", config.url());
+      builder.environment().put("STOCKFLOW_RUN_JDBC_USER", expected);
+      builder.environment().put("STOCKFLOW_RUN_JDBC_PASSWORD", writer.getProperty("password"));
+      builder.environment().put("STOCKFLOW_RUN_KEY_FILE", key.toAbsolutePath().toString());
+    }
   }
 
   static void configureIntegration(ProcessBuilder builder) throws Exception {

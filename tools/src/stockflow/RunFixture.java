@@ -385,6 +385,7 @@ final class RunFixture {
     Path directory = Path.of(".lab/runs", runId.toString());
     for (String kind : List.of("writer", "cleanup", "reader"))
       Files.deleteIfExists(directory.resolve(kind + ".properties"));
+    Files.deleteIfExists(directory.resolve("credential.key"));
     Files.deleteIfExists(directory);
   }
 }
