@@ -52,7 +52,7 @@ setup fixture fixture-issue db-init db-import db-status data-fetch doctor:
 test-java:
 	$(LAB) test
 test: test-java test-api
-	node --test tests/model.test.mjs tests/hover.test.mjs tests/topology.test.mjs
+	node --test tests/model.test.mjs tests/hover.test.mjs tests/topology.test.mjs tests/real-traffic.test.mjs
 test-integration:
 	$(LAB) test-postgres
 lint:
@@ -61,6 +61,7 @@ lint:
 	node --check prototype/model.mjs
 	node --check prototype/hover.mjs
 	node --check prototype/topology.mjs
+	node --check prototype/real-traffic.mjs
 	$(LAB) check-docs
 	git diff --check HEAD
 	git show --format= --check HEAD

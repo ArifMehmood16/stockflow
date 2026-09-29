@@ -25,12 +25,12 @@ Task states: `todo`, `in_progress`, `partial`, `done` (implemented/self-tested),
 - B03: todo
 - B04: todo
 - C01: todo
-- C02: todo
+- C02: partial — first right-hand guide uses real run status; other chapters remain illustrative
 - C03: todo
 - C04: todo
 - D01: partial — fixed-target bounded Java cycles and status; workload distributions and benchmark accounting deferred
 - D02: todo
-- D03: todo
+- D03: partial — first workbench chapter starts/stops and polls the Java fixture run; remaining controls are model-only
 - D04: todo
 - D05: todo
 - E01: todo

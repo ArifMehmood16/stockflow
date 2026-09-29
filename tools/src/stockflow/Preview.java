@@ -26,6 +26,7 @@ final class Preview {
     files.put("/model.mjs", "model.mjs");
     files.put("/hover.mjs", "hover.mjs");
     files.put("/topology.mjs", "topology.mjs");
+    files.put("/real-traffic.mjs", "real-traffic.mjs");
     for (String name : List.of("java", "spring", "postgresql", "redis", "react", "nginx"))
       files.put("/assets/" + name + ".svg", "assets/" + name + ".svg");
     return Map.copyOf(files);

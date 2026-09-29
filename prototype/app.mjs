@@ -9,7 +9,13 @@ import {
 } from "./model.mjs";
 import { placeHover, componentSnapshot } from "./hover.mjs";
 import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
+import { realTraffic } from "./real-traffic.mjs";
 let state = initialState();
+const traffic = realTraffic();
+let realMode = false;
+let realStatus = null;
+let realRate = 2;
+let realError = "";
 let chapter = 0;
 let faultNode = "cache";
 let faultKind = "stampede";
@@ -436,6 +442,15 @@ const actionLocations = {
 };
 function renderGuide() {
   const c = chapters[chapter];
+  if (realMode && chapter === 0) {
+    const s = realStatus;
+    $("guide-content").innerHTML = `<span class="guide-kicker">REAL INVENTORY RUN</span><h3>Follow a committed stock cycle.</h3><p class="guide-intro">Each cycle reads stock, reserves one unit, releases it, then reads the new version from PostgreSQL.</p><div class="step"><div class="step-heading"><span class="step-num">1</span>Choose 1–50 cycles/s</div><p>Use the workload slider inside the canvas. One cycle makes four local API requests.</p></div><div class="step"><div class="step-heading"><span class="step-num">2</span>Start a 30-second run</div><p>Select Start real traffic on the workload. You can stop it at any time.</p></div><div class="step"><div class="step-heading"><span class="step-num">3</span>Inspect what happened</div><p id="real-guide-result"></p></div><div class="tradeoff"><span class="tiny-label">WHAT TO NOTICE</span><p>The stock quantity returns after release while its version advances. Completed, failed and dropped are measured cycles. The other architecture controls are still model lessons.</p></div>`;
+    $("real-guide-result").textContent = s?.offered
+      ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Last path: ${s.lastPath || "in progress"}. Stock ${s.available}, version ${s.version}.`
+      : "Watch offered and completed cycles, the latest elapsed time, stock and version in the workload dock.";
+    $("reflection").textContent = "Why does the stock version rise even when the released quantity returns?";
+    return;
+  }
   const issue = state.faults[faultNode];
   const scenario = faultCatalog[faultNode][issue || faultKind];
   const protectedIssue =
@@ -501,8 +516,9 @@ function renderActions() {
   const button = (action, label, disabled = false) =>
     `<button class="map-action" data-action="${action}" ${disabled ? "disabled" : ""}>${label}</button>`;
   $("client-actions").innerHTML =
-    button("run", running ? "Flow running" : "Start traffic", running) +
-    button("burst", "Send 30,000 req/s");
+    button("run", realMode ? (running ? "Real flow running" : "Start real traffic")
+      : (running ? "Flow running" : "Start traffic"), running) +
+    button("burst", realMode ? "Set 10 cycles/s" : "Send 30,000 req/s", realMode && running);
   $("proxy-actions").innerHTML = button(
     "deploy",
     state.green ? "Roll back to blue" : "Switch to green",
@@ -766,6 +782,7 @@ function render() {
   $("run-state").innerHTML =
     `<i></i> ${running ? "Model flow active" : "Traffic paused"}`;
   $("run-state").classList.toggle("active", running);
+  paintReal();
   $("motion").textContent = `Motion: ${reduced ? "off" : "on"}`;
   $("motion").setAttribute("aria-pressed", String(reduced));
   renderActions();
@@ -775,6 +792,16 @@ function render() {
   if (pinned) renderInspector();
 }
 function act(action) {
+  if (realMode && action === "run") {
+    toggleReal();
+    return;
+  }
+  if (realMode && action === "burst") {
+    realRate = 10;
+    log("Real load set to 10 cycles/s for the next run.");
+    render();
+    return;
+  }
   if (
     [
       "start-migration",
@@ -879,18 +906,34 @@ document
   .querySelectorAll("[data-chapter]")
   .forEach((b) => (b.onclick = () => selectChapter(Number(b.dataset.chapter))));
 $("load").oninput = (e) => {
+  if (realMode) {
+    realRate = Number(e.target.value);
+    render();
+    return;
+  }
   state = transition(state, "load", e.target.value);
   render();
 };
-$("load").onchange = () => log(`Offered load changed to ${state.rps} req/s.`);
+$("load").onchange = () => log(realMode
+  ? `Real load set to ${realRate} cycles/s for the next run.`
+  : `Offered load changed to ${state.rps} req/s.`);
 for (const [id, direction] of [["load-down", -1], ["load-up", 1]]) {
   $(id).onclick = () => {
+    if (realMode) {
+      realRate = Math.max(1, Math.min(50, realRate + direction));
+      render();
+      return;
+    }
     state = transition(state, "load", state.rps + direction * loadSteps.interval);
     log(`Offered load changed to ${fmt(state.rps)} req/s.`);
     render();
   };
 }
 $("run").onclick = () => {
+  if (realMode) {
+    toggleReal();
+    return;
+  }
   running = !running;
   log(
     running
@@ -900,6 +943,7 @@ $("run").onclick = () => {
   render();
 };
 $("reset").onclick = () => {
+  if (realMode && realStatus?.running) traffic.stop().then(updateReal).catch(showRealError);
   buildTimers.forEach(clearTimeout);
   buildTimers = [];
   clearTimeout(routeTimer);
@@ -910,6 +954,88 @@ $("reset").onclick = () => {
   selectChapter(chapter);
   log(routeNotice);
 };
+function paintReal() {
+  if (!realMode) return;
+  const s = realStatus;
+  $("telemetry-mode").textContent = "REAL";
+  $("load-label").textContent = "Offered cycles/s";
+  $("client-meta").textContent = `${realRate} selected cycles/s · Java fixture`;
+  $("load").value = realRate;
+  $("load").disabled = Boolean(s?.running);
+  $("load-value").textContent = `${realRate} cycles/s`;
+  $("load-down").disabled = Boolean(s?.running) || realRate <= 1;
+  $("load-up").disabled = Boolean(s?.running) || realRate >= 50;
+  $("load-step-note").textContent = "1–50 cycles/s · 30s · max 2 concurrent";
+  $("traffic-mix").textContent = "Read → reserve → release → read";
+  $("completed-label").textContent = "Completed";
+  $("db-demand-label").textContent = "Offered";
+  $("rejected-label").textContent = "Failed / dropped";
+  $("completed").textContent = String(s?.completed ?? 0);
+  $("db-demand").textContent = String(s?.offered ?? 0);
+  $("rejected").textContent = `${s?.failed ?? 0} / ${s?.dropped ?? 0}`;
+  $("db-pressure").textContent = `${s?.inFlight ?? 0} in flight`;
+  document.querySelector(".canvas-telemetry").setAttribute("aria-label", "Real inventory workload and cycle counts");
+  document.querySelector(".canvas-telemetry .metrics").setAttribute("aria-label", "Measured inventory cycles");
+  $("run").textContent = s?.running ? "Ⅱ Stop real traffic" : "▶ Start real traffic";
+  $("run-state").textContent = s?.running ? "Real traffic active" : "Real traffic ready";
+  $("run-state").classList.toggle("active", Boolean(s?.running));
+  $("real-detail").hidden = false;
+  $("real-detail").textContent = realError || (s?.lastError
+    ? `Last error: ${s.lastError}`
+    : s?.completed
+      ? `Last cycle ${s.lastElapsedMillis} ms · stock ${s.available} · version ${s.version}`
+      : "No completed cycle yet · stock and version pending");
+}
+function updateReal(status) {
+  const wasRunning = running;
+  realStatus = status;
+  realError = "";
+  running = Boolean(status.running);
+  paintReal();
+  renderGuide();
+  $("graph").classList.toggle("running", running);
+  if (running !== wasRunning) renderActions();
+}
+function showRealError(error) {
+  realError = error.message || "Real traffic control is unavailable.";
+  paintReal();
+  log(realError);
+}
+async function toggleReal() {
+  $("run").disabled = true;
+  try {
+    updateReal(realStatus?.running ? await traffic.stop() : await traffic.start(realRate));
+    log(realStatus.running ? "Real inventory cycles started on the owned fixture."
+      : "Real inventory traffic stopped; committed stock is preserved.");
+  } catch (error) {
+    showRealError(error);
+  } finally {
+    $("run").disabled = false;
+  }
+}
+async function initReal() {
+  try {
+    const status = await traffic.status();
+    realMode = true;
+    $("preview-mode").textContent = "Owned Java run";
+    $("preview-detail").textContent = "Real inventory cycles enabled. Other components remain illustrative.";
+    $("scale-notice").textContent = "The workload dock shows real Java → PostgreSQL cycles. The million-row map and unbuilt solutions remain illustrative.";
+    $("load").min = 1;
+    $("load").max = 50;
+    $("load").step = 1;
+    $("load-down").setAttribute("aria-label", "Decrease real load by one cycle per second");
+    $("load-up").setAttribute("aria-label", "Increase real load by one cycle per second");
+    $("load").setAttribute("aria-describedby", "load-step-note");
+    updateReal(status);
+    render();
+    setInterval(async () => {
+      try { updateReal(await traffic.status()); }
+      catch (error) { showRealError(error); }
+    }, 750);
+  } catch {
+    // A preview without a selected run keeps the labelled illustrative model.
+  }
+}
 $("fault-select").onchange = (e) => {
   faultKind = e.target.value;
   renderFaultConsole();
@@ -1137,3 +1263,4 @@ new ResizeObserver(() => {
   previousSize = size;
   paintCamera();
 }).observe(graphViewport);
+initReal();
