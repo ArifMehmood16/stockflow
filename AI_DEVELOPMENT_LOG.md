@@ -166,6 +166,12 @@ Date: 2026-09-29. Tool: Codex. Owner-requested V0 recheck; draft for human revie
 
 Reviewed A01 correction head `44008c0` against the previous three findings, relevant contract documents and baseline scope. R1's conflict-safe claim and separate replay read, R2's session issuer and stored replay token, and R3's terminal retention clock and per-run table privileges are specified. The cleanup role's table-level `DELETE` still permits removal of active reservations and unexpired idempotency rows, although contracts claim the role itself can delete only retained rows. Requested a focused correction that either enforces row predicates in PostgreSQL or accurately assigns them to a trusted worker and updates all role-level claims. PostgreSQL 17 privilege and row-security documentation supports the distinction.
 
+## 013 — Correct V0 finding R3a
+
+Date: 2026-09-29. Tool: Cursor. Task: A01 focused recheck. Status: draft for human review. This entry does not accept V0.
+
+The owner asked to continue and to create the required branch. A02 stays blocked. Branch `codex/a01-v0-retention-authority` was created from `main`. The retention clocks are now trusted-worker `DELETE` predicates. The cleanup role grant remains table-wide on the two history tables and is no longer described as rejecting an early delete. No row-security policy, migration, or runtime code was added.
+
 Independent Java documentation link check passed 203 links before the packet edit and 206 afterward; both reviewed Git ranges passed whitespace checks. No migration, live database, or runtime verification was run for this documentation gate. Recorded changes_requested in V0 and STATE. A02 remains blocked.
 
 ## 014 — Consolidate StockFlow history on main

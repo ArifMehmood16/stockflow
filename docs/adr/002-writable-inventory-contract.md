@@ -86,7 +86,19 @@ Reservation expiry does not rewrite or delete the idempotency body. Replaying th
 
 Idempotency retention is 24 hours from the claim (`expires_at`), or run deletion, whichever comes first. Reservation history uses a different clock: `terminal_at`, set to `transaction_timestamp()` in the same transaction that moves `ACTIVE` to `RELEASED` or `EXPIRED`. A terminal reservation may be deleted only when `terminal_at <= now() - interval '24 hours'`. `expires_at` on a reservation is the hold deadline, not the retention clock. Active rows have `terminal_at` null and are not retention candidates.
 
-The request writer cannot delete. Cleanup uses role `sf_c_<32 hex>`, which may `SELECT` and `DELETE` only `idempotency_record` and `reservation` in its run schema. It has no `DELETE` on `inventory` or `catalog_snapshot`, no stock `UPDATE`, and no grant on `stockflow.inventory` or another run. The HTTP handlers never use it. After that role deletes a `COMPLETED` idempotency row, the key may be reused. It does not delete a key early because the reservation became terminal.
+The request writer cannot delete. Cleanup uses role `sf_c_<32 hex>`, which receives `SELECT` and `DELETE` on every row of `idempotency_record` and `reservation` in its run schema. That grant is table-wide. It does not stop a `DELETE` of an active reservation or an unexpired key. The role has no `DELETE` on `inventory` or `catalog_snapshot`, no stock `UPDATE`, and no grant on `stockflow.inventory` or another run. HTTP handlers never use it.
+
+The 24-hour clocks are trusted-worker rules, not row security and not a constrained routine. The worker may issue only these statements:
+
+```sql
+DELETE FROM idempotency_record
+WHERE state = 'COMPLETED' AND expires_at <= transaction_timestamp();
+DELETE FROM reservation
+WHERE terminal_at IS NOT NULL
+  AND terminal_at <= transaction_timestamp() - interval '24 hours';
+```
+
+A later implementation test must show the worker uses those predicates. It must not expect PostgreSQL to reject an early `DELETE` by this role, because the grant allows it. No row-security policy is part of this contract. After the worker deletes a `COMPLETED` idempotency row under the first statement, the key may be reused. The worker does not delete a key merely because the reservation became terminal.
 
 Each run keeps at most 200,000 idempotency rows and 200,000 reservation rows. The writer counts and, at the cap, returns `429` without deleting. Later cleanup is what frees a slot. The planned server ceiling is 500 offered requests/s for at most 300 seconds, which is 150,000 requests; 200,000 stored keys cover one such run of unique writes with margin. This cap is not an inventory-row limit. The withdrawn 100,000-row fixture example is not reused.
 
@@ -100,7 +112,7 @@ The HTTP service must not use the database owner login once these roles exist.
 | --- | --- | --- |
 | `stockflow_catalog_reader` | Diagnostic catalog API | `SELECT` on `stockflow.catalog`, `stockflow.inventory`, `stockflow.dataset_import`. Role default is read-only. |
 | `sf_w_<32 hex>` | That run's reserve, release, expiry and Phase 1 stock reads | `USAGE` on its schema; `SELECT`, `INSERT`, `UPDATE` on its four tables. No `DELETE`. No grant on `stockflow.inventory` or any other run schema. |
-| `sf_c_<32 hex>` | That run's retention worker only | `USAGE` on its schema; `SELECT` and `DELETE` on `idempotency_record` and `reservation` only. No `DELETE` on stock or catalog snapshot, and no use by HTTP handlers. |
+| `sf_c_<32 hex>` | That run's retention worker only | `USAGE` on its schema; table-wide `SELECT` and `DELETE` on `idempotency_record` and `reservation`. The grant is not row-filtered. The worker SQL applies the retention clocks. No `DELETE` on stock or catalog snapshot, and no use by HTTP handlers. |
 | `sf_r_<32 hex>` | Future replica reads | `SELECT` only, role default read-only. Created now so later grants do not redefine the contract. Phase 1 HTTP does not open it. |
 | Existing owner login | Trusted fixture CLI only | Create the registry, run schemas and roles. Not placed in the API process environment after the split. |
 
@@ -287,7 +299,7 @@ Both tenants start at `available 1000`, `version 0` in both runs.
 6. North on R2 uses the same key and body. R2's schema has its own row, so R2 goes to 999 / 1 and R1 stays at 999 / 1.
 7. A row at available 1 receives quantity 2 with key `short-1`. The conditional update changes zero rows. The transaction stores `409 INSUFFICIENT_STOCK` with available 1 and the current version, and commits. Version does not change. Replaying `short-1` returns that same body even after a later restock. A new key can reserve quantity 1.
 8. At `expires_at`, expiry wins `ACTIVE → EXPIRED` for the North R1 reservation, sets `terminal_at` to that transaction's timestamp, credits 1, and moves version from 1 to 2 (available 1000). Replaying `retry-1` still returns the original `201` with `state ACTIVE` and the original session token until the idempotency `expires_at`. `GET` returns `EXPIRED`. `POST` release returns `200` with `EXPIRED` and does not credit again, so version stays 2 and `terminal_at` stays the expiry time. The reservation row remains until `terminal_at` is 24 hours old.
-9. The cleanup role, not the request writer, deletes the idempotency row after its `expires_at`. `retry-1` may then reserve again and decrement stock once. The same role deletes the terminal reservation only after `terminal_at` plus 24 hours.
+9. The retention worker, using `sf_c_<32 hex>`, deletes the idempotency row with the `expires_at` predicate above. `retry-1` may then reserve again and decrement stock once. The same worker deletes the terminal reservation with the `terminal_at` predicate. The role grant would also allow deleting those rows early; this contract does not claim the database rejects that.
 
 The lost-response retry in step 2 is this exchange. The second response adds the replay header and does not change stock:
 
