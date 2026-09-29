@@ -1,0 +1,6 @@
+.git
+.lab
+node_modules
+docs
+tests
+.env*

@@ -1,0 +1,35 @@
+# Evaluation and verification strategy
+
+## Current prototype
+
+Use Node's built-in test runner; no test dependencies. Tests cover load saturation/cache effect, replica routing without extra write capacity, primary failure/fencing/promotion, reset/caps and request conservation. Initial empty implementation produced four meaningful behavioural failures after the missing-module scaffold issue. Final outcomes and browser evidence are recorded in the journal; no production benchmark exists.
+
+The aggregate prototype model assumes fixed read/write mix, fixed per-node capacity and instant topology changes. It does not model latency distributions, queues, WAL, race conditions, TTL or process failures. Tests validate the sketch's internal rules, not PostgreSQL/Redis guarantees.
+
+## Production test pyramid
+
+- Unit/JUnit: inventory invariants, idempotency policy, stable tenant hash, command/run states, deterministic simulation, retry/fault/resource budgets.
+- Architecture/ArchUnit: domain/application framework independence; HTTP adapters don't own business transactions; simulator and real telemetry provenance mandatory.
+- SQL integration: concurrent reservation/release and duplicate keys across API instances; crash after commit/before response; migrations and old/new schema compatibility. Explicit Testcontainers suite plus native PostgreSQL option for non-Docker local workflow.
+- Redis integration: stale-fill ordering, lease ownership/expiry, TTL jitter, negative cache, outage admission and memory limit behaviour. Never use mocks to prove Redis atomicity.
+- Replication integration: controlled replay delay, primary failure, rejected unfenced promotion, divergent old node quarantine, known-write loss report and safe rejoin. These tests opt in and own all processes.
+- Shard integration: tenant isolation, epoch conflict, interrupted copy, checksum/idempotency preservation, no double-owner writes.
+- Frontend/Vitest/Testing Library: guide predicate state, stale data badge, keyboard controls, command errors and accessible inspector.
+- E2E/Playwright: baseline→cache→compare and primary failure→fence→promote; simulation default; real pipeline nightly/manual with resource preflight.
+- Security: scope/path/URL/command injection, CORS/Origin/CSRF, body/rate caps, telemetry redaction, dependency/image secret scans.
+
+## Benchmark protocol
+
+Record commit, JVM flags, exact Java/Postgres/Redis versions, machine/VM resources, topology, fixture/seed, workload mix, concurrency, offered RPS, warm-up, duration, state of cache, measurement window and generator drops. Proposed real protocol: 10 seconds warm-up + 60 seconds measurement, 3 repetitions per configuration; reset fixture each run; compare medians with ranges, not invented confidence. Separate cold and warm cache windows. Use open-loop scheduled arrival counts to expose scheduler saturation and avoid coordinated-omission mistakes. Store histograms/summary and bounded sampled traces; no raw confidential payloads.
+
+Correctness gates are absolute within tested fixture: no negative available stock; no duplicate reserve/release effects; no cross-tenant access; no success before durable transaction commit; no simultaneous valid write owners. After asynchronous failover, acknowledged-write loss is an explicit measured outcome, not mislabelled passing durability. Reconcile recovered inventory with the recovered reservation history and report ledger differences separately.
+
+Performance acceptance is improvement under a matching controlled workload, not fixed universal RPS. Do not promise a speedup for every workload; correct “no gain” with explanation is a valid lesson result. Once measured, record thresholds and environment in versioned evaluation files. Thresholds currently TBD.
+
+## UI/performance gates
+
+Targets to measure: ≤30 simultaneous animated particles, ≤1 Hz metric render, ≤10,000 buffered events, no unbounded DOM log, responsive stop action under load, no horizontal body overflow at 375 px. Test prefers-reduced-motion and keyboard lesson completion. Never assert FPS without capture.
+
+## Evidence export
+
+Every report carries mode, engine/schema versions, fixture hash, exact workload/config, run window, counters, histogram sample counts, fault/deployment timeline, invariant verdicts, missing-data/gap flags and resource caps. Reports should make an interviewer able to challenge the conclusion.
