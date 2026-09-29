@@ -1,5 +1,11 @@
 # StockFlow delivery plan
 
+## Cursor execution handoff
+
+The owner will request implementation one item at a time in Cursor and ask Codex to validate at major checkpoints. Start at [CURSOR.md](CURSOR.md), then [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **A01 is the next item: resolve the writable contract without changing runtime code or data.**
+
+This file remains the phase-level authority. Cards refine dependency order within the phases; they do not authorize skipping an earlier acceptance gate. A01/V0 resolves the imported-catalog versus writable-run schema before A02–A07 finish Phase 1. B/C together implement Phase 2; D through I map to Phases 3–8. Existing completed checkboxes remain evidence of delivered work. Cursor updates task status in STATE; phase checkboxes change only when all required work and checkpoint verification pass. Planning this handoff does not mark any future task completed or any new architecture proposal approved.
+
 ## Execution policy
 
 **Current checkpoint: Phase 1 read-only Java foundation, authorized by the owner's continuation request.** Each phase adds one independently explainable capability. Build the whole core curriculum across phases; do not attempt the final topology first. Checkboxes record observed work, not intent. Time ranges below are planning estimates for one developer, not commitments; core build approximately 8–12 focused weeks, depending on infrastructure experience.
@@ -30,7 +36,7 @@ Acceptance: another developer can locate responsibilities, schemas, lesson steps
 - [ ] 1.4 Explicit request/response DTOs, errors and limits. Red: malformed quantity / tenant mismatch rejected safely; no exception body leaks.
 - [ ] 1.5 Host Make path (no mandatory Docker), equivalent Compose baseline, tool doctor, CI build/static analysis/unit suite; explicit integration command.
 
-Expected files: `pom.xml`, `mvnw`, `services/inventory-service/`, `infra/`, `scripts/`, `Makefile`, `compose.yaml`, `docs/`. Gate: isolated concurrent PostgreSQL tests, restart persistence, fresh-clone host + Docker smoke, meaningful coverage (target 80% line / 70% branch for domain/application), no stock or tenant invariant violation. Defaults should pass with no paid service. Capture baseline with raw fixture counts; no speed claim yet.
+Expected files: `pom.xml`, `tools/MavenBuild.java`, `services/inventory-service/`, `infra/`, `tools/`, `Makefile`, `compose.yaml`, `docs/`. Gate: isolated concurrent PostgreSQL tests, restart persistence, fresh-clone host + Docker smoke, meaningful coverage (target 80% line / 70% branch for domain/application), no stock or tenant invariant violation. Defaults should pass with no paid service. Capture baseline with raw fixture counts; no speed claim yet. The implemented Java Maven launcher replaces the originally proposed shell wrapper.
 
 ## Phase 2 — Simulation engine and guided frontend (1.5 weeks)
 

@@ -1,6 +1,10 @@
 # StockFlow engineering instructions
 
-Scope: this repository only. Read README.md, PLAN.md, this file and the latest AI_DEVELOPMENT_LOG.md entry before work. Follow the first incomplete approved task; stop at each phase gate. Phase 0 is delivered. The owner subsequently authorized continuing with the real Java baseline; implement it incrementally without implying approval of all future infrastructure choices.
+Scope: this repository only. At task start, read README.md, this file, the current PLAN.md phase and the latest relevant AI_DEVELOPMENT_LOG.md entry. Read additional sections only when the selected task depends on them. Phase 0 is delivered. The owner subsequently authorized continuing with the real Java baseline; implement it incrementally without implying approval of all future infrastructure choices.
+
+## Cursor implementation and Codex review workflow
+
+The owner now implements one item at a time using Cursor and requests Codex validation at named checkpoints. Follow CURSOR.md and docs/implementation/STATE.md. PLAN.md remains the phase authority; the linked task cards refine the sequence within each phase. Implement only the explicitly requested card, commit it and stop. Read its relevant source/tests/contracts, not every card or the entire historical log. Do not automatically select or execute the next item. At a named validation gate, prepare the compact evidence packet and wait for the owner's review request; Cursor must not mark its own gate accepted. When asked to validate, Codex reviews the recorded scope, records the verdict/evidence and stops rather than implementing the next phase. These pauses are explicitly requested coordination checkpoints, not newly inferred permission requirements.
 
 Human intent: showcase Java, databases and distributed systems with an understandable interactive lab. One normal inventory microservice first; add infrastructure only to explain a demonstrated bottleneck. The separate source repository's Python/RAG architecture does not apply here.
 

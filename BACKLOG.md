@@ -2,6 +2,8 @@
 
 PLAN.md is authoritative. Do not run later phases concurrently with an incomplete earlier gate.
 
+For item-by-item Cursor implementation use [CURSOR](CURSOR.md), the [task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). Next task: A01; next Codex review: V0. This backlog is an overview, not a second completion ledger.
+
 - Phase 0: design/prototype delivered; owner authorized the Java baseline continuation. Licence/hosting remain open.
 - Phase 1: read-only Java catalog API delivered; atomic reservations, tenant/run isolation, migrations and remaining quality gates are next.
 - Phase 2: Java simulation/control plane, React lab shell, guided baseline journey.

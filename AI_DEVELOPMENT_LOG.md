@@ -101,3 +101,13 @@ Date: 2026-09-29. Tool: Codex. User-requested PLAN 0.4e. Draft for human review.
 Added an original mint/navy SF monogram as a small, font-independent SVG, linked it from the page head and included its exact path in the Java preview allowlist. The existing Docker image copies the prototype directory, so no container-specific asset configuration is needed. No new dependency, external image, script or network origin was introduced.
 
 Verification: local preview returned HTTP 200 with image/svg+xml and the page contained the favicon link; xmllint accepted the SVG; make test-java passed all 28 existing assertions; git diff --check passed. This small static-asset change did not require additional tests. Container execution and browser-tab rendering were not separately tested.
+
+## 007 — Hand implementation to Cursor with scoped Codex reviews
+
+Date: 2026-09-29. Tool: Codex. Documentation-only owner request.
+
+The owner requested a detailed plan for Cursor to implement item by item, with checkpoints where they ask Codex to validate, to reduce repeated token use. Created CURSOR.md with reusable prompts, 43 individually readable task cards mapped to PLAN phases, one status ledger, ten validation gates V0–V9 and a compact review-packet template. Each card specifies prerequisites, inputs, deliverable, behavioral/direct validation, acceptance, verification, evidence and excluded scope. Agents stop after one item; Cursor cannot accept its own checkpoint.
+
+Inspected the existing plan/contracts, Java read-only boundary and pool configuration, imported schema, lifecycle tooling and UI/failure specifications. First task resolves numeric imported tenants versus UUID reservation/run examples, writable fixture size/isolation and credential/role decisions before any mutation code. Marked real/simulated evidence, existing versus future commands and Docker's unverified status explicitly. Preserved Java tooling/backend, Make reuse of local PostgreSQL, Docker isolation, min(requested, available) dataset selection, one fitted cumulative map and all requested cache/shard/recovery/deployment lessons.
+
+Updated AGENTS/PLAN/README/backlog/handoff/resume to point to the same workflow and reduce unnecessary full-document reads. No new implementation, dependency, migration, dataset import or architecture decision was executed. Review gates reflect the owner's explicit coordination request; they are not an invented approval requirement. Verification and publication evidence follows in the journal. This log remains a draft for human review.

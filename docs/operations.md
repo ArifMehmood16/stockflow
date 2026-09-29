@@ -2,15 +2,15 @@
 
 ## Available today
 
-`make run` uses Java to create the dedicated schema in an existing local PostgreSQL database, import up to DATASET_ROWS valid unique public products (or skip a matching loaded dataset), then serve the browser sketch on loopback. `make preview` starts only the Java HTTP preview. Complete Make/Docker prerequisites and commands are in [README](../README.md). No Python or Node is required to run; Node 24 is used only for frontend tests.
+`make run` uses Java to create the dedicated schema in an existing local PostgreSQL database, import up to DATASET_ROWS valid unique public products (or skip a matching loaded dataset), then start the real read-only inventory API and browser sketch on loopback. `make preview` starts only the Java HTTP preview. Complete Make/Docker prerequisites and commands are in [README](../README.md). No Python or Node is currently required to run; Node 24 is used for frontend tests and will be needed for the planned React build tooling.
 
 The Java lifecycle records PID, start instant and executable in ignored `.lab/preview-<port>.properties`. Stop verifies all three, requests graceful termination and waits five seconds; it never force-kills or stops the existing PostgreSQL server. Use matching PORT for run/stop. Docker uses Compose down and skips the host process registry. This is local process bookkeeping, not protection against a malicious process under the same OS account. Older Node previews need Ctrl-C once before switching to the Java launcher.
 
-Compose now provisions independent PostgreSQL storage, a one-shot Java catalog importer and a Java web process. The database port is private; named volumes preserve data/cache. The web process waits for successful seed. The Docker daemon was unavailable during verification; do not claim the container path has run successfully yet.
+Compose provisions independent PostgreSQL storage, a one-shot Java catalog importer, inventory API and Java web process. The database port is private; named volumes preserve data/cache. The web process waits for successful seed and API readiness. The Docker daemon was unavailable during verification; do not claim the container path has run successfully yet.
 
 ## Target operating modes (not yet implemented)
 
-Host Make is the author's primary workflow. It launches Java and the frontend on the host, using native PostgreSQL/Redis binaries when the selected lesson needs them. Docker is an alternative, not an implicit dependency. `make setup` will validate tools, download pinned Maven/frontend dependencies with explicit network notice, and prepare an ignored `.lab/` directory. `make run MODE=simulation` will need only JDK and Node. `make run MODE=real PROFILE=baseline` will additionally initialize owned PostgreSQL data on a non-default port. Replication/sharding profiles initialize separate data directories and processes. No sudo or editing the user's existing database service.
+Host Make is the author's primary workflow. It launches Java and the frontend on the host, using native PostgreSQL/Redis binaries when the selected lesson needs them. Docker is an alternative, not an implicit dependency. Future mode/profile flags are not implemented today. Simulation will use the Java controller and built frontend; real baseline continues to reuse the configured existing PostgreSQL database with run-owned fixture isolation. Replication/sharding/crash/restore lessons initialize separate owned native data directories/processes on non-default ports, seeded from the approved fixture. No sudo, stopping or reconfiguring the user's existing database service. Document any frontend build prerequisites when introduced.
 
 A Java launcher or narrowly scoped scripts manage child processes, lock file, ownership marker, ports and cleanup. Fail fast if port occupied; never kill the occupant. Ctrl-C stops child processes and clears expiring faults; database data persists unless user invokes scoped reset. Store generated secrets in ignored `.lab/` with restrictive permissions. On restart, validate ownership before cleaning stale PIDs; don't trust a reused PID alone.
 
@@ -33,7 +33,7 @@ Primary: macOS arm64 and Linux x86_64/arm64 with GNU/POSIX tools, JDK 25, Node 2
 
 Author machine observed during planning: 24 GiB RAM / 10 logical CPUs; JDK unavailable. Host memory is not Docker VM memory; inspect daemon allocation separately. Budget 6–8 GiB Docker VM for advanced selected lessons, preserve headroom for OS/IDE/browser. Do not automatically reconfigure Docker Desktop. Need benchmarks to validate all initial caps.
 
-## Enforced limits
+## Planned runtime limits (implement and verify in the named tasks)
 
 Default real run: 50 offered req/s; UI max 300, server hard ceiling 500; 60-second duration, hard 300 seconds; concurrency 64; scheduler queue 256; timeout 2 seconds; one retry for safe/idempotent requests only within original deadline; stop on sustained resource breach. Synthetic workload only. Ramp at most 50 req/s per second. Supervisor safety loop independent of UI; client disconnect pauses dispatch after 15 seconds and expires run after 60 seconds. Faults max 30 seconds except explicit stopped-primary recovery state, which remains visible and requires controlled restore.
 

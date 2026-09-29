@@ -1,39 +1,35 @@
 # Resume StockFlow
 
 Public repository: https://github.com/ArifMehmood16/stockflow
-Current branch: `codex/phase-1-java-inventory-baseline`.
-Read README, PLAN, AGENTS, ADR 001 and the latest AI_DEVELOPMENT_LOG before editing.
+Current handoff branch: `codex/cursor-implementation-handoff`.
+Code baseline: `ba824c7` (includes Java API checkpoints `e13cd91`/`5946eda` and favicon).
 
-## Current work
+## How the owner wants to work now
 
-The owner requested continuation after the status report. Phase 1 read-only foundation now exists: one Maven/Spring Boot inventory-service module, framework-free stock lookup, JDBC adapter, health endpoints, safe stock errors, local API launch/stop and integration tests. No reservation writes or real traffic visualization yet.
+Cursor implements one requested item at a time. Codex validates at the named milestones to reduce repeated model usage. Read [CURSOR](CURSOR.md), [STATE](docs/implementation/STATE.md) and the requested card from [the task index](docs/implementation/README.md). PLAN remains the phase-level authority; do not load every task card into each agent conversation.
 
-- `make run`: reuse/verify imported data, Maven package/tests, real API 8081 + modeled UI 4173.
-- `make preview`: UI only, without PostgreSQL or API setup.
-- `make api`: API only after setup/build; `make api-stop`: owned API only.
-- `make api-smoke`: compare a running real API stock response against one loaded database row.
-- `make stop`: registered UI/API only; keep PostgreSQL and data.
-- `make verify`: 28 Java tool assertions, 10 API/architecture tests, 14 model tests and doc links.
-- `make test-api-integration`: new JDBC adapter integration in an owned temporary database.
-- `make test-integration`: existing dataset COPY/skip/rollback integration.
-- Docker Compose now includes API, but daemon is stopped and runtime verification is pending.
+**Next Cursor item: A01. Next Codex checkpoint: V0 after A01.** A01 writes the recommended data/identity/transaction contract and stops before implementation. No new checkpoint has been accepted merely because this plan was created. See [VALIDATION](docs/implementation/VALIDATION.md) for short review prompts and evidence requirements.
 
-JDK 25 required for service build. Maven 3.9.11 is checksum-pinned and Java-launched; cached in .lab. Service uses Spring Boot 4.0.8 / pgJDBC 42.7.13. No installed Maven/Python/Node needed for running; Node is still needed for frontend tests.
+## Working implementation
 
-## Local state
+- `make run`: verify/skip catalog import, build Java service, start read-only API at 8081 plus prototype UI at 4173.
+- `make preview`: Java-served UI only, no database/API startup.
+- `make api`, `make api-stop`, `make api-smoke`: real stock API lifecycle and database comparison.
+- `make stop`: owned UI/API only; PostgreSQL/data preserved.
+- Existing suites: `make verify`, `make test-integration`, `make test-api-integration`.
+- Java 25, Spring Boot 4.0.8, pgJDBC 42.7.13; Java-launched pinned Maven 3.9.11. No Python scripts/backend. Node currently supports frontend tests and will support React/TypeScript build tooling.
+- Last recorded verification: 28 tooling assertions, 10 API/architecture tests, 14 frontend model tests; isolated JDBC integration; real API/database stock comparison; launch-copy survives clean rebuild. These are historical results, not verification of later Cursor changes.
+- Docker Compose includes database/seed/API/UI; config parses but container build/run is unverified because the daemon was stopped.
+- UI is a dark fitted cumulative prototype with on-map actions, guide, logos and favicon. Its rates/failures are modeled arithmetic; authoritative Java simulation and measured animation are still future tasks.
 
-Ignored .env targets the existing local `postgres` database with DATASET_ROWS=10000000. Do not print or commit it. Project-local JDK exists in ignored .lab/jdk/Contents/Home. Fresh clones supply their own JDK.
+## Local data and safety
 
-stockflow.catalog and stockflow.inventory each contain 4,532,480 rows, the available valid unique source products below the configured maximum. Repeated setup skips import. No synthetic product expansion. Public product descriptions plus synthetic quantities/tenant IDs. Dataset caches/manifests stay ignored.
+Ignored `.env` targets the existing local database `postgres` with DATASET_ROWS=10000000. Do not print/commit credentials. A project-local JDK/cache exists under ignored `.lab`; fresh clones supply/install documented prerequisites.
 
-## Next checkpoint
+The owner's `stockflow.catalog` and `stockflow.inventory` each contain 4,532,480 valid unique public products/synthetic stock records. Selection uses the lower of requested maximum and available products. Repeat setup skips verified imports; do not manufacture duplicates or reimport needlessly.
 
-Finish any final lifecycle/rebuild validation, documentation/diff review and checkpoint commit/push not recorded in the journal. The first packaged smoke timed out with a class-loading error; a restart of the same artifact passed real reads. Added a regression-tested per-launch artifact copy so Maven rebuilds cannot replace a running API's JAR. Record the final packaged checks rather than asserting an unproven original root cause.
+Real write lessons need run-owned stock, credentials and transactions. A01 resolves the current numeric catalog versus proposed UUID warehouse contract. Fault/failover/restore lessons must use separate owned native clusters or containers; never stop/reconfigure the user's PostgreSQL instance. Native Make still uses that existing instance for baseline operation.
 
-Next implementation scope remains Phase 1: inventory reservations, authenticated run/tenant/warehouse fixtures and explicit SQL concurrency/idempotency/expiry. Resolve the documented imported-catalog versus run-fixture schema distinction at that task. Do not retrofit unscoped writes onto the diagnostic catalog endpoint. Further baseline work includes image digest locking, CI and Docker/fresh-clone checks. Phase 2/3 add authoritative Java simulation, real load generation and frontend telemetry. Do not describe modeled counters as actual database measurements.
+A first packaged API run once had a class-loading error; restart and final clean-rebuild/live smoke passed. Per-launch JAR isolation was added. Original root cause remains unestablished in the journal; investigate if it recurs, not as a reason to repeat already-completed work indefinitely.
 
-No unrelated RAG repository work. Existing Phase 0 and Java bootstrap checkpoints are in Git history. Follow the user's instruction to commit progress incrementally.
-
-## Final checkpoint
-
-Implementation `e13cd91` pushed. Final verify/integration/Compose checks passed. Packaged API smoke passed before and after a clean Maven rebuild. Agent test UI/API on 4176/8085 were stopped; repeated stop succeeded, PostgreSQL untouched. No test API should be left occupying the default ports. Only the final documentation/CLI wording checkpoint and its push may remain if the session ends before the next commit; use git status/log to confirm. Continue the remaining Phase 1 plan, not Phase 2 yet.
+No unrelated RAG repository work. No public deployment, licence choice or spending is authorized by this handoff. Commit each completed item, preserve reviewed history and update only the relevant status/evidence.

@@ -105,6 +105,8 @@ Operational tooling is Java under `tools/`; browser code/tests remain JavaScript
 
 ## Build package
 
+**Continuing development in Cursor:** start with [CURSOR.md](CURSOR.md). It provides copy-and-paste prompts, [43 small task cards](docs/implementation/README.md), a [state ledger](docs/implementation/STATE.md), and [Codex validation checkpoints](docs/implementation/VALIDATION.md). Implement one requested item, commit it, then stop; ask Codex to validate only at the named gates.
+
 - [Plan and acceptance gates](PLAN.md)
 - [Product and learning journey](docs/product.md)
 - [Architecture and diagrams](docs/architecture.md)

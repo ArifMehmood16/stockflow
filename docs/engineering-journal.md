@@ -136,3 +136,9 @@ Follow-up documentation/CLI wording commit records this checkpoint. Future work 
 ## 2026-09-29 — StockFlow favicon
 
 User-requested PLAN 0.4e: added a mint/navy SF vector monogram, its HTML icon link and an explicit Java static route. `PORT=4177 make preview` served the asset with HTTP 200 and image/svg+xml; fetched HTML contained the icon link. `xmllint --noout prototype/favicon.svg`, `make test-java` (28 assertions), and `git diff --check` passed. No dependencies or CSP expansion. Existing Docker COPY includes the asset; container execution and browser-tab appearance were not tested for this change.
+
+## 2026-09-29 — Cursor implementation and Codex checkpoint plan
+
+Documentation-only owner request: Cursor implements one card per request, Codex validates named milestones. Added 43 task cards A01–I04, dependency order, ten stop gates V0–V9, state ledger, implementation/review prompts and review template. All implementation task statuses remain todo; all checkpoint verdicts remain not_requested. A01 is a contract-only decision task before any writable schema/service work.
+
+Planning was grounded in current code/contracts, including the read-only HTTP filter/pool and numeric imported schema. Documented the existing/future command distinction, inherited constraints, small-context reading protocol and code-commit-based review evidence. Runtime code, database and process state were not changed. Link/structure/diff checks and publication status are recorded after validation below; no runtime suite is claimed for this documentation-only change.

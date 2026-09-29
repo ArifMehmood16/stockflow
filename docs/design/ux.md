@@ -62,7 +62,7 @@ Reject cross-mode comparison. Warn on workload/fixture mismatch; allow explanati
 
 ## Responsive states
 
-1440+: 208 px lesson rail, fluid centre, 320 px guide; topology min 600 px. 1024: collapse rail to chapter selector, retain guide. 768: guide becomes lower tab, architecture pans inside labelled region. 375: stacked controls/metrics, topology has accessible ordered component list, Guide and Inspect tabs below; no body horizontal overflow. Preserve stop action at top. An export report is readable without the graph.
+The owner's single-view requirement supersedes the earlier panning proposal. At 1440+ retain the lesson rail, fluid centre and right guide. At 1024 collapse the rail to a chapter selector if needed; at 768/375 move the guide below or into tabs. At every width fit the complete topology without inner canvas scrolling or body horizontal overflow. Preserve readable pinned inspection, keyboard-accessible component details, focus-canvas mode and a reachable stop action. Small graph labels are supplemented by the inspector rather than clipped controls. An export report is readable without the graph.
 
 ## Interaction flows
 
