@@ -167,3 +167,11 @@ Date: 2026-09-29. Tool: Codex. Owner-requested V0 recheck; draft for human revie
 Reviewed A01 correction head `44008c0` against the previous three findings, relevant contract documents and baseline scope. R1's conflict-safe claim and separate replay read, R2's session issuer and stored replay token, and R3's terminal retention clock and per-run table privileges are specified. The cleanup role's table-level `DELETE` still permits removal of active reservations and unexpired idempotency rows, although contracts claim the role itself can delete only retained rows. Requested a focused correction that either enforces row predicates in PostgreSQL or accurately assigns them to a trusted worker and updates all role-level claims. PostgreSQL 17 privilege and row-security documentation supports the distinction.
 
 Independent Java documentation link check passed 203 links before the packet edit and 206 afterward; both reviewed Git ranges passed whitespace checks. No migration, live database, or runtime verification was run for this documentation gate. Recorded changes_requested in V0 and STATE. A02 remains blocked.
+
+## 014 — Consolidate StockFlow history on main
+
+Date: 2026-09-29. Tool: Codex. Owner requested merging the existing branches into `main` and removing obsolete branches; draft for human review.
+
+The three branch tips formed a linear history: Phase 0 was an ancestor of Phase 1, which was an ancestor of the Cursor handoff. No open pull requests existed. Updated the resume instructions, Cursor branch guidance, state ledger and public experiment link before creating `main` at the complete history. Set `main` as the GitHub default, then deleted the three old local and remote branch names. Their commits remain reachable on `main`; no history was rewritten.
+
+`make verify` passed after retrying with loopback access: 28 Java tooling assertions, Maven API tests, 26 frontend tests, JavaScript syntax and 207 documentation links. The first sandboxed run could not bind a local test port; it did not indicate a product failure. V0 remains changes_requested and A02 remains unstarted.
