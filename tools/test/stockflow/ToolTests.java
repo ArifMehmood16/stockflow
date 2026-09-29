@@ -72,7 +72,34 @@ public final class ToolTests {
     apiPortTest();
     apiArtifactTest();
     apiReaderCredentialsTest();
+    trafficTests();
     System.out.println("Passed " + passed + " Java behaviour assertions.");
+  }
+
+  static void trafficTests() throws Exception {
+    rejects(() -> new TrafficRun.Limits(51, 1, 1), "Reject excessive offered rate");
+    rejects(() -> new TrafficRun.Limits(1, 31, 1), "Reject long unattended runs");
+    rejects(() -> new TrafficRun.Limits(1, 1, 9), "Reject excessive concurrency");
+    var release = new java.util.concurrent.CountDownLatch(1);
+    try (var run = new TrafficRun(new TrafficRun.Limits(50, 2, 1), () -> {
+      release.await();
+      return new TrafficRun.Observation("read → reserve → release", 7, 3);
+    })) {
+      run.start();
+      Thread.sleep(180);
+      var busy = run.status();
+      check(busy.offered() > 1 && busy.dropped() > 0 && busy.inFlight() == 1,
+          "Slow target keeps offered arrivals visible and drops excess at concurrency cap");
+      run.stop();
+      long stopped = run.status().offered();
+      release.countDown();
+      Thread.sleep(100);
+      check(run.status().offered() == stopped && !run.status().running(),
+          "Stop prevents further dispatch");
+      check(run.status().inFlight() == 0, "Stopped work drains");
+    } finally {
+      release.countDown();
+    }
   }
 
   static void apiReaderCredentialsTest() throws Exception {
