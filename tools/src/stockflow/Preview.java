@@ -90,7 +90,13 @@ final class Preview {
   }
 
   static HttpServer create(Path root, int port) throws IOException {
+    return create(root, port, null);
+  }
+
+  static HttpServer create(Path root, int port, TrafficControl control) throws IOException {
     String host = System.getenv().getOrDefault("HOST", "127.0.0.1");
+    if (control != null && !Set.of("127.0.0.1", "localhost").contains(host))
+      throw new IllegalStateException("Traffic control requires a loopback preview bind.");
     var server = HttpServer.create(new InetSocketAddress(host, port), 32);
     var executor =
         new ThreadPoolExecutor(
@@ -101,6 +107,7 @@ final class Preview {
             new ArrayBlockingQueue<>(32),
             new ThreadPoolExecutor.CallerRunsPolicy());
     server.setExecutor(executor);
+    if (control != null) control.attach(server);
     var files = files();
     server.createContext(
         "/",
@@ -134,7 +141,7 @@ final class Preview {
             headers.set(
                 "Content-Security-Policy",
                 "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src"
-                    + " 'self' data:; connect-src 'none'; frame-ancestors 'none'; base-uri 'none'");
+                    + " 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'none'");
             headers.set("Content-Length", Integer.toString(bytes.length));
             exchange.sendResponseHeaders(200, method.equals("HEAD") ? -1 : bytes.length);
             if (!method.equals("HEAD")) exchange.getResponseBody().write(bytes);
@@ -154,9 +161,12 @@ final class Preview {
 
   static void start(Path root, int port) throws Exception {
     HttpServer server;
+    TrafficControl control = System.getenv().getOrDefault("RUN_ID", "").isBlank()
+        ? null : TrafficControl.forSelectedRun();
     try {
-      server = create(root, port);
+      server = create(root, port, control);
     } catch (BindException error) {
+      if (control != null) control.close();
       throw new IOException(
           "Port "
               + port
@@ -172,6 +182,7 @@ final class Preview {
         .addShutdownHook(
             new Thread(
                 () -> {
+                  if (control != null) control.close();
                   try {
                     Path file = recordPath(directory, port);
                     if (Files.exists(file)) {

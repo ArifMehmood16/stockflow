@@ -10,9 +10,9 @@ StockFlow is a Java and distributed-systems portfolio app. The dark visual workb
 - **Real Java inventory reads:** Spring Boot service on port 8081; stock lookup reads the loaded PostgreSQL catalog, with liveness/readiness checks and bounded JDBC connections. See the [Java baseline](docs/java-baseline.md).
 - **Real writable run fixtures and reservations:** an explicit Java command creates isolated, versioned PostgreSQL stock from actual catalog codes. Small runs use up to 400 rows; `FIXTURE_ROWS` selects up to the available unique catalog codes. The API reads an active run with a run-issued tenant credential and commits atomic, idempotent reservations.
 - **Real local PostgreSQL data:** Open Food Facts products plus deterministic synthetic inventory quantities/tenant assignments. `DATASET_ROWS` is an upper bound: import the lower of that limit and the available valid, unique products. No duplicate products are invented to reach the limit.
-- **Illustrative frontend simulation:** a million logical records and up to 250,000 modeled requests/s. Its rates, failures, build timings and recoveries are teaching assumptions, not measurements from the imported database. No request load is sent to PostgreSQL yet.
+- **Bounded real traffic control:** with an owned `RUN_ID`, the Java preview can send up to 50 read/reserve/release cycles/s for at most 30 seconds and eight concurrent cycles to the loopback inventory API. A cycle makes four HTTP requests. The control reports actual cycle counts, final stock/version and recent elapsed time. The visible workbench is still illustrative and does not yet use this control.
 
-UI integration with the API, Redis, physical replication, separate shard processes and real load generation remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
+UI integration with the API, Redis, physical replication and separate shard processes remain planned. The animation still uses its illustrative model; creating a fixture does not convert those counters to measured telemetry.
 
 ## Run locally with Make
 
@@ -74,7 +74,9 @@ RUN_ID=<run ID> make api
 
 Run stock reads default to the primary. `consistency=eventual` returns `CAPABILITY_UNAVAILABLE` until a real replica exists. Reservation lookup is authenticated and tenant-scoped. `POST /v1/reservations` requires a bearer tenant credential, a unique `Idempotency-Key` (1–128 printable non-space ASCII characters), and JSON `{warehouseId,sku,quantity}` with quantity 1–100. A repeated key with the same request returns the stored result and `Idempotency-Replayed: true`; a changed request conflicts. Stock and the response commit in one PostgreSQL transaction. `POST /v1/reservations/{id}/release` uses its own idempotency key and returns a terminal result. A bounded Java worker expires overdue ACTIVE reservations every second. Release and expiry each credit stock only if their guarded transition wins.
 
-The implemented HTTP shape is in [the inventory OpenAPI file](docs/openapi/inventory.yaml). The local run API currently supports one selected run per process. It is a correctness baseline, not a measured load or multi-instance deployment. History cleanup and the Java load generator are later work; the current 200,000-row history caps can reject new writes if a long-lived run reaches them.
+To exercise the real fixture, start both processes with the selected run: `RUN_ID=<run ID> make run` (or start the API and preview separately with the same `RUN_ID`). The preview exposes loopback-only `GET /lab/traffic`, `POST /lab/traffic/start?rate=2&seconds=5&concurrency=1`, and `POST /lab/traffic/stop`. The target is always the local inventory API; no URL can be supplied. `offered`, `completed`, `failed` and `dropped` count cycles, each containing four API requests. Scheduled expiry lets accepted cycles finish; explicit stop interrupts them. The preview control is available only when `RUN_ID` is selected. The browser UI will be connected in the next slice.
+
+The implemented inventory HTTP shape is in [the inventory OpenAPI file](docs/openapi/inventory.yaml). The local run API currently supports one selected run per process. The traffic control is a bounded functional experiment, not a benchmark or multi-instance deployment. History cleanup is later work; the current 200,000-row history caps can reject new writes if a long-lived run reaches them.
 
 ## Run with Docker (Make optional)
 

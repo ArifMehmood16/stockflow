@@ -73,6 +73,8 @@ public final class ToolTests {
     apiArtifactTest();
     apiReaderCredentialsTest();
     trafficTests();
+    trafficTargetTest();
+    trafficControlTest();
     System.out.println("Passed " + passed + " Java behaviour assertions.");
   }
 
@@ -97,8 +99,87 @@ public final class ToolTests {
       check(run.status().offered() == stopped && !run.status().running(),
           "Stop prevents further dispatch");
       check(run.status().inFlight() == 0, "Stopped work drains");
+      var finalStatus = run.status();
+      check(finalStatus.offered() == finalStatus.completed() + finalStatus.failed()
+          + finalStatus.dropped() + finalStatus.inFlight(),
+          "Stopped run accounts for every offered arrival");
     } finally {
       release.countDown();
+    }
+    try (var finite = new TrafficRun(new TrafficRun.Limits(1, 1, 1), () -> {
+      Thread.sleep(80);
+      return new TrafficRun.Observation("read → reserve → release", 6, 2);
+    })) {
+      finite.start();
+      Thread.sleep(1150);
+      check(!finite.status().running() && finite.status().offered() == 1
+          && finite.status().completed() == 1 && finite.status().failed() == 0,
+          "Scheduled end lets accepted work finish without recording a false failure");
+    }
+  }
+
+  static void trafficTargetTest() throws Exception {
+    var server = com.sun.net.httpserver.HttpServer.create(
+        new java.net.InetSocketAddress("127.0.0.1", 0), 8);
+    var paths = new java.util.concurrent.CopyOnWriteArrayList<String>();
+    server.createContext("/", exchange -> {
+      paths.add(exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath());
+      String body = exchange.getRequestURI().getPath().endsWith("/release")
+          ? "{\"state\":\"RELEASED\"}"
+          : exchange.getRequestURI().getPath().equals("/v1/reservations")
+              ? "{\"id\" : \"eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee5\"}"
+              : "{\"available\" : 9, \"version\" : 3}";
+      byte[] bytes = body.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+      exchange.sendResponseHeaders(200, bytes.length);
+      try (var out = exchange.getResponseBody()) { out.write(bytes); }
+    });
+    server.start();
+    try {
+      var target = new TrafficTarget(server.getAddress().getPort(), "local-token",
+          UUID.fromString("cccccccc-cccc-4ccc-8ccc-ccccccccccc3"), "00123");
+      var observation = target.perform();
+      check(observation.available() == 9 && observation.version() == 3,
+          "Traffic reports the stock value returned by the real HTTP read");
+      check(paths.size() == 4 && paths.get(0).contains("/stock/00123")
+          && paths.get(1).equals("POST /v1/reservations")
+          && paths.get(2).endsWith("/release") && paths.get(3).contains("/stock/00123"),
+          "A cycle reads, reserves and releases through the owned API");
+    } finally {
+      server.stop(0);
+    }
+  }
+
+  static void trafficControlTest() throws Exception {
+    var control = new TrafficControl(() -> new TrafficRun.Observation("read → reserve → release", 8, 4));
+    var server = Preview.create(java.nio.file.Path.of("."), 0, control);
+    server.start();
+    try (var client = java.net.http.HttpClient.newHttpClient()) {
+      String base = "http://127.0.0.1:" + server.getAddress().getPort();
+      var start = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base
+          + "/lab/traffic/start?rate=5&seconds=2&concurrency=1"))
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(start, java.net.http.HttpResponse.BodyHandlers.ofString()).statusCode() == 200,
+          "Local control starts a bounded run");
+      var status = client.send(java.net.http.HttpRequest.newBuilder(
+          java.net.URI.create(base + "/lab/traffic")).build(),
+          java.net.http.HttpResponse.BodyHandlers.ofString());
+      check(status.body().contains("\"running\":true") && status.body().contains("\"offered\":"),
+          "Status exposes actual run counters");
+      check(client.send(start, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 409,
+          "Cannot start a second active run");
+      var hostile = java.net.http.HttpRequest.newBuilder(start.uri())
+          .header("Origin", "https://elsewhere.example")
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(hostile, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode() == 403,
+          "Foreign browser origins cannot control local traffic");
+      var stop = java.net.http.HttpRequest.newBuilder(java.net.URI.create(base + "/lab/traffic/stop"))
+          .POST(java.net.http.HttpRequest.BodyPublishers.noBody()).build();
+      check(client.send(stop, java.net.http.HttpResponse.BodyHandlers.ofString()).body()
+          .contains("\"running\":false"), "Stop reports the final status");
+    } finally {
+      control.close();
+      server.stop(0);
+      ((java.util.concurrent.ExecutorService) server.getExecutor()).shutdownNow();
     }
   }
 

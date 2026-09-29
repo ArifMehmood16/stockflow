@@ -20,7 +20,7 @@ Task states: `todo`, `in_progress`, `partial`, `done` (implemented/self-tested),
 - A05: done — conditional decrement, durable idempotency and concurrency test; `f48ea77`
 - A06: done — guarded release/expiry, restart and race tests; `6910ab0`
 - A07: partial — native lifecycle, coverage, import and API integration passed at `b83703d`; isolated Docker runtime smoke blocked by stopped daemon
-- B01: todo
+- B01: partial — minimal single-run native traffic control; durable commands and broader lifecycle deferred by scope review
 - B02: todo
 - B03: todo
 - B04: todo
@@ -28,7 +28,7 @@ Task states: `todo`, `in_progress`, `partial`, `done` (implemented/self-tested),
 - C02: todo
 - C03: todo
 - C04: todo
-- D01: todo
+- D01: partial — fixed-target bounded Java cycles and status; workload distributions and benchmark accounting deferred
 - D02: todo
 - D03: todo
 - D04: todo

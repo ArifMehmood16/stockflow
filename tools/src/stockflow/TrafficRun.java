@@ -15,7 +15,7 @@ final class TrafficRun implements AutoCloseable {
   record Observation(String path, int available, long version) {}
   record Status(boolean running, long offered, long started, long completed, long failed,
       long dropped, int inFlight, String lastPath, long lastElapsedMillis,
-      int available, long version) {}
+      int available, long version, String lastError) {}
   @FunctionalInterface interface Operation { Observation perform() throws Exception; }
 
   private final Limits limits;
@@ -27,6 +27,7 @@ final class TrafficRun implements AutoCloseable {
   private int inFlight, available;
   private long version;
   private String lastPath = "";
+  private String lastError = "";
 
   TrafficRun(Limits limits, Operation operation) {
     this.limits = limits;
@@ -38,11 +39,12 @@ final class TrafficRun implements AutoCloseable {
     if (running || offered != 0) throw new IllegalStateException("Traffic run already started.");
     running = true;
     timer.scheduleAtFixedRate(this::arrive, 0, 1000L / limits.rate(), TimeUnit.MILLISECONDS);
-    timer.schedule(this::stop, limits.seconds(), TimeUnit.SECONDS);
+    timer.schedule(this::finish, limits.seconds(), TimeUnit.SECONDS);
   }
 
   private synchronized void arrive() {
     if (!running) return;
+    if (offered >= (long) limits.rate() * limits.seconds()) return;
     offered++;
     if (inFlight >= limits.concurrency()) {
       dropped++;
@@ -62,7 +64,11 @@ final class TrafficRun implements AutoCloseable {
           lastElapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - begin);
         }
       } catch (Exception error) {
-        synchronized (this) { failed++; }
+        synchronized (this) {
+          failed++;
+          lastError = error instanceof IllegalStateException ? error.getMessage()
+              : error.getClass().getSimpleName();
+        }
       } finally {
         synchronized (this) { inFlight--; }
       }
@@ -71,13 +77,21 @@ final class TrafficRun implements AutoCloseable {
 
   synchronized Status status() {
     return new Status(running, offered, started, completed, failed, dropped, inFlight,
-        lastPath, lastElapsedMillis, available, version);
+        lastPath, lastElapsedMillis, available, version, lastError);
   }
 
   synchronized void stop() {
     running = false;
     timer.shutdownNow();
-    workers.shutdownNow();
+    int queued = workers.shutdownNow().size();
+    inFlight -= queued;
+    failed += queued;
+  }
+
+  private synchronized void finish() {
+    running = false;
+    timer.shutdown();
+    workers.shutdown();
   }
 
   @Override public void close() {
