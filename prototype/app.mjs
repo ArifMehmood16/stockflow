@@ -7,9 +7,9 @@ import {
   faultCatalog,
   componentAvailable,
   loadSteps,
-} from "./model.mjs";
-import { placeHover, componentSnapshot } from "./hover.mjs";
-import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs";
+} from "./model.mjs?v=database-lessons-1";
+import { placeHover, componentSnapshot } from "./hover.mjs?v=database-lessons-1";
+import { nodes, scene, routes, fitCamera, zoomCamera, panCamera } from "./topology.mjs?v=database-lessons-1";
 let state = initialState();
 let chapter = 0;
 let faultNode = "cache";

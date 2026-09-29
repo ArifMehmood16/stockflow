@@ -1,4 +1,4 @@
-import { metrics, shardRecords } from "./model.mjs";
+import { metrics, shardRecords } from "./model.mjs?v=database-lessons-1";
 
 export const scene = { width: 1240, height: 660 };
 const card = (x, y, width = 176) => ({ x, y, width, height: 120 });

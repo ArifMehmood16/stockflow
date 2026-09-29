@@ -54,3 +54,12 @@ test('database lessons exclude deployment resources and route switches', async (
     assert.doesNotMatch(source, /component-green|Blue \/ green|Switch to green/);
   }
 });
+
+test('hosted page and module imports select the same asset revision', async () => {
+  for (const file of ['index.html', 'app.mjs', 'hover.mjs', 'topology.mjs']) {
+    const source = await readFile(new URL(`../prototype/${file}`, import.meta.url), 'utf8');
+    const assets = [...source.matchAll(/["'](\.\/[^"']+\.(?:mjs|css)(?:\?[^"']*)?)["']/g)];
+    assert.ok(assets.length > 0);
+    for (const [, asset] of assets) assert.match(asset, /\?v=database-lessons-1$/);
+  }
+});

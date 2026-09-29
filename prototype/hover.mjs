@@ -1,4 +1,4 @@
-import { metrics, faultCatalog, componentAvailable, shardRecords } from "./model.mjs";
+import { metrics, faultCatalog, componentAvailable, shardRecords } from "./model.mjs?v=database-lessons-1";
 
 const fmt = (n) => Math.round(n).toLocaleString("en-GB");
 

@@ -28,3 +28,5 @@ gh api repos/ArifMehmood16/stockflow/pages/builds/latest --jq .status
 ```
 
 Updates can take a few minutes to become visible. Smoke-check the live page after publishing. No uptime or latency guarantee is claimed. GitHub Pages limits and policies still apply; this educational static project has no metered backend or usage-based application bill.
+
+The page and its JavaScript imports use a shared asset revision query (`v=database-lessons-1`) to avoid reusing previously cached modules after the deployment lesson was removed. When changing the module/HTML contract, update that revision consistently in the page, imports and regression test. This avoids adding a bundler for the static demo.
