@@ -27,9 +27,14 @@ test("a failed primary rejects writes; only a replica can be promoted after fenc
   assert.equal(metrics(s).writeAvailable, true);
   assert.equal(s.promoted, true);
 });
-test("reset restores the baseline and offered load is bounded", () => {
+test("offered load uses regular 10,000 req/s steps and stays bounded", () => {
+  assert.equal(initialState().rps, 10000);
+  assert.equal(transition(initialState(), "load", 24999).rps, 20000);
+  assert.equal(transition(initialState(), "load", 25000).rps, 30000);
   assert.equal(transition(initialState(), "load", 999999).rps, 250000);
-  assert.equal(transition(initialState(), "load", -5).rps, 1000);
+  assert.equal(transition(initialState(), "load", -5).rps, 10000);
+});
+test("reset restores the baseline", () => {
   assert.deepEqual(
     transition(transition(initialState(), "cache"), "reset"),
     initialState(),

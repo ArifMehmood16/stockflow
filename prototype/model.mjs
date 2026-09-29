@@ -1,6 +1,7 @@
 // Deliberately aggregate teaching sketch, not the planned discrete-event engine.
+export const loadSteps = { min: 10000, max: 250000, interval: 10000 };
 export const initialState = () => ({
-  rps: 8000,
+  rps: loadSteps.min,
   records: 1000000,
   lesson: 0,
   owners: Array(16).fill(0),
@@ -47,7 +48,8 @@ export function transition(state, action, value) {
       break;
     case "load":
       s.rps = Number.isFinite(Number(value))
-        ? Math.max(1000, Math.min(250000, Number(value)))
+        ? Math.max(loadSteps.min, Math.min(loadSteps.max,
+            Math.round(Number(value) / loadSteps.interval) * loadSteps.interval))
         : s.rps;
       break;
     case "cache":

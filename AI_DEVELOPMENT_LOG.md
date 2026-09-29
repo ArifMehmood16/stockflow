@@ -175,3 +175,11 @@ Date: 2026-09-29. Tool: Codex. Owner requested merging the existing branches int
 The three branch tips formed a linear history: Phase 0 was an ancestor of Phase 1, which was an ancestor of the Cursor handoff. No open pull requests existed. Updated the resume instructions, Cursor branch guidance, state ledger and public experiment link before creating `main` at the complete history. Set `main` as the GitHub default, then deleted the three old local and remote branch names. Their commits remain reachable on `main`; no history was rewritten.
 
 `make verify` passed after retrying with loopback access: 28 Java tooling assertions, Maven API tests, 26 frontend tests, JavaScript syntax and 207 documentation links. The first sandboxed run could not bind a local test port; it did not indicate a product failure. V0 remains changes_requested and A02 remains unstarted.
+
+## 015 — Move controls into the animation canvas
+
+Date: 2026-09-29. Tool: Codex. Owner-requested Phase 0 workbench refinement; draft for human review.
+
+Moved the full-width workload, capacity and fault rows into two compact canvas-edge docks. Load and rate statistics stay expanded vertically; the fault drawer starts collapsed and opens from each component’s Faults button. Added 10,000 req/s load steps, inset-aware Fit behavior on wider screens, and pointer handling so dock actions do not pan the map. No service or database contract changed.
+
+Behavioral tests first failed for the old 8,000 req/s baseline and missing Fit inset, then passed after the changes. Full `make verify` passed 28 tooling assertions, Maven API tests, 28 frontend tests, syntax and 207 documentation links. Browser checks covered desktop and phone widths, load rates, drawer target/focus, and dock bounds. The rates remain illustrative. V0 and A02 status are unchanged.

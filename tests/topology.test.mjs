@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import { routes, nodes, scene, fitCamera, zoomCamera, panCamera } from "../prototype/topology.mjs";
 import { initialState, transition } from "../prototype/model.mjs";
 
+test("fit leaves room for controls docked inside the canvas", () => {
+  const fitted = fitCamera({ width: 1000, height: 600 }, { left: 174, right: 48 });
+  assert.ok(fitted.x >= 174);
+  assert.ok(fitted.x + scene.width * fitted.scale <= 1000 - 48);
+});
+
 test("replica receives read requests and WAL, never client writes, in blue and green", () => {
   for (const green of [false, true]) {
     const edges = routes({ ...initialState(), replica: true, green, greenReady: true });
