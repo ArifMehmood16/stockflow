@@ -2,15 +2,15 @@
 
 ## Start here
 
-For the owner's current Codex/ChatGPT workflow, begin with the [task cards](implementation/README.md) and [state ledger](implementation/STATE.md). The [validation gates](implementation/VALIDATION.md) define when to review. Task status belongs in STATE, not in this narrative handoff.
+For the owner's current Codex/ChatGPT workflow, begin with the [scope review](implementation/SCOPE_REVIEW.md), [task cards](implementation/README.md) and [state ledger](implementation/STATE.md). The revised [validation gates](implementation/VALIDATION.md) define when to review. Task status belongs in STATE, not in this narrative handoff.
 
 1. Read README prerequisites, configure the existing local database, then use `make run`; use `make preview` for the Java-served sketch without setup. Read dataset-and-scale.md for the real import boundary, product.md and design/ux.md for intended versus implemented simulation behavior.
-2. Read the owner-directed continuation in ADR 001 and the implemented read-only slice in java-baseline.md. PLAN.md tracks the remaining Phase 1 work; licence and hosting decisions remain open.
-3. Implement inventory correctness before scaling. Use the contracts and fixture from contracts.md; maintain test evidence and journal.
-4. Build authoritative Java simulation, then port UI to React using the same run/command/event contracts. The prototype's aggregate model is disposable.
-5. Add real infrastructure one lesson at a time with operations.md budgets and experiments.md acceptance criteria.
+2. Review the implemented native inventory baseline at V1. It supports authenticated reads, reservations, release and expiry; fix blocking correctness issues before building on it.
+3. Implement the small Java run/load worker, then connect the existing UI and guide to a real read/reserve/release journey using polling. Use TDD and commit each passing behavior.
+4. Add the first real solution through the map: a second owned API instance and readiness-gated routing. Preserve the current frontend; observability, React migration, SSE and the full Java simulator are deferred.
+5. Add Redis, replication, shards and deployment one working lesson at a time under the reduced scope review. Retain ownership/correctness checks and only the feedback needed to explain the interaction.
 
-## Proposed eventual layout
+## Proposed eventual layout (not a scaffolding requirement)
 
 ```text
 services/

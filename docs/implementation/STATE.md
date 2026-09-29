@@ -4,12 +4,12 @@ This is the single task and checkpoint status ledger. Do not duplicate task chec
 
 - Implementation baseline: `ba824c7` (read-only Java API plus favicon; earlier `e13cd91` and `5946eda` contain API work).
 - Working base: `main` contains A03; Phase A continuation is on `codex/phase-1-authenticated-run-stock-reads`.
-- Current task: **A07 partial** — native inventory baseline verified; Docker daemon unavailable for required container smoke.
-- Next review: **V1 packet pending**; no independent verdict yet.
+- Current task: **A07 partial under its original scope** — native checks passed; native V1 review pending, Docker equivalence deferred.
+- Next review: **V1 native baseline**; [packet available](reviews/V1.md), no independent verdict yet. Apply the later [scope review](SCOPE_REVIEW.md).
 - Last accepted checkpoint: **V0** on A01 contract head `c5e8599a898fd49d79656a4dab8d7a98c2b2ade7`.
-- Active blocker: Docker runtime verification remains untested because the daemon socket is unavailable. The owner deferred Docker polish, so native functionality was prioritized.
+- Deferred verification: Docker runtime is untested because the daemon socket is unavailable. The native-first scope review moves equivalence proof to release; it does not claim a pass. V1 correctness review remains pending.
 
-Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
+Task states: `todo`, `in_progress`, `partial`, `done` (implemented/self-tested), `blocked`. Checkpoint states: `not_requested`, `pending_review`, `changes_requested`, `accepted`, `blocked`. Store completion commit IDs/evidence path on the relevant line after they exist; do not invent or prefill hashes.
 
 ## Tasks
 
@@ -72,4 +72,4 @@ Task states: `todo`, `in_progress`, `done` (implemented/self-tested), `blocked`.
 
 ## Handoff note
 
-Owner now uses Codex and ChatGPT to implement and validate one item at a time. The retained public catalog is 4,532,480 imported products on the author's machine; a fresh clone must prepare its own data. Working API is read-only; simulation remains the browser prototype until B/C are implemented.
+Owner uses Codex and ChatGPT with TDD and passing commits per working behavior. Follow the scope review for minimum delivery requirements. The retained public catalog is 4,532,480 imported products on the author's machine; a fresh clone must prepare its own data. The native API supports scoped reads, reserve/release and expiry. The browser remains illustrative until the first real walkthrough is connected.

@@ -1,6 +1,6 @@
 # Implementation contracts
 
-Status: proposed v1 contract, with Phase 1 run-scoped GET routes now implemented. The design prototype still does not call them. Maintain machine-readable OpenAPI and JSON Schema from Phase 1/2, with generated strict frontend types and compatibility tests.
+Status: Phase 1 inventory routes are implemented in [OpenAPI](openapi/inventory.yaml); the browser does not call them yet. Control-plane, streaming and simulation contracts below describe the larger future design. The [current scope review](implementation/SCOPE_REVIEW.md) uses a minimal polling snapshot first and defers SSE, telemetry/report schemas and generated frontend tooling. Inventory ownership, transaction and idempotency guarantees still apply.
 
 ## Inventory data
 

@@ -1,6 +1,6 @@
 # Architecture and system design
 
-All diagrams describe the target; the delivered prototype is static browser code only.
+Diagrams describe the full target design. Native Java inventory now works, while the browser remains illustrative. The [current scope review](implementation/SCOPE_REVIEW.md) governs implementation: connect the existing UI with polling first; React, SSE, telemetry collectors and a full simulation engine are deferred. Do not scaffold the whole target architecture.
 
 ## Start small
 

@@ -1,5 +1,7 @@
 # Product brief
 
+This is the full product vision. The [current delivery scope](implementation/SCOPE_REVIEW.md) first connects the existing workbench to real Java/PostgreSQL behavior. Detailed observability, complete simulator parity and portfolio packaging are deferred; requested cache, replica, shard and deployment lessons remain in scope as subsequent working features.
+
 ## Promise
 
 StockFlow lets someone answer “what changed, why did it help, and what got worse?” by manipulating a real-looking architecture and following individual inventory requests. Its distinctive portfolio value is an honest bridge from visual intuition to Java code, SQL constraints and measured infrastructure behaviour.

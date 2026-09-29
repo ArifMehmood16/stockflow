@@ -4,9 +4,11 @@ Scope: this repository only. At task start, read README.md, this file, the curre
 
 ## Codex implementation and review workflow
 
-The owner now uses Codex and ChatGPT to implement one item at a time and validate named checkpoints. Follow docs/implementation/STATE.md and the current task card. PLAN.md remains the phase authority; the linked task cards refine the sequence within each phase. Implement the requested card, commit it and stop at its checkpoint. Read relevant source/tests/contracts, not every card or the entire historical log. At a named validation gate, prepare compact evidence and record the verdict against the implementation commit. Do not treat self-testing as independent review or automatically begin the next card.
+The owner uses Codex and ChatGPT to deliver small working features with TDD and regular commits. Read docs/implementation/STATE.md and docs/implementation/SCOPE_REVIEW.md before selecting work. PLAN.md gives the current execution order; the scope review narrows the older task cards and validation gates. Finish the authorized feature, committing passing behaviors along the way. Do not pause for permission after every card or commit. At a requested checkpoint, record compact evidence against the implementation commit; do not treat self-testing as independent acceptance. Read only relevant source/tests/contracts during implementation.
 
 Human intent: showcase Java, databases and distributed systems with an understandable interactive lab. One normal inventory microservice first; add infrastructure only to explain a demonstrated bottleneck. The separate source repository's Python/RAG architecture does not apply here.
+
+Owner-directed fast path: until one real guided browser-to-database walkthrough works, follow the short working order in `PLAN.md`. Keep the existing UI, implement only necessary Java behavior, and defer observability infrastructure, SSE and framework rewrites. Start each behavior with a focused failing test, make it pass with the smallest change, run the relevant checks, and commit/push each passing slice. Do not call illustrative UI rates measured traffic. This priority does not turn the unrun V1 Docker smoke into a pass.
 
 Before edits, restate task, acceptance criteria, expected files and material assumptions. The owner-directed Phase 1 continuation in ADR 001 authorizes the Java baseline. Ask only for material new choices beyond that scope. Do not add technologies, services or cloud costs merely to look enterprise-ready.
 

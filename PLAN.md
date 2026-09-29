@@ -4,11 +4,21 @@
 
 The owner uses Codex and ChatGPT for implementation and validation. Start at [the task index](docs/implementation/README.md) and [STATE](docs/implementation/STATE.md). There are 43 task cards and ten validation gates, V0–V9. **V0 is accepted; A04–A06 are self-tested; A07 native checks passed while Docker runtime smoke remains unavailable. V1 has no independent verdict.**
 
-This file remains the phase-level authority. Cards refine dependency order within the phases; they do not authorize skipping an earlier acceptance gate. A01/V0 resolved the imported-catalog versus writable-run schema; A02–A07 finish Phase 1. B/C together implement Phase 2; D through I map to Phases 3–8. Existing completed checkboxes remain evidence of delivered work. Task status lives in STATE; phase checkboxes change only when all required work and checkpoint verification pass.
+This file gives the current execution order. The [review of all 43 cards](docs/implementation/SCOPE_REVIEW.md) defines minimum scope and supersedes larger deliveries and ordering in the original phase backlog below. Existing completion and acceptance records remain evidence of delivered work; deferred requirements are not silently marked passed. Task status lives in STATE.
+
+## Owner-directed fast path to a working app
+
+The next priority is **one real guided browser → Java → owned PostgreSQL journey**, followed by one on-map solution. Use the already working dark workbench; keep its modeled view clearly labelled until a control is connected to real results. This working order supersedes the B/C/D card sequence for the first functional slice, without marking those cards or V1 accepted.
+
+1. Add one local Java run control with a fixed inventory target, bounded rate/duration/concurrency and start/stop/status. It must never accept an arbitrary URL or send the prototype's modeled 250,000 req/s to PostgreSQL. Test the limit, stop and a read plus reserve/release against an owned fixture before wiring the UI. Commit this behavior.
+2. Connect the existing workbench's start/stop and right-hand guide to that run. Poll a small authoritative status snapshot. Show actual offered/completed/failed counts, the recent operation's path and elapsed time, stock value/version and an explicit **real** badge. Keep the rest of the map illustrative and labelled. Test one browser action through to the database and commit it.
+3. Add one real solution control: start a second owned API instance, wait for readiness, route a bounded workload between instances, and stop it safely. Show whether the bottleneck moved or stayed at the single primary. Test route ownership and durable idempotency across instances, then commit it.
+
+For this slice, defer a React rewrite, generic command platform, full discrete-event engine, SSE/replay, tracing, histograms, detailed observability, report generation and broad Docker polish. Minimal request counts and elapsed time are product feedback, not an observability platform. Redis, replica, shard and deployment controls remain later vertical slices; do not enable a real-mode button until its resource and failure behavior exist. Apply red-green-refactor at each behavior boundary and push each passing commit. Keep V1's unavailable Docker smoke visible rather than claiming it passed.
 
 ## Execution policy
 
-**Current checkpoint: Phase 1 read-only Java foundation, authorized by the owner's continuation request.** Each phase adds one independently explainable capability. Build the whole core curriculum across phases; do not attempt the final topology first. Checkboxes record observed work, not intent. Time ranges below are planning estimates for one developer, not commitments; core build approximately 8–12 focused weeks, depending on infrastructure experience.
+**Current checkpoint: native inventory baseline, V1 pending review.** Each delivery adds one working user journey. Checkboxes record observed work, not intent. The phase list and time ranges below are the original full curriculum backlog, not estimates or prerequisites for the reduced working path.
 
 Each implementation task: inspect relevant code → smallest failing behaviour test → observe red → minimal green → refactor → focused and phase checks → full diff review → docs + AI log. Tests default offline; integration suites opt into local services. Stop at the gate.
 

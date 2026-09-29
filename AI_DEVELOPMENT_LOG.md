@@ -241,3 +241,11 @@ The focused release HTTP test failed with 405 before the route was added. The fi
 Date: 2026-09-29. Tool: Codex. Task: A07, partial; draft for human review.
 
 Added selected-run readiness, a bounded run writer connection pool, fixed malformed-request and Origin errors, and an OpenAPI description of implemented routes. Focused tests first showed readiness 200 on a down run and missing malformed-request envelope, then passed. `make verify`, `make lint`, `make test-integration`, `make test-api-integration`, `make api-smoke` and `docker compose config --quiet` passed with the results in the engineering journal. The native API refused an occupied port, stopped cleanly, restarted, and replayed the same stored reservation body. Docker runtime smoke was not run because `docker info` could not reach the daemon. No V1 acceptance or Docker equivalence is claimed. The owner prioritized a simple native backend over Docker polish and CI/CD; this record does not treat that priority as a passing container test.
+
+## 024 — Reduce the complete development backlog to working features
+
+Date: 2026-09-29. Tool: Codex; draft for human review.
+
+The owner requested review of all development items, minimum implementation, no observability at this stage, TDD and regular commits. Reviewed all 43 task cards, V0–V9 and related architecture, contracts, evaluation and handoff references. Added a per-card scope review and changed the execution order to a bounded Java run worker, existing browser integration, then a real second API instance. Retained the requested cache/failure, replication/recovery, multi-shard migration and blue/green lessons, with minimum behavior per feature. Deferred simulator parity, React migration, SSE, telemetry, advanced reporting and Docker equivalence proof until needed/release. Updated instructions and stale handoff claims; historical evidence and checkpoint verdicts were not rewritten. This is documentation-only work: no runtime code, test thresholds or passing/acceptance claims changed, and no artificial TDD test was added.
+
+Verification: the Java documentation checker passed 269 local links; comparing review entries with task filenames found all 43 IDs exactly once; `git diff --check` passed. Application tests were not rerun for this documentation-only change.

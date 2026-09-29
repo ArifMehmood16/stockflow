@@ -2,6 +2,8 @@
 
 The owner explicitly requests reviews at these gates. The implementing agent prepares evidence and fixes findings; a separate review pass examines the scoped change and records a verdict. **Self-testing does not accept a checkpoint.** Use the ten milestones below unless an earlier material decision/security issue genuinely blocks progress.
 
+Current scope override: [the development scope review](SCOPE_REVIEW.md) narrows these original gate definitions to delivered functionality. The first native journey does not require a React migration, Java simulator, SSE or observability. Review backend correctness, the browser journey and the first real solution as runnable milestones; use a short evidence entry, not a new packet for each small commit. Native-first work defers Docker equivalence to the release check; keep it unverified until exercised. Existing verdicts and the historical V1 packet remain unchanged. Apply the retained ownership, transaction and recovery checks whenever the corresponding feature is delivered.
+
 ## Request a review
 
 ```text
@@ -45,9 +47,9 @@ Evidence: ADR, DDL sketches, two-tenant/two-run examples, one retry/expiry timel
 
 **After A07; before B01.** Maps to PLAN Phase 1 exit.
 
-Review migrations, credential scope, transactions, concurrent reserve/release/expiry, durable idempotency and least privilege. Verify actual SQL races/rollback/restart, safe error contracts, preserved global data and independent Make/Docker database paths. Validate toolchain/image/CI/coverage evidence; check default tests need no database after bootstrap.
+Review migrations, credential scope, transactions, concurrent reserve/release/expiry, durable idempotency and least privilege. Verify actual SQL races/rollback/restart, safe error contracts and preserved global data. Validate native build/coverage evidence; check default tests need no database after bootstrap. CI/CD is deferred. Review Make/Docker equivalence at release under the current scope override.
 
-Required proof: conservation ledger, duplicate-key/race tests, cross-tenant/run denial, migration twice, API restart, native setup/stop, fresh isolated Docker smoke and exact validation commands. If Docker cannot run, record blocked or an explicit owner scope defer; do not claim the complete Phase 1 gate passed.
+Required native proof: conservation ledger, duplicate-key/race tests, cross-tenant/run denial, migration twice, API restart, native setup/stop and exact validation commands. Docker is deferred by the owner's native-first scope direction and remains unverified. A native verdict must name this scope; it cannot claim the original full Make/Docker gate passed.
 
 ## V2 — Deterministic runtime and event contract
 

@@ -2,15 +2,17 @@
 
 Start with [PLAN](../../PLAN.md), the current [STATE](STATE.md), and [AGENTS](../../AGENTS.md). These **43 task cards** refine the phase implementation order. [STATE](STATE.md) is the only task/checkpoint status ledger. [VALIDATION](VALIDATION.md) defines the ten review gates.
 
+Read [the scope review of every card](SCOPE_REVIEW.md) before implementation. It records minimum acceptance behavior, deferred work and the revised use of all ten gates. It supersedes oversized deliveries, compulsory simulator parity, observability and per-card permission pauses in the older cards.
+
 V0 accepted A01. A02–A06 are self-tested; A07's native baseline passed while its Docker runtime smoke is unavailable. **V1 has no independent verdict.** Do not redo the delivered prototype, import or Java inventory baseline. The owner explicitly requested a quick Phase A delivery push; subsequent phase work still waits for the named checkpoint. There is no automatic multi-agent execution.
 
 ## Ordering and completion
 
-Cards are strictly sequential in the index below. This refines dependency ordering inside PLAN phases: decide the writable data contract before migrations; define the run boundary before its simulator; build the guided simulation before connecting real load. B and C together complete PLAN Phase 2. Other letter groups map to successive phases. An accepted checkpoint completes only its stated scope, not every later feature.
+The A-card baseline was built in order. For the first working browser-to-database journey, the owner's [fast path](../../PLAN.md#owner-directed-fast-path-to-a-working-app) now takes precedence over the older B/C/D card order. Those cards remain a backlog of later behaviors, not a mandate to build a generic controller, React rewrite, SSE stream or observability stack before the first real walkthrough. An accepted checkpoint completes only its stated scope, not every later feature.
 
 A02 and A07 finish the outstanding build/operations parts of 1.1/1.5; existing 1.1a stays completed. Phase-level checkboxes are updated only after all relevant cards and gate evidence pass. A task may be implemented/self-tested while its checkpoint is still pending; those are different states.
 
-Future task paths/commands are proposals to introduce at the named card. Do not create empty services or test targets now. A missing prerequisite blocks that card; it is not permission to skip the test or silently substitute simulation for real evidence.
+Future task paths/commands are proposals to introduce when the behavior needs them. Do not create empty services or test targets now. A missing prerequisite blocks that behavior; it is not permission to skip the test or silently substitute simulation for real evidence.
 
 ## A — Correct inventory and durable writes
 
@@ -102,11 +104,10 @@ Tasks I01–I04. Review: V9.
 
 ## Command availability
 
-Available at handoff: `make preview`, `make run`, `make stop`, `make setup`, `make api`, `make api-stop`, `make api-smoke`, `make test-java`, `make test-api`, `make verify`, `make test-integration`, `make test-api-integration`, `make doctor`, `make run-docker`, `make down`.
+Available: `make preview`, `make run`, `make stop`, `make setup`, `make fixture`, `make fixture-issue`, `make api`, `make api-stop`, `make api-smoke`, `make test-java`, `make test-api`, `make verify`, `make lint`, `make test-integration`, `make test-api-integration`, `make doctor`, `make run-docker`, `make down`.
 
 Introduced later, not runnable today:
 
-- A02: `make lint`.
 - B01: `make test-controller`; B02: `make test-simulation`.
 - C01: `make test-frontend` plus named frontend build/typecheck targets; C03: `make test-e2e`.
 - D01: `make test-load`; D04: `make test-runtime-integration`.

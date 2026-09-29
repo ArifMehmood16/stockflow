@@ -1,5 +1,7 @@
 # Evaluation and verification strategy
 
+Current delivery uses the [reduced scope review](implementation/SCOPE_REVIEW.md): one failing behavior test, minimal implementation, focused checks and a regular commit. The benchmark protocol, histogram/report requirements and full simulator/streaming checks below are future evaluation work. Run infrastructure suites only when the changed behavior depends on them; preserve transaction, isolation and recovery tests.
+
 ## Current prototype
 
 Use Node's built-in test runner; no test dependencies. Tests cover load saturation/cache effect, replica routing without extra write capacity, primary failure/fencing/promotion, reset/caps and request conservation. Initial empty implementation produced four meaningful behavioural failures after the missing-module scaffold issue. Final outcomes and browser evidence are recorded in the journal; no production benchmark exists.
