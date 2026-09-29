@@ -24,6 +24,7 @@ CREATE TABLE reservation (
   quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 100),
   state text NOT NULL CHECK (state IN ('ACTIVE','RELEASED','EXPIRED')),
   expires_at timestamptz NOT NULL,
+  terminal_at timestamptz,
   stock_version bigint NOT NULL CHECK (stock_version >= 0),
   PRIMARY KEY (tenant_id, id),
   FOREIGN KEY (tenant_id, warehouse_id, sku)
@@ -41,16 +42,18 @@ CREATE TABLE idempotency_record (
 );
 ```
 
-`sku` is a catalog code. `version` starts at 0 and increments only when `available` changes. The idempotency primary key is inserted and completed in the same transaction as the stock change; a committed row is `COMPLETED`, and a crash before commit leaves no claim. Replay returns the stored status and body. The same key under another tenant or another run is a different operation.
+`sku` is a catalog code. `version` starts at 0 and increments only when `available` changes. A duplicate idempotency key uses `INSERT ... ON CONFLICT DO NOTHING` and then a `SELECT` in that same open transaction. A unique-violation error is not used, because it would abort the transaction before the replay read. The claim and the stored response, including `sessionToken` on a `201`, commit together. A crash before commit leaves no claim. Replay returns the stored body and does not mint a new session token. The same key under another tenant or another run is a different operation.
 
-The default writable fixture is the small profile: 2 tenants, 2 warehouses, 100 shared catalog SKUs on each pair, 400 rows, `available` 1000. An explicit `FIXTURE_ROWS` value copies that many distinct catalog codes, capped by the catalog rows actually present and by disk admission. The withdrawn 100,000-row example is not a default or a hidden maximum. Receipts record `actual_rows`. Reservations and idempotency rows are retained for 24 hours, at most 200,000 of each per run. Full DDL, roles and the worked example are in ADR 002.
+`terminal_at` is null while `ACTIVE` and is set when the reservation becomes `RELEASED` or `EXPIRED`. Reservation retention runs from `terminal_at`. Idempotency retention runs from the key's `expires_at`. The request writer cannot delete those rows. A per-run cleanup role can delete only expired idempotency rows and reservations whose `terminal_at` is at least 24 hours old.
+
+The default writable fixture is the small profile: 2 tenants, 2 warehouses, 100 shared catalog SKUs on each pair, 400 rows, `available` 1000. An explicit `FIXTURE_ROWS` value copies that many distinct catalog codes, capped by the catalog rows actually present and by disk admission. The withdrawn 100,000-row example is not a default or a hidden maximum. Receipts record `actual_rows`. Each of those histories keeps at most 200,000 rows per run. Full DDL, roles and the worked example are in ADR 002.
 
 ## Inventory HTTP
 
 Tenant identity comes from a run-issued synthetic client credential, never trusted solely from a path/header. Local fixture clients get assigned tenant scopes. Future internet auth is out of core scope.
 
 - `GET /v1/warehouses/{warehouseId}/stock/{sku}?consistency=eventual|session` → 200 `{sku,available,version,source,cachedAt,observedAt}`. Omitted consistency means primary. `session` requires the opaque session token and reads the primary at `minVersion`. `eventual` returns 409 `CAPABILITY_UNAVAILABLE` until a replica reader exists; a primary read is never labeled eventual. 404 unknown item in scope; 503 required freshness unavailable.
-- `POST /v1/reservations`, required `Idempotency-Key`, body `{warehouseId,sku,quantity}` → 201 `{id,state,quantity,stockVersion,sessionToken}`. Replay returns the stored status and body plus `Idempotency-Replayed: true`. Reuse of a key with a different body → 409 `IDEMPOTENCY_CONFLICT`. An in-flight claim that exceeds the 2-second lock wait → 409 `IDEMPOTENCY_IN_PROGRESS`, `retryable: true`, with no stock change. Insufficient stock → 409 `INSUFFICIENT_STOCK`; the stored body is replayed unchanged even if stock later increases.
+- `POST /v1/reservations`, required `Idempotency-Key`, body `{warehouseId,sku,quantity}` → 201 `{id,state,quantity,stockVersion,sessionToken}`. The inventory service mints `sessionToken` once for that commit; the fixture CLI issues only tenant credentials. Replay returns the stored status and body, including that same token, plus `Idempotency-Replayed: true`. Reuse of a key with a different body → 409 `IDEMPOTENCY_CONFLICT`. An in-flight claim that exceeds the 2-second lock wait → 409 `IDEMPOTENCY_IN_PROGRESS`, `retryable: true`, with no stock change. Insufficient stock → 409 `INSUFFICIENT_STOCK`; the stored body is replayed unchanged even if stock later increases.
 - `POST /v1/reservations/{id}/release`, same key contract and a distinct release hash → 200 canonical release result. Already released or expired stays terminal and does not credit stock. The reserve key is not a release key.
 - `GET /v1/reservations/{id}` → current tenant-scoped state; use to inspect a known committed operation.
 - Health: `/health/live`, `/health/ready`. Readiness depends on critical primary route, not optional Redis. Private telemetry endpoints not publicly routed.

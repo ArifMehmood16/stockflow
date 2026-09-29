@@ -69,23 +69,26 @@ The request hash is lowercase hex SHA-256 of the UTF-8 canonical JSON object wit
 
 Reusing a reserve key for a release, or changing quantity, SKU or warehouse, is a different hash.
 
-Claim and response share one transaction. The mechanism is the primary-key insert, not a committed placeholder and not an advisory lock:
+Claim and response share one transaction. The mechanism is a conflict-safe primary-key insert, not a committed placeholder and not an advisory lock. A plain `INSERT` that raises unique violation aborts the PostgreSQL transaction, so the following `SELECT` cannot replay. This contract does not do that.
 
 1. Set `lock_timeout` to the remaining request deadline, at most 2 seconds.
-2. Insert `(tenant_id, key, request_hash, state='CLAIMED', expires_at=now()+24h)` with null status and body.
-3. A conflicting insert waits for the other transaction because PostgreSQL holds the unique index entry until commit or rollback.
-4. If that wait exceeds `lock_timeout`, roll back and return `409 IDEMPOTENCY_IN_PROGRESS` with `retryable: true`. This request inserted nothing.
-5. If the other transaction rolls back, the waiting insert proceeds and owns the key.
-6. If the other transaction commits, the insert fails uniqueness. Read the stored row. A different hash returns `409 IDEMPOTENCY_CONFLICT` and does not change stock. `COMPLETED` returns the stored status and body with header `Idempotency-Replayed: true`.
-7. The owner then either mutates stock and inserts the reservation, or records insufficient stock / not found. It updates the same idempotency row to `COMPLETED` with the status and response JSON, then commits once.
+2. Run `INSERT INTO idempotency_record (...) VALUES (..., state='CLAIMED', expires_at=transaction_timestamp()+interval '24 hours', status_code=NULL, response_json=NULL) ON CONFLICT (tenant_id, key) DO NOTHING RETURNING tenant_id`. The insert waits while another transaction holds the unique index entry.
+3. If `lock_timeout` fires, that error aborts this transaction. Roll it back and return `409 IDEMPOTENCY_IN_PROGRESS` with `retryable: true`. This request inserted nothing.
+4. If the other transaction rolls back, the waiting insert proceeds. `RETURNING` yields a row and this transaction owns the claim.
+5. If the other transaction commits, `ON CONFLICT DO NOTHING` inserts nothing and leaves this transaction open. `SELECT` the stored row in this same transaction. Do not mutate stock. A different hash returns `409 IDEMPOTENCY_CONFLICT`. `COMPLETED` returns the stored status and body, including the original `sessionToken` bytes, with header `Idempotency-Replayed: true`. Then roll back this read-only transaction.
+6. The owner, only when step 4 inserted the claim, either mutates stock and inserts the reservation, or records insufficient stock or not found. It mints the session token for a `201` through the session issuer below, stores that token inside `response_json`, updates the same idempotency row to `COMPLETED`, and commits once.
 
-`CLAIMED` is never committed. A crash before commit leaves no claim and no stock change. A lost HTTP response after commit is repaired by the retry in step 6, which must not decrement stock again.
+`CLAIMED` is never committed. A crash before commit leaves no claim and no stock change. A lost HTTP response after commit is repaired by step 5, which must not decrement stock again and must not mint a second token.
 
 Insufficient stock stores the `409` body from the stock row read in that same transaction, including `available` and `version` at the decision. Replay returns those bytes even if a later request changes stock. A new key sees the current row and can succeed.
 
 Reservation expiry does not rewrite or delete the idempotency body. Replaying the reserve key still returns the original `201` whose `state` is the commit-time `ACTIVE`, until key retention ends. Clients use `GET /v1/reservations/{id}` for the live state.
 
-Key retention is 24 hours from the claim, or run deletion, whichever comes first. The worker may delete a `COMPLETED` row only after `expires_at`. The key may then be reused as a new operation. Stored reservation history uses the same 24-hour terminal retention. Each run keeps at most 200,000 idempotency rows and 200,000 reservation rows. Past that cap, a new claim returns `429` after expired rows are removed. The planned server ceiling is 500 offered requests/s for at most 300 seconds, which is 150,000 requests; 200,000 stored keys cover one such run of unique writes with margin. This cap is not an inventory-row limit. The withdrawn 100,000-row fixture example is not reused.
+Idempotency retention is 24 hours from the claim (`expires_at`), or run deletion, whichever comes first. Reservation history uses a different clock: `terminal_at`, set to `transaction_timestamp()` in the same transaction that moves `ACTIVE` to `RELEASED` or `EXPIRED`. A terminal reservation may be deleted only when `terminal_at <= now() - interval '24 hours'`. `expires_at` on a reservation is the hold deadline, not the retention clock. Active rows have `terminal_at` null and are not retention candidates.
+
+The request writer cannot delete. Cleanup uses role `sf_c_<32 hex>`, which may `SELECT` and `DELETE` only `idempotency_record` and `reservation` in its run schema. It has no `DELETE` on `inventory` or `catalog_snapshot`, no stock `UPDATE`, and no grant on `stockflow.inventory` or another run. The HTTP handlers never use it. After that role deletes a `COMPLETED` idempotency row, the key may be reused. It does not delete a key early because the reservation became terminal.
+
+Each run keeps at most 200,000 idempotency rows and 200,000 reservation rows. The writer counts and, at the cap, returns `429` without deleting. Later cleanup is what frees a slot. The planned server ceiling is 500 offered requests/s for at most 300 seconds, which is 150,000 requests; 200,000 stored keys cover one such run of unique writes with margin. This cap is not an inventory-row limit. The withdrawn 100,000-row fixture example is not reused.
 
 Rejected: committing `201` before the stock update; an application-level read-modify-write; deleting the idempotency row when the reservation expires; treating a replay of insufficient stock as a fresh availability check.
 
@@ -97,6 +100,7 @@ The HTTP service must not use the database owner login once these roles exist.
 | --- | --- | --- |
 | `stockflow_catalog_reader` | Diagnostic catalog API | `SELECT` on `stockflow.catalog`, `stockflow.inventory`, `stockflow.dataset_import`. Role default is read-only. |
 | `sf_w_<32 hex>` | That run's reserve, release, expiry and Phase 1 stock reads | `USAGE` on its schema; `SELECT`, `INSERT`, `UPDATE` on its four tables. No `DELETE`. No grant on `stockflow.inventory` or any other run schema. |
+| `sf_c_<32 hex>` | That run's retention worker only | `USAGE` on its schema; `SELECT` and `DELETE` on `idempotency_record` and `reservation` only. No `DELETE` on stock or catalog snapshot, and no use by HTTP handlers. |
 | `sf_r_<32 hex>` | Future replica reads | `SELECT` only, role default read-only. Created now so later grants do not redefine the contract. Phase 1 HTTP does not open it. |
 | Existing owner login | Trusted fixture CLI only | Create the registry, run schemas and roles. Not placed in the API process environment after the split. |
 
@@ -110,7 +114,9 @@ The current `ReadOnlyBoundary` remains in force until a later card adds the spec
 
 ### 7. Credential issuer before a controller exists
 
-A04 verifies tokens. A03's fixture CLI is the issuer until the Java controller exists. Both sides use the same types, proposed in `tools/src/stockflow/FixtureCredentials.java` when those cards start:
+Tenant credentials and session tokens are different types. They share the run MAC key and the `sf1.` wire format. They do not share an issuer.
+
+A04 verifies tenant tokens. A03's fixture CLI is the only tenant issuer until the Java controller exists. Proposed types, added when those cards start, live in `tools/src/stockflow/FixtureCredentials.java`:
 
 ```java
 public interface FixtureCredentialIssuer {
@@ -126,13 +132,31 @@ public interface FixtureCredentialVerifier {
 public record VerifiedScope(UUID runId, UUID tenantId, Instant expiresAt) {}
 ```
 
-Proposed CLI, not added by this card: `java tools/Build.java fixture-issue <runId> <tenantId>`. It prints one token to stdout and does not log it.
+Proposed CLI, not added by this card: `java tools/Build.java fixture-issue <runId> <tenantId>`. It prints one tenant token to stdout and does not log it. It does not implement session issuance.
 
-The MAC key is 32 random bytes in `.lab/runs/<runId>/credential.key`. The token is `sf1.` + unpadded base64url(UTF-8 payload) + `.` + unpadded base64url(HMAC-SHA256). Payload keys are sorted: `{"exp":<epoch seconds>,"runId":"<uuid>","tenantId":"<uuid>","typ":"tenant"}`. `typ` `session` adds `warehouseId`, `sku` and `minVersion` and is not accepted as a tenant credential. Verification uses a constant-time MAC compare and rejects an expired, unknown-run or wrong-type token with `401`. A token for tenant A naming tenant B's warehouse returns the scoped `404`, not the other tenant's stock.
+The inventory service issues the `sessionToken` on a reserving `201`. It verifies tenant tokens and does not issue them. Proposed type, added with the reserve path:
 
-The controller later calls this issuer. It must not invent a second token format. The inventory service only verifies.
+```java
+public interface SessionTokenIssuer {
+  String issue(SessionClaim claim);
+}
 
-Rejected: trusting `X-Tenant-Id`; minting a token inside the request path; storing raw tokens in PostgreSQL.
+public record SessionClaim(
+    UUID runId,
+    UUID tenantId,
+    UUID warehouseId,
+    String sku,
+    long minVersion,
+    Instant expiresAt) {}
+```
+
+`runId` and `tenantId` come from the verified tenant credential. `warehouseId` and `sku` come from the accepted operation. `minVersion` is the stock version stored in that same response. `expiresAt` is the idempotency row's `expires_at`, 24 hours from the claim, not the reservation hold of 30 seconds. The service calls `issue` only while it owns the claim, puts the returned string in `response_json.sessionToken`, and commits that body with the stock change. Replay returns those stored bytes and does not call `SessionTokenIssuer`. A `409` body has no session token. A `consistency=session` read verifies the presented token and echoes it; it does not mint a tenant credential or replace the stored reserve token. A session token does not keep a reservation `ACTIVE` after `expires_at`.
+
+The MAC key is 32 random bytes in `.lab/runs/<runId>/credential.key`. The token is `sf1.` + unpadded base64url(UTF-8 payload) + `.` + unpadded base64url(HMAC-SHA256). Tenant payload keys are sorted: `{"exp":<epoch seconds>,"runId":"<uuid>","tenantId":"<uuid>","typ":"tenant"}`. Session payload keys are sorted: `{"exp":<epoch seconds>,"minVersion":<long>,"runId":"<uuid>","sku":"<code>","tenantId":"<uuid>","typ":"session","warehouseId":"<uuid>"}`. Each verifier accepts only its own `typ`. Verification uses a constant-time MAC compare and rejects an expired, unknown-run or wrong-type token with `401`. A tenant token for tenant A naming tenant B's warehouse returns the scoped `404`, not the other tenant's stock.
+
+The controller later calls `FixtureCredentialIssuer` for tenant tokens. It must not invent a third format. `SessionTokenIssuer` stays in the inventory service because the token's `minVersion` is the version committed with the stock row.
+
+Rejected: trusting `X-Tenant-Id`; minting a tenant token inside the request path; storing raw tenant tokens in PostgreSQL; re-issuing `sessionToken` on replay; using the fixture CLI to sign session tokens.
 
 ### 8. Writable fixture size
 
@@ -209,13 +233,20 @@ CREATE TABLE reservation (
   quantity integer NOT NULL CHECK (quantity BETWEEN 1 AND 100),
   state text NOT NULL CHECK (state IN ('ACTIVE', 'RELEASED', 'EXPIRED')),
   expires_at timestamptz NOT NULL,
+  terminal_at timestamptz,
   stock_version bigint NOT NULL CHECK (stock_version >= 0),
   PRIMARY KEY (tenant_id, id),
   FOREIGN KEY (tenant_id, warehouse_id, sku)
-    REFERENCES inventory (tenant_id, warehouse_id, sku)
+    REFERENCES inventory (tenant_id, warehouse_id, sku),
+  CHECK (
+    (state = 'ACTIVE' AND terminal_at IS NULL)
+    OR (state IN ('RELEASED', 'EXPIRED') AND terminal_at IS NOT NULL)
+  )
 );
 CREATE INDEX reservation_active_expiry ON reservation (expires_at)
   WHERE state = 'ACTIVE';
+CREATE INDEX reservation_terminal_retention ON reservation (terminal_at)
+  WHERE terminal_at IS NOT NULL;
 CREATE TABLE idempotency_record (
   tenant_id uuid NOT NULL,
   key text NOT NULL CHECK (length(key) BETWEEN 1 AND 128 AND key ~ '^[\x21-\x7E]+$'),
@@ -249,14 +280,14 @@ Example ids, not a claim that this SKU was imported:
 Both tenants start at `available 1000`, `version 0` in both runs.
 
 1. North on R1 reserves quantity 1. The insert claims `retry-1`. The conditional update sets available to 999 and version to 1. The transaction inserts reservation `cccccccc-cccc-4ccc-8ccc-ccccccccccc1` as `ACTIVE` and commits the `201` body. South and R2 stay at 1000 / 0.
-2. The response is lost. The client sends the same key and body. The insert conflicts with the committed row, the hash matches, and the server returns the stored `201` plus `Idempotency-Replayed: true`. Available stays 999 and version stays 1. No second reservation is inserted.
+2. The response is lost. The client sends the same key and body. `ON CONFLICT DO NOTHING` inserts nothing and leaves the transaction open. The following `SELECT` finds the committed hash match and returns the stored `201`, including the original `sessionToken`, plus `Idempotency-Replayed: true`. Available stays 999 and version stays 1. No second reservation is inserted.
 3. If that retry had arrived while step 1 still held the unique-index lock, it would wait up to 2 seconds. On timeout it returns `409 IDEMPOTENCY_IN_PROGRESS` and inserts nothing. It must not create a second reservation.
 4. The same key with quantity 2 returns `409 IDEMPOTENCY_CONFLICT`. Stock stays 999 / version 1.
 5. South on R1 uses the same key and body. That is a different `(tenant, key)`. South commits its own `201`, available 999, version 1. North is unchanged.
 6. North on R2 uses the same key and body. R2's schema has its own row, so R2 goes to 999 / 1 and R1 stays at 999 / 1.
 7. A row at available 1 receives quantity 2 with key `short-1`. The conditional update changes zero rows. The transaction stores `409 INSUFFICIENT_STOCK` with available 1 and the current version, and commits. Version does not change. Replaying `short-1` returns that same body even after a later restock. A new key can reserve quantity 1.
-8. At `expires_at`, expiry wins `ACTIVE → EXPIRED` for the North R1 reservation, credits 1, and moves version from 1 to 2 (available 1000). Replaying `retry-1` still returns the original `201` with `state ACTIVE` until the key is 24 hours old. `GET` returns `EXPIRED`. `POST` release returns `200` with `EXPIRED` and does not credit again, so version stays 2.
-9. After the idempotency row is deleted at 24 hours, `retry-1` is a new reserve and may decrement stock once.
+8. At `expires_at`, expiry wins `ACTIVE → EXPIRED` for the North R1 reservation, sets `terminal_at` to that transaction's timestamp, credits 1, and moves version from 1 to 2 (available 1000). Replaying `retry-1` still returns the original `201` with `state ACTIVE` and the original session token until the idempotency `expires_at`. `GET` returns `EXPIRED`. `POST` release returns `200` with `EXPIRED` and does not credit again, so version stays 2 and `terminal_at` stays the expiry time. The reservation row remains until `terminal_at` is 24 hours old.
+9. The cleanup role, not the request writer, deletes the idempotency row after its `expires_at`. `retry-1` may then reserve again and decrement stock once. The same role deletes the terminal reservation only after `terminal_at` plus 24 hours.
 
 The lost-response retry in step 2 is this exchange. The second response adds the replay header and does not change stock:
 
@@ -273,6 +304,8 @@ Idempotency-Replayed: true
 
 {"id":"cccccccc-cccc-4ccc-8ccc-ccccccccccc1","state":"ACTIVE","quantity":1,"stockVersion":1,"sessionToken":"sf1.<session-token>"}
 ```
+
+That `sessionToken` was minted once by `SessionTokenIssuer` before the original commit, with `minVersion` 1 and `exp` equal to the idempotency `expires_at`. The replay copies it from `response_json`.
 
 The insufficient-stock decision in step 7 stores this body and replays it unchanged:
 

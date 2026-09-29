@@ -145,3 +145,9 @@ Date: 2026-09-29. Tool: Codex. Owner explicitly requested checkpoint V0 review; 
 Reviewed only A01's docs range `9eb2e03..7772cbe`, its V0 packet and relevant baseline/schema/contracts. Confirmed diagnostic preservation and run ownership are described, but requested three corrections: recover correctly from duplicate-key transaction failure before replay; define session-token issuance separately from tenant credential issuance; align retention permissions and timestamps with the promised cleanup. Also noted the small-fixture assumption of at least 100 catalog products. Verified PostgreSQL behavior against official version-17 transaction/INSERT docs rather than executing a migration.
 
 Recorded changes_requested in the packet and STATE. Java link check and diff whitespace check passed; no runtime code, credential or database was changed for this review. Did not approve the proposed contract or begin A02. Cursor should correct A01 and the owner should request V0 recheck.
+
+## 011 — Correct V0 findings R1–R3
+
+Date: 2026-09-29. Tool: Cursor. Task: A01 recheck preparation. Status: draft for human review. This entry does not accept V0.
+
+The owner asked to fix findings R1–R3 only. ADR 002 now uses conflict-safe idempotency insertion so a committed duplicate can be read without an aborted transaction. The inventory service issues session tokens into the stored reserve body; the fixture CLI still issues only tenant credentials. Retention deletes belong to a per-run cleanup role, and reservation retention starts at `terminal_at`. The smaller-catalog note was not changed. No runtime code, migration, or credential was added. A02 stays blocked until a recheck accepts V0.

@@ -179,3 +179,13 @@ Reviewed A01 documentation at `7772cbe1e9c8a339238e102fa46c08bc7b41e5f9` against
 Verdict: changes_requested. R1: uniqueness-error replay cannot continue in an aborted PostgreSQL transaction. R2: the required reservation session token has no authorized issuer/interface. R3: the retention worker has no DELETE authority, and the schema lacks a terminal-retention timestamp. Smaller-than-100 catalog behavior is a non-blocking clarification. PostgreSQL 17 transaction and INSERT documentation independently support R1; sources are linked in the packet.
 
 Checks: Git diff scope, line-by-line ADR/contract/schema review, Java documentation check (203 local links before adding review links), and whitespace check passed. No migration or database write was run. Runtime tests from the UI task are not evidence that this proposed writable contract works. Updated the V0 packet and STATE; A02 remains blocked pending corrections and a requested recheck.
+
+## 2026-09-29 — V0 corrections R1–R3
+
+Documentation-only. No migration, credential, or runtime change. The non-blocking smaller-catalog note was left unchanged.
+
+- R1: a duplicate idempotency key uses `INSERT ... ON CONFLICT DO NOTHING` and a `SELECT` in that same open transaction. A unique-violation error is specified as unusable because it aborts the transaction before replay.
+- R2: `FixtureCredentialIssuer` remains the tenant CLI issuer. `SessionTokenIssuer` in the inventory service mints the reserve `sessionToken` once, with `minVersion` and `exp` taken from the committed response and the idempotency `expires_at`. Replay returns the stored token.
+- R3: `reservation.terminal_at` is the retention clock for terminal rows. Role `sf_c_<32 hex>` may delete only expired idempotency rows and reservations past that clock. The request writer still has no `DELETE`.
+
+Static SQL inspection of the ADR sketches: parenthesis balance 0. Migrations were not applied. `.lab/jdk/Contents/Home/bin/java tools/Build.java check-docs` passed: `Checked 204 local documentation links.` `git diff --check` passed.
