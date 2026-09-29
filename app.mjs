@@ -15,6 +15,7 @@ let realMode = false;
 let realStatus = null;
 let realRate = 2;
 let realError = "";
+let scalePending = false;
 let chapter = 0;
 let faultNode = "cache";
 let faultKind = "stampede";
@@ -415,6 +416,14 @@ function inspect(id, shardIndex = null) {
 function renderInspector() {
   const id = pinned || "api";
   const d = descriptions[id];
+  const live = realSnapshot(id);
+  if (live) {
+    $("inspect-content").innerHTML = `<span class="guide-kicker">REAL COMPONENT</span><h3>${d[0]}</h3><p id="live-component-status"></p><p id="live-component-detail"></p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
+    $("live-component-status").textContent = live.status;
+    $("live-component-detail").textContent = live.detail;
+    $("back-guide").onclick = () => selectPanel(false);
+    return;
+  }
   const snapshot = componentSnapshot(state, id, running, pinnedShard);
   $("inspect-content").innerHTML =
     `<span class="guide-kicker">COMPONENT INSPECTOR</span><h3>${d[0]}</h3><span class="inspect-role">${d[1]}</span><dl class="inspect-list"><div><dt>Current state</dt><dd>${snapshot.status}</dd></div><div><dt>Current model behavior</dt><dd>${snapshot.detail}</dd></div><div><dt>What it does</dt><dd>${d[2]}</dd></div><div><dt>Model assumption</dt><dd>${d[3]}</dd></div></dl><div class="tradeoff"><span class="tiny-label">WHAT TO REMEMBER</span><p>${d[4]}</p></div><p class="inspect-hint">All values are illustrative. Select another architecture component to inspect its role.</p><button class="secondary" id="back-guide">← Back to walkthrough</button>`;
@@ -448,6 +457,8 @@ function renderGuide() {
       ? `${s.offered} offered · ${s.completed} completed · ${s.failed} failed · ${s.dropped} dropped. Last path: ${s.lastPath || "in progress"}. Stock ${s.available}, version ${s.version}.`
       : "Watch offered and completed cycles, the latest elapsed time, stock and version in the workload dock.";
     $("reflection").textContent = "Why does the stock version rise even when the released quantity returns?";
+    $("guide-content").querySelector(".tradeoff").insertAdjacentHTML("beforebegin",
+      '<div class="step"><div class="step-heading"><span class="step-num">4</span>Add a real API instance</div><p>Select Add real API instance on the extra API card. It becomes routable only after readiness succeeds. Repeat the same load and compare the per-instance request counts. Both APIs still share one PostgreSQL primary. Stop traffic before removing the extra instance.</p></div>');
     return;
   }
   const issue = state.faults[faultNode];
@@ -637,6 +648,19 @@ function renderActions() {
     $(`component-${id}`).append(control);
   }
   renderFaultConsole();
+  if (realMode) {
+    $("api2-actions").innerHTML = state.build?.action === "scale"
+      ? '<span class="map-fact">Starting JVM · waiting for readiness…</span>'
+      : button(state.instances > 1 ? "remove-instance" : "scale",
+          state.instances > 1 ? "Remove instance" : "+ Add real API instance",
+          scalePending || (state.instances > 1 && (running || realStatus?.inFlight > 0)));
+    document.querySelectorAll(".map-action").forEach(b => {
+      if (!["run", "burst", "scale", "remove-instance"].includes(b.dataset.action)) {
+        b.disabled = true;
+        b.title = "Available in model preview; real resource support is still planned.";
+      }
+    });
+  }
   document
     .querySelectorAll(".map-action")
     .forEach((b) => (b.onclick = () => act(b.dataset.action)));
@@ -674,6 +698,10 @@ function renderFaultConsole() {
     : issue
       ? `${faultCatalog[faultNode][issue].label} · ${state.protections.includes(`${faultNode}:${issue}`) ? "mitigation installed; fault remains until recovery" : "fault active — inspect the impact"}`
       : "Select a problem → Inject → Apply a fix → Recover. Architecture and fixes persist.";
+  if (realMode) {
+    for (const id of ["inject-fault", "fix-fault", "recover-fault"]) $(id).disabled = true;
+    $("fault-outcome").textContent = "Fault injection is available in model preview; real fault support is still planned.";
+  }
 }
 function render() {
   const m = metrics(state);
@@ -791,6 +819,10 @@ function render() {
   if (pinned) renderInspector();
 }
 function act(action) {
+  if (realMode && ["scale", "remove-instance"].includes(action)) {
+    changeInstance(action === "scale");
+    return;
+  }
   if (realMode && action === "run") {
     toggleReal();
     return;
@@ -973,6 +1005,10 @@ function paintReal() {
   $("db-demand").textContent = String(s?.offered ?? 0);
   $("rejected").textContent = `${s?.failed ?? 0} / ${s?.dropped ?? 0}`;
   $("db-pressure").textContent = `${s?.inFlight ?? 0} in flight`;
+  $("api-meta").textContent = `${s?.primaryRequests ?? 0} dispatched HTTP requests`;
+  $("api2-meta").textContent = s?.instances > 1
+    ? `${s.secondaryRequests} dispatched HTTP requests` : "not running";
+  $("proxy-meta").textContent = "Java round-robin dispatch";
   document.querySelector(".canvas-telemetry").setAttribute("aria-label", "Real inventory workload and cycle counts");
   document.querySelector(".canvas-telemetry .metrics").setAttribute("aria-label", "Measured inventory cycles");
   $("run").textContent = s?.running ? "Ⅱ Stop real traffic" : "▶ Start real traffic";
@@ -982,18 +1018,63 @@ function paintReal() {
   $("real-detail").textContent = realError || (s?.lastError
     ? `Last error: ${s.lastError}`
     : s?.completed
-      ? `Last cycle ${s.lastElapsedMillis} ms · stock ${s.available} · version ${s.version}`
+      ? `Last cycle ${s.lastElapsedMillis} ms · stock ${s.available} · version ${s.version} · ${s.instances ?? 1} API(s)`
       : "No completed cycle yet · stock and version pending");
 }
 function updateReal(status) {
   const wasRunning = running;
+  const wasInFlight = realStatus?.inFlight ?? 0;
+  const oldInstances = state.instances;
+  const oldBuilding = Boolean(state.build);
   realStatus = status;
   realError = "";
   running = Boolean(status.running);
+  state = { ...state, instances: status.instances ?? 1,
+    build: status.building || (scalePending && (status.instances ?? 1) < 2)
+      ? { action: "scale", stage: "provisioning" } : null };
+  if (oldInstances !== state.instances || oldBuilding !== Boolean(state.build)) {
+    render();
+    if (oldInstances !== state.instances) highlightRoutes();
+  }
   paintReal();
   renderGuide();
   $("graph").classList.toggle("running", running);
-  if (running !== wasRunning) renderActions();
+  if (running !== wasRunning || (!running && wasInFlight > 0 && status.inFlight === 0)) renderActions();
+  if (pinned) renderInspector();
+  renderHover();
+}
+
+function realSnapshot(id) {
+  if (!realMode) return null;
+  const s = realStatus;
+  const snapshots = {
+    api: { status: "Original Java API", detail: `${s?.primaryRequests ?? 0} HTTP requests dispatched to this instance. Shares the owned PostgreSQL fixture with the second API.` },
+    api2: { status: state.build ? "Waiting for readiness" : state.instances > 1 ? "Ready · available for traffic" : "Not running",
+      detail: `${s?.secondaryRequests ?? 0} HTTP requests dispatched. Add starts one owned JVM; removal requires stopped, drained traffic.` },
+    proxy: { status: "Java request dispatcher", detail: "Alternates HTTP requests between ready API instances. No NGINX process is running in this native experiment." },
+    db: { status: "Shared PostgreSQL primary", detail: s?.completed ? `Latest observed stock ${s.available}, version ${s.version}. A second API adds connections, not database capacity.` : "No completed cycle yet. Both API instances use the same run-owned inventory." },
+    client: { status: s?.running ? "Real workload active" : "Real workload stopped", detail: `${s?.completed ?? 0} completed cycles. Each cycle reads, reserves, releases, then reads stock again.` },
+  };
+  return snapshots[id] || null;
+}
+async function changeInstance(add) {
+  if (scalePending) return;
+  scalePending = true;
+  if (add) state = { ...state, build: { action: "scale", stage: "provisioning" } };
+  render();
+  try {
+    const status = await (add ? traffic.addInstance() : traffic.removeInstance());
+    scalePending = false;
+    updateReal(status);
+    routeNotice = add ? "Second Java API ready. Requests now alternate between both instances; PostgreSQL is shared."
+      : "Extra API stopped. New requests use the original Java API.";
+    log(routeNotice);
+  } catch {
+    scalePending = false;
+    state = { ...state, build: null };
+    showRealError(new Error("Instance change failed. Stop traffic before removal; check the adjacent API port and readiness."));
+  }
+  render();
 }
 function showRealError(error) {
   realError = error.message || "Real traffic control is unavailable.";
@@ -1103,7 +1184,7 @@ function renderHover() {
   }
   const id = hoverNode.dataset.node;
   const shardIndex = hoverNode.dataset.shard === undefined ? null : Number(hoverNode.dataset.shard);
-  const snapshot = componentSnapshot(state, id, running, shardIndex);
+  const snapshot = realSnapshot(id) || componentSnapshot(state, id, running, shardIndex);
   const tip = $("hover-card");
   $("hover-title").textContent = shardIndex === null ? descriptions[id][0] : `Shard S${shardIndex + 1}`;
   $("hover-state").textContent = snapshot.status;

@@ -13,5 +13,7 @@ export function realTraffic(fetchLocal = fetch) {
       return request(`/lab/traffic/start?rate=${rate}&seconds=30&concurrency=2`, "POST");
     },
     stop: () => request("/lab/traffic/stop", "POST"),
+    addInstance: () => request("/lab/traffic/add-instance", "POST"),
+    removeInstance: () => request("/lab/traffic/remove-instance", "POST"),
   };
 }
