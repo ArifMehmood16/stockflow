@@ -71,9 +71,6 @@ button:hover:not(:disabled) {
   font-size: 25px;
   letter-spacing: -1px;
 }
-.brand-dot {
-  color: var(--accent);
-}
 .brand-icon {
   height: 29px;
   width: 29px;
@@ -2633,3 +2630,9 @@ h1 {
   .fault-console summary { min-height: 108px; }
   #quality { display: block; }
 }
+
+/* The product name states its educational purpose without widening the canvas. */
+.brand strong { font-size: clamp(14px, 1.4vw, 20px); letter-spacing: -.4px; }
+#model-insight { line-height: 1.5; }
+@media (max-width: 1050px) { .breadcrumb { display: none; } }
+@media (max-width: 600px) { .top-actions .mode { display: none; } }

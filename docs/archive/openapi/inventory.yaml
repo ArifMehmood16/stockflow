@@ -1,0 +1,165 @@
+openapi: 3.1.0
+info:
+  title: StockFlow inventory API
+  version: 0.1.0
+  description: Local Phase 1 API. An active run is selected when the process starts.
+servers:
+  - url: http://127.0.0.1:8081
+paths:
+  /health/live:
+    get:
+      operationId: live
+      responses:
+        '200': {description: Process is live}
+  /health/ready:
+    get:
+      operationId: ready
+      responses:
+        '200': {description: Catalog and selected run primary are ready}
+        '503': {description: A required primary is unavailable}
+  /v1/catalog/{code}/stock:
+    get:
+      operationId: diagnosticStock
+      parameters:
+        - {name: code, in: path, required: true, schema: {type: string, pattern: '^[0-9]{1,32}$'}}
+      responses:
+        '200': {description: Public diagnostic stock, content: {application/json: {schema: {$ref: '#/components/schemas/DiagnosticStock'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/warehouses/{warehouseId}/stock/{sku}:
+    get:
+      operationId: runStock
+      security: [{tenantCredential: []}]
+      parameters:
+        - {name: warehouseId, in: path, required: true, schema: {type: string, format: uuid}}
+        - {name: sku, in: path, required: true, schema: {type: string, pattern: '^[0-9]{1,32}$'}}
+        - {name: consistency, in: query, schema: {type: string, enum: [primary, session, eventual], default: primary}}
+        - {name: X-Session-Token, in: header, schema: {type: string}, description: Required only for session consistency}
+      responses:
+        '200': {description: Scoped primary stock, content: {application/json: {schema: {$ref: '#/components/schemas/RunStock'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/reservations:
+    post:
+      operationId: reserve
+      security: [{tenantCredential: []}]
+      parameters:
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ReserveRequest'}
+      responses:
+        '201': {description: Committed reservation, content: {application/json: {schema: {$ref: '#/components/schemas/ReservationCreated'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '413': {$ref: '#/components/responses/InvalidRequest'}
+        '429': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/reservations/{id}:
+    get:
+      operationId: reservation
+      security: [{tenantCredential: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ReservationId'}
+      responses:
+        '200': {description: Current scoped reservation, content: {application/json: {schema: {$ref: '#/components/schemas/ReservationView'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+  /v1/reservations/{id}/release:
+    post:
+      operationId: release
+      security: [{tenantCredential: []}]
+      parameters:
+        - {$ref: '#/components/parameters/ReservationId'}
+        - {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 128}}
+      responses:
+        '200': {description: Terminal state; stock credited once, content: {application/json: {schema: {$ref: '#/components/schemas/ReleaseResult'}}}}
+        '400': {$ref: '#/components/responses/InvalidRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '503': {$ref: '#/components/responses/Unavailable'}
+components:
+  securitySchemes:
+    tenantCredential: {type: http, scheme: bearer, description: Run-issued synthetic tenant token}
+  parameters:
+    ReservationId: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+  responses:
+    InvalidRequest: {description: Invalid or oversized request, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Unauthorized: {description: Missing, expired or invalid run credential, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Missing: {description: Resource absent in this tenant scope, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Conflict: {description: Idempotency, stock or capability conflict, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+    Unavailable: {description: Required primary unavailable, content: {application/json: {schema: {$ref: '#/components/schemas/Error'}}}}
+  schemas:
+    Error:
+      type: object
+      required: [code, message, retryable]
+      properties:
+        code: {type: string}
+        message: {type: string}
+        requestId: {type: string, format: uuid}
+        retryable: {type: boolean}
+        available: {type: integer}
+        version: {type: integer, format: int64}
+    DiagnosticStock:
+      type: object
+      required: [code, productName, available, version, tenantId, bucket, source, observedAt]
+      properties:
+        code: {type: string}
+        productName: {type: string}
+        available: {type: integer}
+        version: {type: integer, format: int64}
+        tenantId: {type: integer}
+        bucket: {type: integer}
+        source: {type: string}
+        observedAt: {type: string, format: date-time}
+    RunStock:
+      type: object
+      required: [sku, available, version, source, observedAt]
+      properties:
+        sku: {type: string}
+        available: {type: integer}
+        version: {type: integer, format: int64}
+        source: {type: string, const: postgresql-primary}
+        cachedAt: {type: [string, 'null'], format: date-time}
+        observedAt: {type: string, format: date-time}
+    ReserveRequest:
+      type: object
+      required: [warehouseId, sku, quantity]
+      properties:
+        warehouseId: {type: string, format: uuid}
+        sku: {type: string, pattern: '^[0-9]{1,32}$'}
+        quantity: {type: integer, minimum: 1, maximum: 100}
+    ReservationCreated:
+      type: object
+      required: [id, state, quantity, stockVersion, sessionToken]
+      properties:
+        id: {type: string, format: uuid}
+        state: {type: string, const: ACTIVE}
+        quantity: {type: integer}
+        stockVersion: {type: integer, format: int64}
+        sessionToken: {type: string}
+    ReservationView:
+      type: object
+      required: [id, state, quantity, stockVersion]
+      properties:
+        id: {type: string, format: uuid}
+        state: {type: string, enum: [ACTIVE, RELEASED, EXPIRED]}
+        quantity: {type: integer}
+        stockVersion: {type: integer, format: int64}
+    ReleaseResult:
+      type: object
+      required: [id, state, stockVersion]
+      properties:
+        id: {type: string, format: uuid}
+        state: {type: string, enum: [RELEASED, EXPIRED]}
+        stockVersion: {type: integer, format: int64}

@@ -2,6 +2,7 @@ import {
   initialState,
   transition,
   metrics,
+  explain,
   shardRecords,
   faultCatalog,
   componentAvailable,
@@ -167,7 +168,7 @@ const chapters = [
       ],
       [
         "Follow the read route",
-        "Inspect the replica. Real replay delay and session consistency are planned experiments.",
+        "Inspect the replica, then inject simulated lag to explore stale reads and primary fallback.",
         "Inspect replica",
         "inspect-replica",
       ],
@@ -199,7 +200,7 @@ const chapters = [
       ],
       [
         "Fence the old writer",
-        "In the real lab, this must verify that the old owned process cannot accept writes.",
+        "In a real system, fencing must prevent the old primary from accepting writes. Here this is a modeled safety gate.",
         "Fence primary",
         "fence",
       ],
@@ -256,7 +257,7 @@ const chapters = [
       "Keep a known-good version available while introducing the next one.",
     heading: "Switch with a way back.",
     intro:
-      "Blue and green share a compatible schema. The final lab will check readiness, switch routes and drain old requests.",
+      "Blue and green share a compatible schema. The simulation stages readiness before switching the illustrated request routes.",
     steps: [
       [
         "Keep requests flowing",
@@ -288,7 +289,7 @@ const descriptions = {
     "Traffic source",
     "Schedules synthetic stock reads and reservation writes.",
     "90% reads / 10% writes; selected load is offered demand.",
-    "The preview generates no HTTP load. The real runner will enforce rate, duration and concurrency caps.",
+    "The simulation generates no HTTP load. Selected requests/s is an input to the capacity model.",
   ],
   proxy: [
     "Routing proxy",
@@ -662,6 +663,7 @@ function renderFaultConsole() {
 }
 function render() {
   const m = metrics(state);
+  $("model-insight").textContent = explain(state);
   $("load").value = state.rps;
   $("load-value").innerHTML = `${fmt(state.rps)} <small>req/s</small>`;
   $("load-down").disabled = state.rps <= loadSteps.min;

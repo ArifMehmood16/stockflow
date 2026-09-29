@@ -1,4 +1,4 @@
-// Deliberately aggregate teaching sketch, not the planned discrete-event engine.
+// Aggregate educational model: capacities and fault multipliers are explicit assumptions.
 export const loadSteps = { min: 10000, max: 250000, interval: 10000 };
 export const initialState = () => ({
   rps: loadSteps.min,
@@ -378,4 +378,22 @@ export function metrics(s) {
     staleReads,
     movingShare,
   };
+}
+
+// Explain the aggregate model rather than presenting its numbers as a benchmark.
+export function explain(state) {
+  const m = metrics(state);
+  if (state.primaryDown) return 'Primary database unavailable: writes are unavailable. Fence it before promoting a replica; cached reads may continue.';
+  const activeFault = Object.entries(state.faults)[0];
+  if (activeFault) {
+    const [node, kind] = activeFault;
+    const scenario = faultCatalog[node][kind];
+    return `${scenario.label}: ${state.protections.includes(`${node}:${kind}`) ? scenario.result : scenario.effect}`;
+  }
+  if (m.rejected < 1) return 'Headroom available: the modeled system can handle this load. Increase requests to find the next limit.';
+  if (m.apiCapacity / state.rps < m.dbCapacity / Math.max(m.rawDbDemand, 1))
+    return 'API capacity is the next limit. Another API shares requests, but does not increase the capacity of the shared database.';
+  if (state.replica && m.rawDbDemand <= m.dbCapacity)
+    return 'The read replica is saturated. Splitting reads does not create unlimited read capacity or more primary write capacity.';
+  return 'The database cannot serve all requested work. Caching removes repeated reads; a replica moves reads; balanced shards spread data ownership.';
 }
