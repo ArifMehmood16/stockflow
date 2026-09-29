@@ -7,10 +7,10 @@ export function realTraffic(fetchLocal = fetch) {
   return {
     status: () => request("/lab/traffic"),
     start(rate) {
-      if (!Number.isInteger(rate) || rate < 1 || rate > 50) {
-        throw new RangeError("Real traffic rate must be 1–50 cycles/s");
+      if (!Number.isInteger(rate) || rate < 1 || rate > 10000) {
+        throw new RangeError("Real traffic rate must be 1–10,000 requests/s");
       }
-      return request(`/lab/traffic/start?rate=${rate}&seconds=30&concurrency=2`, "POST");
+      return request(`/lab/traffic/start?rate=${rate}&seconds=0&concurrency=256`, "POST");
     },
     stop: () => request("/lab/traffic/stop", "POST"),
     addInstance: () => request("/lab/traffic/add-instance", "POST"),
