@@ -15,7 +15,9 @@ public final class Lab {
       for (String line : Files.readAllLines(file)) {
         if (line.isBlank() || line.stripLeading().startsWith("#")) continue;
         String[] entry = line.split("=", 2);
-        if (entry.length == 2 && Set.of("DATABASE_URL", "DATASET_ROWS").contains(entry[0].trim())) {
+        if (entry.length == 2
+            && Set.of("DATABASE_URL", "DATASET_ROWS", "FIXTURE_ROWS", "FIXTURE_SEED")
+                .contains(entry[0].trim())) {
           String value = entry[1].trim();
           if (value.length() > 1
               && ((value.startsWith("\"") && value.endsWith("\""))
@@ -71,6 +73,28 @@ public final class Lab {
     }
   }
 
+  static void fixture() throws Exception {
+    var settings = settings();
+    var config = Database.config(settings.getOrDefault("DATABASE_URL", ""), false);
+    UUID runId =
+        settings.containsKey("RUN_ID")
+            ? UUID.fromString(settings.get("RUN_ID"))
+            : UUID.randomUUID();
+    Integer requested =
+        settings.containsKey("FIXTURE_ROWS")
+            ? Integer.valueOf(settings.get("FIXTURE_ROWS"))
+            : null;
+    try (var connection = Database.connect(config)) {
+      var receipt =
+          RunFixture.prepare(
+              connection, runId, settings.getOrDefault("FIXTURE_SEED", "stockflow-demo"),
+              requested);
+      System.out.printf(
+          "Run %s READY; profile=%s, actual stock rows=%,d. Credentials: .lab/runs/%s/%n",
+          runId, receipt.profile(), receipt.actualRows(), runId);
+    }
+  }
+
   static void docs() throws IOException {
     int checked = 0;
     var pattern = Pattern.compile("\\[[^\\]]*\\]\\(([^)]+)\\)");
@@ -105,6 +129,7 @@ public final class Lab {
     try {
       switch (action) {
         case "setup", "db-init", "db-import", "db-status", "data-fetch" -> setup(action);
+        case "fixture" -> fixture();
         case "preview" -> Preview.start(Path.of("."), Preview.port());
         case "run" -> {
           Api.start();
@@ -145,7 +170,7 @@ public final class Lab {
         case "test-postgres" -> IntegrationTest.run();
         default ->
             System.out.println(
-                "StockFlow Java tools: setup | db-init | db-import | db-status | data-fetch |"
+                "StockFlow Java tools: setup | fixture | db-init | db-import | db-status | data-fetch |"
                     + " preview | stop | doctor");
       }
     } catch (SQLException error) {
