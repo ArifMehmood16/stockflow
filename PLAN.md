@@ -24,6 +24,7 @@ Each implementation task: inspect relevant code → smallest failing behaviour t
 - [x] 0.4d Add user-requested local PostgreSQL schema/import bootstrap and an isolated Docker database; document prerequisites.
 - [x] 0.4e Add a StockFlow favicon and verify the Java preview serves it.
 - [x] 0.4f Repair card padding/overlap, space topology rows, add cursor-following component/shard details and stable runtime build animations; verify keyboard, narrow and six-shard views.
+- [x] 0.4g Separate primary-write, replica-read and WAL arrows; widen component gutters and add bounded pan/zoom with Fit system, preserved runtime view and keyboard navigation.
 - [ ] 0.5 Human approves ADR 001 proposals, scope, licence and visual direction.
 
 Acceptance: another developer can locate responsibilities, schemas, lesson steps, limits, tests and implementation order without treating the prototype as a measured system. Verification details in the journal. The later owner request to continue explicitly authorizes the baseline Java milestone; outstanding licence/hosting decisions are not required for local implementation.

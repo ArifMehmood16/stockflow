@@ -62,7 +62,7 @@ Reject cross-mode comparison. Warn on workload/fixture mismatch; allow explanati
 
 ## Responsive states
 
-The owner's single-view requirement supersedes the earlier panning proposal. At 1440+ retain the lesson rail, fluid centre and right guide. At 1024 collapse the rail to a chapter selector if needed; at 768/375 move the guide below or into tabs. At every width fit the complete topology without inner canvas scrolling or body horizontal overflow. Preserve readable pinned inspection, keyboard-accessible component details, focus-canvas mode and a reachable stop action. Small graph labels are supplemented by the inspector rather than clipped controls. An export report is readable without the graph.
+The owner now explicitly allows pan and zoom, superseding the fit-only restriction. At 1440+ retain the lesson rail, fluid centre and right guide. At 1024 collapse the rail to a chapter selector if needed; at 768/375 move the guide below or into tabs. Initially fit the complete topology at every width; allow pointer/keyboard navigation and retain Fit system without body horizontal overflow. Preserve the camera during runtime builds, readable pinned inspection, keyboard-accessible controls, focus-canvas mode and a reachable stop action. Small graph labels can be enlarged with zoom or explained in Inspector. An export report is readable without the graph.
 
 ## Interaction flows
 
@@ -114,7 +114,7 @@ The responsive browser preview below was captured during Phase 0. At narrower wi
 
 ## Single-view revision (supersedes the reset/scroll behavior above)
 
-Chapter selection now preserves the complete model, including pending builds. Only Reset lab cancels timers and clears topology/fixes. The workspace uses viewport height; the architecture fits both dimensions with no inner scrolling, while learning and guide panels scroll independently. Focus canvas temporarily hides side panels and restores them on demand. On narrow screens the complete graph is retained but text is smaller; the inspector provides readable detail.
+Chapter selection preserves the complete model, including pending builds. Only Reset lab cancels timers and clears topology/fixes. The workspace uses viewport height; the architecture initially fits both dimensions and now supports pan/zoom with Fit system, while learning and guide panels scroll independently. Focus canvas temporarily hides side panels. Runtime additions preserve the camera. On narrow screens, zoom and Inspector provide readable detail.
 
 A distinct shard bank shows up to six PostgreSQL owners and record counts. New nodes appear empty; copy/verification preserve old counts and routes; epoch switch changes ownership and enables routes. Ready empty capacity is never counted as serving data. The same canvas hosts a fault selector and inject/fix/recover controls, selected through each component's Faults button. The right panel explains active effects and persistent mitigations. Cache stale-read estimates are separate from completed rates; a completed stale read is not silently classified as fresh.
 

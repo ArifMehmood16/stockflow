@@ -61,7 +61,7 @@ A01 must resolve these before writable implementation:
 2. Actual `ReadOnlyBoundary` rejects all non-GET/HEAD operations and JDBC uses read-only settings. Add specific authenticated routes/roles, not a global bypass.
 3. The old 100k run-fixture example is not the import limit. Specify actual writable fixture size separately from retained catalog size, support explicitly selected large fixtures within admitted disk/process budgets, and preserve imported data.
 4. Bootstrap PostgreSQL is user-owned. Real crash/failover/shard/restore lessons must provision separate owned native processes/containers, never stop/reconfigure the user's existing server. Make still reuses that server for the baseline.
-5. Early UX text once allowed canvas panning; the owner's later requirement wins: keep the architecture fitted in a single view, preserve cumulative state, and use inspector/focus mode for small-screen detail.
+5. The owner now explicitly allows canvas pan and zoom. Start with the full architecture fitted; keep a Fit system control, pointer/keyboard navigation and cumulative state. Building components must preserve the chosen view. This supersedes the earlier fit-only restriction; use Inspector/focus mode for additional detail.
 
 ## Working loop and token budget
 

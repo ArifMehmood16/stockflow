@@ -61,7 +61,7 @@ Required proof: repeated identical seeded trace, conservation under overload/dro
 
 **After C04; before D01.** Completes PLAN Phase 2.
 
-Review preserved visual direction, fitted architecture, on-map build/fault/solution controls, component/trace inspector, readiness-driven route animation, persistent chapter state and right-side guide. Verify keyboard/reduced motion, 375/768/1440 widths, mode labels and disconnect/stale handling.
+Review preserved visual direction, initially fitted architecture with pan/zoom and Fit system, on-map build/fault/solution controls, component/trace inspector, readiness-driven route animation, persistent chapter state and right-side guide. Verify keyboard/reduced motion, 375/768/1440 widths, camera preservation during builds, separate write/read/WAL routing, mode labels and disconnect/stale handling.
 
 Required proof: runnable guided baseline E2E, representative screenshots/short recording, reconnect/resync and bounded history. Read-only API and favicon remain usable; no frontend arithmetic is mislabeled authoritative Java behavior.
 

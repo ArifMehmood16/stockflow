@@ -189,3 +189,13 @@ Documentation-only. No migration, credential, or runtime change. The non-blockin
 - R3: `reservation.terminal_at` is the retention clock for terminal rows. Role `sf_c_<32 hex>` may delete only expired idempotency rows and reservations past that clock. The request writer still has no `DELETE`.
 
 Static SQL inspection of the ADR sketches: parenthesis balance 0. Migrations were not applied. `.lab/jdk/Contents/Home/bin/java tools/Build.java check-docs` passed: `Checked 204 local documentation links.` `git diff --check` passed.
+
+## 2026-09-29 — 0.4g readable routes and navigable canvas
+
+Owner requested correcting the apparent write-to-replica arrow, more space and pan/zoom. The old WRITE label sat next to the replica-read segment, and route highlighting replaced semantic colors. Centralized source/destination/kind/label/path definitions, separated primary writes, replica reads and WAL, preserved type colors/arrowheads, and restored primary reads when a replica is unavailable. Widened gutters; route segments are tested against unrelated card interiors.
+
+Added pointer drag, pointer-centered wheel zoom, bounded zoom buttons, keyboard navigation, offscreen focus reveal and Fit system. Model renders do not reset the camera. The new owner instruction supersedes the fit-only restriction, so README, UX and Cursor frontend acceptance text were updated without changing task/gate status.
+
+Red/green: new module initially absent; route-clearance regression then found a replica-read line crossing the shard card, corrected to the right gutter. Browser offscreen-focus check failed before removing an unreliable focus-visible gate and passed afterward. Final make verify passed 28 tooling assertions, the API suite and 26 frontend tests. Browser evidence includes blue/green routing, replica-crash fallback, hover, mouse drag/wheel zoom, build camera preservation, keyboard and narrow Fit. See docs/ui-interaction-verification.md for concrete measurements. Final syntax, focused tests, links and whitespace checks were repeated after cleanup.
+
+No new dependency or external-input boundary. Exact static module route added to the Java allowlist. No database import, infrastructure fault or Docker run. Cursor's V0 corrections are preserved and not reviewed by this UI task. An existing Java preview must restart to serve the new module.

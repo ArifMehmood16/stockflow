@@ -151,3 +151,11 @@ Recorded changes_requested in the packet and STATE. Java link check and diff whi
 Date: 2026-09-29. Tool: Cursor. Task: A01 recheck preparation. Status: draft for human review. This entry does not accept V0.
 
 The owner asked to fix findings R1–R3 only. ADR 002 now uses conflict-safe idempotency insertion so a committed duplicate can be read without an aborted transaction. The inventory service issues session tokens into the stored reserve body; the fixture CLI still issues only tenant credentials. Retention deletes belong to a per-run cleanup role, and reservation retention starts at `terminal_at`. The smaller-catalog note was not changed. No runtime code, migration, or credential was added. A02 stays blocked until a recheck accepts V0.
+
+## 012 — Separate replica flows and add canvas pan/zoom
+
+Date: 2026-09-29. Tool: Codex. Owner-requested PLAN 0.4g; draft for human review.
+
+Fixed ambiguous write labeling beside the replica-read line and route highlights that erased flow colors. Added typed route definitions, distinct primary-write/replica-read/WAL labels and arrowheads, replica-failure read fallback and wider component gutters. Added bounded drag/wheel/button/keyboard navigation, focus reveal and Fit system while preserving camera state during builds. Updated the fit-only product/handoff wording because the owner now explicitly requests pan/zoom.
+
+Six topology/camera regressions join the existing suite. A line-through-shard failure and an offscreen-focus browser failure were corrected before completion. Full verification passed 28 Java tooling assertions, API tests and 26 frontend tests; browser checks covered semantic routing in blue/green, failure fallback, mouse/keyboard navigation, narrow Fit, hover and build camera stability. Exact evidence is in the journal and UI verification document. No dependency, database operation or V0 review was introduced; concurrent Cursor documentation remains intact.
